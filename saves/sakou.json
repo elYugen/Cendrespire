@@ -1,42 +1,167 @@
 {
  "name": "Sakou",
  "cls": "barbare",
- "level": 2,
- "xp": 196,
+ "level": 4,
+ "xp": 47,
  "alloc": {
-  "force": 0,
+  "force": 6,
   "dex": 0,
   "int": 0,
-  "vit": 0
+  "vit": 9
  },
- "points": 5,
- "gold": 161,
- "potions": 3,
- "max_floor": 1,
- "cleared": [],
+ "points": 0,
+ "gold": 397,
+ "max_floor": 2,
+ "cleared": [
+  1
+ ],
  "equipment": {
   "arme": {
-   "uid": 26878292862916,
+   "uid": 99879983251846,
    "slot": "arme",
-   "rarity": "magique",
+   "rarity": "legendaire",
    "ilvl": 1,
    "upgrade": 0,
    "affixes": {
-    "force": 3,
-    "armure": 7
+    "cdr": 3,
+    "dmg_pct": 5,
+    "vie": 21,
+    "mana_regen": 1,
+    "atk_speed": 4
    },
    "wclass": "barbare",
    "base": "Fléau",
    "dmg": [
-    8,
-    13
+    9,
+    16
    ],
-   "name": "Fléau de l'Ours"
+   "name": "Faucheuse des Steppes",
+   "ench": [
+    {
+     "choices": [
+      "tranchant",
+      "chaine",
+      "acuite"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "vampirisme",
+      "vivacite",
+      "acuite"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "acuite",
+      "vampirisme",
+      "entrave"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
   },
-  "casque": null,
-  "torse": null,
+  "casque": {
+   "uid": 257597705904650,
+   "slot": "casque",
+   "rarity": "rare",
+   "ilvl": 1,
+   "upgrade": 0,
+   "affixes": {
+    "gold_find": 7,
+    "cdr": 3,
+    "vit": 3
+   },
+   "base": "Casque à cornes",
+   "armor": 6,
+   "name": "Ruine du Bourreau",
+   "ench": [
+    {
+     "choices": [
+      "epines",
+      "esquive",
+      "agilite"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "vitalite",
+      "riposte",
+      "potion_vive"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  "torse": {
+   "uid": 135173060396373,
+   "slot": "torse",
+   "rarity": "magique",
+   "ilvl": 1,
+   "upgrade": 0,
+   "affixes": {
+    "force": 4
+   },
+   "base": "Cuirasse",
+   "armor": 7,
+   "name": "Cuirasse de l'Ours",
+   "ench": [
+    {
+     "choices": [
+      "rempart",
+      "recharge",
+      "ame_soin"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
   "gants": null,
-  "bottes": null,
+  "bottes": {
+   "uid": 71006788815633,
+   "slot": "bottes",
+   "rarity": "rare",
+   "ilvl": 1,
+   "upgrade": 0,
+   "affixes": {
+    "force": 3,
+    "gold_find": 7,
+    "armure": 5,
+    "dex": 3
+   },
+   "base": "Grèves",
+   "armor": 5,
+   "name": "Marque du Néant",
+   "ench": [
+    {
+     "choices": [
+      "recharge",
+      "potion_vive",
+      "vitalite"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "agilite",
+      "vitalite",
+      "potion_vive"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
   "amulette": {
    "uid": 178159368756929,
    "slot": "amulette",
@@ -47,20 +172,35 @@
     "int": 3
    },
    "base": "Amulette",
-   "name": "Amulette du Sage"
+   "name": "Amulette du Sage",
+   "ench": []
   },
   "anneau": {
-   "uid": 273698933120379,
+   "uid": 182844609378070,
    "slot": "anneau",
    "rarity": "magique",
    "ilvl": 1,
    "upgrade": 0,
    "affixes": {
-    "lifesteal": 1
+    "int": 3
    },
-   "base": "Chevalière",
-   "name": "Chevalière du Vampire"
-  }
+   "base": "Anneau",
+   "name": "Anneau du Sage",
+   "ench": [
+    {
+     "choices": [
+      "epines",
+      "agilite",
+      "ame_soin"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  "artefact1": null,
+  "artefact2": null,
+  "artefact3": null
  },
  "inventory": [
   {
@@ -80,7 +220,8 @@
     8,
     14
    ],
-   "name": "Faim de Givre"
+   "name": "Faim de Givre",
+   "ench": []
   },
   {
    "uid": 28842707622728,
@@ -95,7 +236,8 @@
     7,
     13
    ],
-   "name": "Fléau"
+   "name": "Fléau",
+   "ench": []
   },
   {
    "uid": 4373600424672,
@@ -107,7 +249,8 @@
     "int": 3
    },
    "base": "Chevalière",
-   "name": "Chevalière"
+   "name": "Chevalière",
+   "ench": []
   },
   {
    "uid": 50706745956398,
@@ -119,11 +262,90 @@
     "atk_speed": 4
    },
    "base": "Bague",
-   "name": "Bague de Célérité"
+   "name": "Bague de Célérité",
+   "ench": []
+  },
+  {
+   "uid": 234511656475986,
+   "slot": "casque",
+   "rarity": "commun",
+   "ilvl": 1,
+   "upgrade": 0,
+   "affixes": {},
+   "base": "Couronne de fer",
+   "armor": 4,
+   "name": "Couronne de fer",
+   "ench": []
+  },
+  {
+   "uid": 274886521425839,
+   "slot": "artefact",
+   "art": "bottes",
+   "rarity": "commun",
+   "ilvl": 1,
+   "upgrade": 0,
+   "affixes": {},
+   "base": "Artefact",
+   "name": "Bottes de célérité"
+  },
+  {
+   "uid": 46468017953715,
+   "slot": "amulette",
+   "rarity": "magique",
+   "ilvl": 1,
+   "upgrade": 0,
+   "affixes": {
+    "cdr": 2
+   },
+   "base": "Pendentif",
+   "name": "Pendentif de l'Instant",
+   "ench": [
+    {
+     "choices": [
+      "potion_vive",
+      "celerite",
+      "vitalite"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 26878292862916,
+   "slot": "arme",
+   "rarity": "magique",
+   "ilvl": 1,
+   "upgrade": 0,
+   "affixes": {
+    "force": 3,
+    "armure": 7
+   },
+   "wclass": "barbare",
+   "base": "Fléau",
+   "dmg": [
+    8,
+    13
+   ],
+   "name": "Fléau de l'Ours",
+   "ench": []
+  },
+  {
+   "uid": 273698933120379,
+   "slot": "anneau",
+   "rarity": "magique",
+   "ilvl": 1,
+   "upgrade": 0,
+   "affixes": {
+    "lifesteal": 1
+   },
+   "base": "Chevalière",
+   "name": "Chevalière du Vampire",
+   "ench": []
   }
  ],
- "kills": 16,
+ "kills": 40,
  "deaths": 0,
  "created_at": 1790432904.3347578,
- "saved_at": 1790433083.1145332
+ "saved_at": 1790451417.741944
 }

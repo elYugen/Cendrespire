@@ -810,9 +810,9 @@ class World(Scene):
         fr.light(PX + 90, PY + 110, 110, 500, (255, 236, 214), 1.4)
         fr.light(PX - 90, PY - 60, 60, 300, (90, 200, 255), 1.2)
         if not hasattr(self, "pcam"):
-            self.pcam = Camera3D(yaw=45, pitch=12, dist=4.0, fov=30)
+            self.pcam = Camera3D(yaw=45, pitch=12, dist=6.4, fov=30)
         cam = self.pcam
-        cam.dist = 4.0 / zoom
+        cam.dist = 6.4 / zoom
         cam.tx, cam.ty, cam.tz = PX, PY, 24
         cam.ndc_shift = (sx / SCREEN_W * 2 - 1, 1 - sy / SCREEN_H * 2)
         env = Env(clear=(0.03, 0.055, 0.07), shadow_extent=3.0, cut=0.0, fog=(30.0, 40.0),
@@ -852,7 +852,7 @@ class World(Scene):
         for bx, by, br in self.blood:
             fr.decal(bx, by, br, br * 0.85, (70, 6, 8), 0.75, kind=0, rot=bx)
         # lumières : lanterne du héros, torches, bougies, lave, éclairs
-        fr.light(p.x, p.y, 70, 320, (255, 214, 170), 1.15 + 0.05 * math.sin(t * 9))
+        fr.light(p.x, p.y, 80, 400, (255, 214, 170), 1.3 + 0.05 * math.sin(t * 9))
         for x, y, z in self.geo.torches:
             if abs(x - p.x) < 900 and abs(y - p.y) < 900:
                 f = 1 + 0.12 * math.sin(t * 11 + x) + 0.06 * math.sin(t * 23 + y)

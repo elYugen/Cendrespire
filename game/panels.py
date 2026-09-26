@@ -117,7 +117,7 @@ class MenuScreen(Panel):
 
     def portrait_spot(self):
         """Position (conception) et zoom du héros en 3D selon l'onglet."""
-        return (985, 250, 1.0) if self.tab == 0 else (150, 200, 0.8)
+        return (985, 270, 1.0) if self.tab == 0 else (145, 200, 0.75)
 
     # ------------------------------------------------------------------ aides
     def visible_items(self):
@@ -331,9 +331,10 @@ class MenuScreen(Panel):
                 ui.draw_text(surf, a, (box.x + 390 + (i // 3) * 220, box.y + 14 + (i % 3) * 25), 14, (140, 175, 255))
             self.draw_enchants(surf, it, box, mouse)
         equipped = it in p.equipment.values()
-        hint = "[Clic droit] Retirer" if equipped else "[Clic droit] Équiper   [Suppr] Recycler"
-        ui.draw_text(surf, hint, (box.x + 104, box.bottom - 8), 12, (150, 156, 156), anchor="bottomleft")
-        ui.draw_text(surf, f"Valeur {item_value(it)} or", (box.x + 390, box.bottom - 8), 12, GOLD, anchor="bottomleft")
+        hint = "[Clic droit] Retirer" if equipped else "[Clic droit] Équiper  ·  [Suppr] Recycler"
+        r = ui.draw_text(surf, f"Valeur {item_value(it)} or", (box.x + 390, box.bottom - 6), 12, GOLD,
+                         anchor="bottomleft")
+        ui.draw_text(surf, hint, (r.right + 16, box.bottom - 6), 12, (150, 156, 156), anchor="bottomleft")
 
     def draw_enchants(self, surf, it, box, mouse):
         """Emplacements d'enchantement : 3 choix par emplacement, puis amélioration jusqu'au niveau III."""

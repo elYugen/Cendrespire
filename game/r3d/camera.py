@@ -50,7 +50,7 @@ def look_at(eye, target, up=(0, 1, 0)):
 
 
 class Camera3D:
-    def __init__(self, yaw=45.0, pitch=52.0, dist=17.0, fov=36.0):
+    def __init__(self, yaw=45.0, pitch=52.0, dist=15.0, fov=36.0):
         self.yaw, self.pitch, self.dist, self.fov = yaw, pitch, dist, fov
         self.tx = self.ty = 0.0     # cible en coordonnées logiques
         self.tz = 0.0
@@ -72,7 +72,7 @@ class Camera3D:
         self.eye = t + (hd * math.cos(pitch) + np.array((0, math.sin(pitch), 0), dtype="f4")) * self.dist
         self.target = t
         self.view = look_at(self.eye, t)
-        self.proj = perspective(math.radians(self.fov), self.w / self.h, 0.5, 120.0)
+        self.proj = perspective(math.radians(self.fov), self.w / self.h, 0.5, 420.0)
         if self.ndc_shift != (0.0, 0.0):
             T = np.identity(4, dtype="f4")
             T[0, 3], T[1, 3] = self.ndc_shift
@@ -99,7 +99,7 @@ class Camera3D:
         p = self.vp @ np.array((*to3(x, y, z), 1.0), dtype="f4")
         if p[3] <= 0.01:
             return None
-        return ((p[0] / p[3] + 1) * 0.5 * self.w, (1 - p[1] / p[3]) * 0.5 * self.h)
+        return (float((p[0] / p[3] + 1) * 0.5 * self.w), float((1 - p[1] / p[3]) * 0.5 * self.h))
 
     def project_many(self, pts):
         arr = np.array([(x * U, z * U, y * U, 1.0) for x, y, z in pts], dtype="f4")

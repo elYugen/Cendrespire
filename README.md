@@ -1,8 +1,12 @@
 # Tour des Tourments
 
-Action-RPG en Python / pygame, inspiré de **Torghast** (World of Warcraft) pour la structure,
-de **Diablo** pour l'ambiance du monde et de **Zelda Breath of the Wild** pour l'interface.
-Tous les graphismes et les sons sont générés par le code : il n'y a aucun fichier d'asset.
+Action-RPG roguelike en 3D, écrit en Python. Les inspirations :
+- **Torghast** (World of Warcraft) pour la structure : une tour à étages, des pouvoirs d'anima, des gardiens ;
+- **Minecraft Dungeons** pour le gameplay : roulade, artefacts, enchantements, potion à recharge ;
+- **Diablo** pour l'ambiance des donjons ;
+- **Zelda Breath of the Wild** pour l'interface et l'écran titre.
+
+Tout est généré par le code : les modèles 3D en formes simples (sphères, cylindres, cônes, blocs), les niveaux et les sons. Il n'y a aucun fichier d'asset.
 
 ## Lancer le jeu
 
@@ -12,7 +16,7 @@ python3 -m venv .venv
 .venv/bin/python main.py
 ```
 
-Les sauvegardes sont écrites dans `saves/` (un fichier JSON par personnage).
+Il faut une carte graphique compatible OpenGL 3.3, ce qui est le cas de tout Mac récent. Le jeu s'affiche à la résolution native de l'écran, Retina compris. F11 bascule en plein écran. Les sauvegardes sont écrites dans `saves/`.
 
 ## Commandes
 
@@ -20,85 +24,72 @@ Les sauvegardes sont écrites dans `saves/` (un fichier JSON par personnage).
 |---|---|
 | ZQSD / WASD / flèches | Se déplacer (touches physiques : AZERTY et QWERTY fonctionnent) |
 | Clic gauche (maintenu) | Attaque de base vers le curseur |
-| 1 2 3 4 · clic droit | Sorts (le clic droit lance le sort 1) |
-| F | Boire une potion |
-| E | Parler / ouvrir / emprunter un portail |
+| 1 2 3 4 · clic droit | Sorts de classe (le clic droit lance le sort 1) |
+| Espace | Roulade d'esquive (invulnérable) |
+| R · T · G | Artefacts |
+| F | Potion de soins (illimitée, avec temps de recharge) |
+| E | Interagir |
 | I · C | Menu Équipement · Personnage (met le jeu en pause) |
 | Tab | Grande carte |
 | Échap | Pause |
-| F11 | Plein écran |
 
-## Concept
+## Boucle de jeu
 
-### Boucle de jeu
-1. **Campement** (hub) : on y trouve le marchand, la forgeronne et le portail de la Tour.
-2. **Portail** : on choisit un étage déjà débloqué.
-3. **Étage** : un donjon généré aléatoirement, avec des salles remplies de monstres.
-   - L'entrée de la salle du gardien est protégée par un **sceau**. Il se brise quand 60% des créatures de l'étage sont tuées.
-   - En entrant dans l'arène, le sceau se referme : impossible de fuir.
-   - Une fois le boss vaincu, l'**étage suivant est débloqué**, un butin tombe (objet légendaire garanti à la première victoire) et un portail ramène au campement.
-4. **Mort** : on revient au campement. On perd la moitié de l'or ramassé pendant l'ascension, mais on garde l'équipement et l'expérience.
+1. **Campement** : on y trouve le marchand (équipement et artefacts), la forgeronne (améliorations jusqu'à +5) et le portail de la Tour.
+2. **Étage** : un donjon 3D généré aléatoirement. Chaque étage a son ambiance : Geôles, Ossuaire, Forges avec lave, Sanctuaire, Cryptes de givre…
+3. **Sceau du gardien** : il se brise quand 60% des créatures de l'étage sont tuées. L'arène se referme alors sur le gardien.
+4. **Victoire** : l'étage suivant est débloqué, le gardien laisse du butin (objet légendaire garanti à la première victoire) et un portail ramène au campement.
+5. **Mort** : on revient au campement en perdant la moitié de l'or ramassé pendant l'ascension. L'équipement et l'expérience sont conservés.
 
-### Classes
-| Classe | Style | Sorts (niveau de déblocage) |
-|---|---|---|
-| **Barbare** (Force) | Corps à corps, résistant, ses coups rendent du mana | Tourbillon (1), Cri de guerre (3), Bond (6), Séisme (10) |
-| **Sorcier** (Intelligence) | Magie à distance, fragile | Boule de feu (1), Nova de givre (3), Téléportation (6), Météore (10) |
-| **Chasseur** (Dextérité) | Archer mobile | Tir multiple (1), Piège explosif (3), Roulade (6), Pluie de flèches (10) |
+## Systèmes
 
-Chaque niveau donne 5 points de caractéristiques à répartir (menu Personnage).
+- **3 classes**, chacune avec son attaque de base et 4 sorts débloqués aux niveaux 1, 3, 6 et 10 :
+  - Barbare : corps à corps ;
+  - Sorcier : magie à distance ;
+  - Chasseur : archer.
+- **Caractéristiques** : 5 points à répartir à chaque niveau.
+- **Enchantements** : les objets Magiques, Rares et Légendaires ont 1, 2 ou 3 emplacements. Pour chacun, on choisit 1 enchantement parmi 3, puis on l'améliore jusqu'au niveau III. On gagne 1 point d'enchantement par niveau. Les points investis sont rendus quand on vend ou recycle l'objet.
+- **Artefacts** : 9 objets actifs avec temps de recharge, à trouver en butin ou chez le marchand. Par exemple : Pierre d'orage, Totem de régénération, Crâne infernal, Lanterne des âmes (qui invoque un feu follet allié)…
+- **Pouvoirs d'anima** : ils sont rares. Les orbes tombent parfois sur les élites et dans les coffres. Chaque orbe propose 3 pouvoirs, avec une rareté Commun, Rare ou Épique qui multiplie leur effet. Ils durent jusqu'à la fin de l'ascension.
+- **Butin** : 4 raretés et des bonus aléatoires. Dans le menu, des flèches vertes ou rouges indiquent l'effet de l'objet sur l'attaque, la défense et la vie, comme dans BotW.
+- **Gardiens** : le Boucher, Varkul la Liche, le Golem d'ossements et Mal'zahar. Leurs attaques sont annoncées au sol, on peut donc les esquiver. Chacun passe en phase enragée sous 50% de vie.
 
-### Pouvoirs d'Anima (façon Torghast)
-Les élites et les coffres laissent tomber des orbes d'anima. En ramasser un propose **3 pouvoirs au choix**
-(dégâts, vol de vie, explosion des ennemis tués, résurrection…). Ils se cumulent, mais disparaissent à la fin de l'ascension.
+## Rendu
 
-### Butin
-- **Raretés** : Commun, Magique, Rare, Légendaire. Leurs couleurs reprennent celles de Diablo.
-- **7 emplacements** : arme, casque, torse, gants, bottes, amulette, anneau.
-- **Affixes** aléatoires : caractéristiques, % de dégâts, critique, vitesse d'attaque, vol de vie, recharge, vitesse de déplacement…
-- Les armes sont liées à une classe. La plupart des armes qui tombent sont de votre classe.
-- **Forgeronne** : améliore un objet jusqu'à +5 (+10% de statistiques par niveau), contre de l'or.
-- **Marchand** : vend des potions et un stock d'objets renouvelé à chaque retour au campement, et rachète vos objets.
-
-### Monstres et gardiens
-- **Monstres** : squelettes, goules, archers, diablotins (à partir de l'étage 2), cultistes qui lancent des attaques au sol (étage 3), brutes démoniaques (étage 4).
-- **Élites** : plus gros, avec un affixe (Véloce, Vampirique, Robuste, Frénétique, Colossal) et un butin garanti.
-- **Gardiens** en rotation : le Boucher (charge), Varkul la Liche (novas, invocations, clignement), le Golem d'ossements (rochers, ondes de choc), puis Mal'zahar (qui combine tout). Chacun passe en phase 2 (enragé) sous 50% de vie.
-- Toutes les grosses attaques ennemies sont **annoncées au sol** (zones rouges) : on peut les esquiver.
-- La difficulté augmente à chaque étage, sans limite.
-
-### Interface façon Breath of the Wild
-- **Vie** : des cœurs en haut à gauche, remplis par quarts. Le dernier cœur bat quand la vie est basse.
-- **Mana** : une roue à côté du héros, comme l'endurance de Link. Elle disparaît quand elle est pleine.
-- **Minicarte** : circulaire, avec le nord, la flèche jaune du joueur, les ennemis, les coffres et les portails.
-- **Grande carte** : style tablette Sheikah (grille, cadre cyan, légende).
-- **Menu Équipement / Personnage** : plein écran. Au survol d'un objet, des flèches vertes ou rouges montrent son effet sur l'attaque, la défense et la vie.
+- **Moteur 3D maison** (moderngl) :
+  - caméra en plongée qui suit le héros ;
+  - ombres portées et lumières dynamiques (torches, sorts, lave) ;
+  - anticrénelage 4× ;
+  - zones d'attaque dessinées au sol ;
+  - particules ;
+  - murs qui s'effacent quand ils masquent le héros.
+- **Interface** (pygame) : dessinée à la résolution native, puis posée sur l'image 3D, ce qui garde les textes nets. Polices Avenir Next et Optima.
+- **HUD façon BotW** :
+  - cœurs par quarts en haut à gauche ;
+  - roue de mana à côté du héros ;
+  - minicarte carrée arrondie ;
+  - jauges du sceau et de la menace ;
+  - bulles d'interaction ;
+  - titres de zone.
 
 ## Structure du code
 
 ```
-main.py            boucle principale, transitions entre scènes
-game/settings.py   constantes, palette, touches
-game/data.py       classes, sorts, monstres, boss, étages, pouvoirs d'anima  <- équilibrage ici
-game/items.py      génération d'objets, affixes, prix
-game/dungeon.py    génération procédurale des étages, carte du campement, rendu des tuiles
-game/entities.py   joueur, monstres, projectiles, butin, PNJ, coffres, portails
-game/bosses.py     techniques des gardiens
-game/spells.py     attaques de base et sorts
-game/world.py      scène de jeu commune : collisions, IA de déplacement, combat, éclairage
-game/tower.py      logique d'un étage (sceau, boss, récompenses)
-game/hub.py        le campement
-game/hud.py        HUD façon BotW (cœurs, roue de mana, minicarte, carte)
-game/panels.py     menus en jeu (équipement, personnage, marchand, forge, portail…)
-game/scenes.py     écran titre, chargement, création de personnage
-game/render.py     dessin procédural des personnages
-game/fx.py         lumières, particules, zones d'effet, attaques annoncées
-game/sfx.py        sons synthétisés
+main.py              fenêtre OpenGL, boucle, composition 3D + interface
+game/data.py         classes, sorts, monstres, boss, anima, artefacts, enchantements  <- équilibrage
+game/items.py        objets, raretés, affixes, artefacts, emplacements d'enchantement
+game/dungeon.py      génération des étages, carte du campement, minicarte
+game/entities.py     héros, monstres, projectiles, butin, PNJ, coffres, portails
+game/bosses.py       techniques des gardiens
+game/spells.py       attaques et sorts
+game/artifacts.py    effets des artefacts
+game/fx.py           particules 3D, zones au sol, attaques annoncées
+game/world.py        scène de jeu : logique, combat, rendu 3D, interface en jeu
+game/tower.py        un étage de la tour
+game/hub.py          le campement
+game/hud.py          HUD façon BotW
+game/panels.py       menus (équipement avec héros 3D, enchantements, marchand, forge…)
+game/scenes.py       écran titre 3D façon BotW, chargement, création de personnage
+game/ui.py, gfx.py   boîte à outils d'interface (nette en Retina)
+game/r3d/            moteur 3D : renderer, shaders, caméra, maillages, modèles, niveaux
 ```
-
-## Pistes pour la suite
-- Vraies images (sprites) à la place du dessin procédural.
-- Coffre de stockage au campement et crafting.
-- Arbres de talents par classe.
-- Étages « à thème » (givre, feu) avec des modificateurs de difficulté.
-- Musique d'ambiance.

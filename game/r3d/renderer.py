@@ -77,7 +77,7 @@ class Env:
         self.shadow_extent = 17.0
         self.cut = 1.7
         self.fog_col = (0.0, 0.0, 0.0)
-        self.fog = (13.0, 22.0)
+        self.fog = (16.0, 30.0)
         self.player = (0.0, 0.0, 0.0)
         self.__dict__.update(kw)
 
@@ -267,15 +267,15 @@ class Renderer:
             self._write(self.decal_buf, arr)
             ctx.enable(moderngl.BLEND)
             ctx.blend_func = moderngl.SRC_ALPHA, moderngl.ONE_MINUS_SRC_ALPHA
-            ctx.depth_mask = False
+            fbo.depth_mask = False
             self.p_decal["u_vp"].write(vp_bytes)
             self.vao_decal.render(instances=len(arr) // 14)
-            ctx.depth_mask = True
+            fbo.depth_mask = True
 
         # formes additives (énergie, faisceaux)
         ctx.enable(moderngl.BLEND)
         ctx.blend_func = moderngl.ONE, moderngl.ONE
-        ctx.depth_mask = False
+        fbo.depth_mask = False
         pa = self.p_add
         pa["u_vp"].write(vp_bytes)
         self._set(pa, "u_cam", tuple(cam.eye))
@@ -293,40 +293,51 @@ class Renderer:
             arr = np.array(frame.solids, dtype="f4")
             self._write(self.part_buf, arr)
             ctx.blend_func = moderngl.SRC_ALPHA, moderngl.ONE_MINUS_SRC_ALPHA
-            ctx.depth_mask = True
+            fbo.depth_mask = True
             self._set(pp, "u_mode", 1)
             self.vao_part.render(instances=len(arr) // 8)
-            ctx.depth_mask = False
+            fbo.depth_mask = False
         if frame.glows:
             arr = np.array(frame.glows, dtype="f4")
             self._write(self.part_buf, arr)
             ctx.blend_func = moderngl.ONE, moderngl.ONE
             self._set(pp, "u_mode", 0)
             self.vao_part.render(instances=len(arr) // 8)
-        ctx.depth_mask = True
+        fbo.depth_mask = True
         ctx.disable(moderngl.BLEND)
         ctx.copy_framebuffer(screen, fbo)
 
-    # ------------------------------------------------------------------ interface
-    def draw_ui(self, surf, screen):
-        """Compose la surface pygame (alpha prémultiplié) par-dessus l'image 3D."""
+    # ------------------------------------------------------------------ composition finale
+    def clear(self, target, color=(0.0, 0.0, 0.0)):
+        target.use()
+        target.clear(*color, 1.0)
+
+    def present(self, screen, screen_size, viewport, color_tex, ui_surf):
+        """Image 3D puis interface pygame (alpha prémultiplié), dans la zone 16:9 de l'écran."""
         ctx = self.ctx
-        size = surf.get_size()
+        screen.use()
+        ctx.viewport = (0, 0, *screen_size)
+        screen.clear(0.0, 0.0, 0.0, 1.0)
+        ctx.viewport = viewport
+        ctx.disable(moderngl.DEPTH_TEST)
+        ctx.disable(moderngl.BLEND)
+        color_tex.use(location=0)
+        self.p_ui["u_tex"].value = 0
+        self.p_ui["u_flip"].value = 0.0
+        self.vao_ui.render()
+        size = ui_surf.get_size()
         if self.ui_tex is None or self.ui_tex.size != size:
             if self.ui_tex:
                 self.ui_tex.release()
             self.ui_tex = ctx.texture(size, 4)
             self.ui_tex.filter = (moderngl.NEAREST, moderngl.NEAREST)
-            masks = surf.get_masks()
+            masks = ui_surf.get_masks()
             self.ui_tex.swizzle = "BGRA" if masks[0] == 0xFF0000 else "RGBA"
-        self.ui_tex.write(surf.get_view("1"))
-        screen.use()
-        ctx.viewport = (0, 0, *screen.size)
-        ctx.disable(moderngl.DEPTH_TEST)
+        self.ui_tex.write(ui_surf.get_view("1"))
         ctx.enable(moderngl.BLEND)
         ctx.blend_func = moderngl.ONE, moderngl.ONE_MINUS_SRC_ALPHA
         self.ui_tex.use(location=0)
-        self.p_ui["u_tex"].value = 0
+        self.p_ui["u_flip"].value = 1.0
         self.vao_ui.render()
         ctx.disable(moderngl.BLEND)
         ctx.enable(moderngl.DEPTH_TEST)

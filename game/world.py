@@ -11,7 +11,8 @@ from .dungeon import WALL, BARRIER, Minimap
 from .entities import Loot
 from .fx import Particles, RingFX, Blast, Lightning
 from .items import generate_item, item_value, buy_price, ench_spent, ART_SLOTS
-from .panels import (InventoryPanel, MenuScreen, MerchantPanel, ForgePanel, AnimaPanel, PausePanel, DeathPanel)
+from .panels import (InventoryPanel, MenuScreen, MerchantPanel, ForgePanel, AnimaPanel, DeathPanel, PAGE_CHAR,
+                     PAGE_INV, PAGE_SYS)
 from .r3d import level, models
 from .r3d.camera import Camera3D
 from .r3d.renderer import Env
@@ -421,6 +422,24 @@ class World(Scene):
             return
         self.equip(it, idx)
 
+    def assign_artifact(self, item, slot):
+        """Place un artefact (du sac ou d'une autre touche) sur la touche voulue ; échange si elle est occupée."""
+        p = self.player
+        old = p.equipment[slot]
+        if old is item:
+            return
+        src = next((s for s in ART_SLOTS if p.equipment[s] is item), None)
+        if src:
+            p.equipment[src] = old
+        else:
+            idx = next(i for i, it in enumerate(p.inventory) if it is item)
+            p.inventory.pop(idx)
+            if old:
+                p.inventory.insert(idx, old)
+        p.equipment[slot] = item
+        p.recompute()
+        sfx.play("pickup")
+
     def unequip(self, slot):
         p = self.player
         if len(p.inventory) >= BAG_SIZE:
@@ -503,7 +522,9 @@ class World(Scene):
         self.left_panel = None
 
     def open_pause(self):
-        self.modal = PausePanel(self)
+        """Échap : menu principal, directement sur la page Système."""
+        self.modal = MenuScreen(self, PAGE_SYS)
+        sfx.play("click")
 
     def save(self):
         save.save_data(self.player.to_save())
@@ -555,7 +576,7 @@ class World(Scene):
                 return
             if e.key in (pygame.K_i, pygame.K_c):
                 self.close_panels()
-                self.modal = MenuScreen(self, 0 if e.key == pygame.K_i else 1)
+                self.modal = MenuScreen(self, PAGE_INV if e.key == pygame.K_i else PAGE_CHAR)
                 sfx.play("click")
                 return
             if e.key == pygame.K_TAB:
@@ -798,15 +819,12 @@ class World(Scene):
         pass
 
     # ------------------------------------------------------------------ rendu 3D
-    def render_portrait(self, fr, menu):
-        """Héros en 3D sur un socle, qui tourne lentement (menu façon BotW)."""
+    def render_portrait(self, fr, menu, spot):
+        """Héros en 3D, face à la caméra ; on le fait pivoter à la souris (menu façon BotW)."""
         p = self.player
         PX, PY = -3000.0, -3000.0
-        t = menu.t
-        sx, sy, zoom = menu.portrait_spot()
-        models.humanoid(fr, PX, PY, 0, 0.9 + t * 0.45, 0, models.PLAYER_SPECS[p.cls_id], moving=False)
-        fr.box(PX, PY, -5, 34, 34, 5, (36, 58, 68), mesh="cylinder")
-        fr.decal(PX, PY, 40, 40, (90, 210, 255), 0.5 + 0.15 * math.sin(t * 2), kind=1, inner=0.9, lift=0.14)
+        sx, sy, zoom = spot
+        models.humanoid(fr, PX, PY, 0, 0.9 + menu.rot, 0, p.spec, moving=False)
         fr.light(PX + 90, PY + 110, 110, 500, (255, 236, 214), 1.4)
         fr.light(PX - 90, PY - 60, 60, 300, (90, 200, 255), 1.2)
         if not hasattr(self, "pcam"):
@@ -821,8 +839,10 @@ class World(Scene):
         return cam, env
 
     def render3d(self, fr):
-        if isinstance(self.modal, MenuScreen):
-            return self.render_portrait(fr, self.modal)
+        if hasattr(self.modal, "portrait_spot"):
+            spot = self.modal.portrait_spot()
+            if spot:
+                return self.render_portrait(fr, self.modal, spot)
         p = self.player
         t = self.time
         cam = self.cam
@@ -887,6 +907,9 @@ class World(Scene):
         return pt[0] / VIEW.s, pt[1] / VIEW.s
 
     def draw_ui(self, surf):
+        if getattr(self.modal, "fullscreen", False):
+            self.modal.draw(surf)
+            return
         p = self.player
         for m in self.monsters:
             if (m.hp < m.max_hp or m.elite) and not m.boss:

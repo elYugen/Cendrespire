@@ -1,4 +1,4 @@
-"""Tour des Tourments — point d'entrée.
+"""Cendrespire — point d'entrée.
 
 Lancement :  python main.py
 Rendu 3D (moderngl / OpenGL 3.3) + interface pygame, à la résolution native de l'écran (Retina compris).

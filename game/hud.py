@@ -15,7 +15,10 @@ from .data import SPELLS, ANIMA_POWERS, ARTIFACTS, ARTIFACT_KEYS, anima_desc, xp
 from .items import ART_SLOTS
 from .settings import SCREEN_W, SCREEN_H, VIEW, TEXT, TEXT_DIM, GOLD_BRIGHT, WHITE, SHEIKAH, UI_LINE, RARITY_COLORS
 
-HEART = 26
+HEART = 19            # taille d'un cœur
+HEARTS_PER_ROW = 15
+HEART_GAP = 2
+MAX_HEARTS = 30
 MM = pygame.Rect(SCREEN_W - 24 - 172, SCREEN_H - 24 - 172, 172, 172)
 SOFT = (210, 216, 216)
 
@@ -74,7 +77,7 @@ def draw_heart(surf, x, y, frac, size=HEART):
 def draw_hearts(surf, world, x, y):
     p = world.player
     mx = p.stats["max_hp"]
-    n = min(20, max(3, round(mx / 25)))
+    n = min(MAX_HEARTS, max(3, round(mx / 25)))
     per = mx / n
     hp = max(0.0, p.hp)
     low = hp < mx * 0.3
@@ -82,8 +85,8 @@ def draw_hearts(surf, world, x, y):
         frac = max(0.0, min(1.0, (hp - i * per) / per))
         if 0 < frac < 1:
             frac = math.ceil(frac * 4) / 4
-        hx = x + (i % 10) * (HEART + 3)
-        hy = y + (i // 10) * (HEART + 3)
+        hx = x + (i % HEARTS_PER_ROW) * (HEART + HEART_GAP)
+        hy = y + (i // HEARTS_PER_ROW) * (HEART + HEART_GAP)
         last = frac > 0 and (i + 1 >= n or hp - (i + 1) * per <= 0)
         if low and last:
             k = 1 + 0.2 * max(0, math.sin(world.time * 9))
@@ -91,7 +94,7 @@ def draw_hearts(surf, world, x, y):
             draw_heart(surf, hx - (size - HEART) / 2, hy - (size - HEART) / 2, frac, size)
         else:
             draw_heart(surf, hx, hy, frac)
-    return y + ((n - 1) // 10 + 1) * (HEART + 3)
+    return y + ((n - 1) // HEARTS_PER_ROW + 1) * (HEART + HEART_GAP)
 
 
 # --------------------------------------------------------------------------- roue de mana

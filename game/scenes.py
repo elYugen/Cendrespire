@@ -1,186 +1,93 @@
 """Écrans hors-jeu façon Zelda Breath of the Wild : titre (paysage 3D), chargement, création de personnage."""
 import datetime
 import math
+import os
 import random
 
-import numpy as np
 import pygame
 
-from . import save, sfx, ui
+from . import looks, save, sfx, ui
 from .data import CLASSES, SPELLS, ATTR_NAMES, ATTRS
 from .entities import Player
 from .r3d import models
-from .r3d.camera import Camera3D, U
-from .r3d.meshes import MeshBuilder, STRIDE
+from .r3d.camera import Camera3D
 from .r3d.renderer import Env
-from .settings import SCREEN_W, SCREEN_H, WHITE, SHEIKAH, UI_LINE, TEXT_DIM, RED, GOLD_BRIGHT
+from .settings import SCREEN_W, SCREEN_H, WHITE, SHEIKAH, UI_LINE, TEXT_DIM, RED, GOLD_BRIGHT, TITLE, ASSETS_DIR, VIEW
+from .wardrobe import LookEditor
 from .world import Scene
 
 SOFT = (214, 218, 218)
 NAMES = ["Aldric", "Morwen", "Kaelen", "Sybille", "Thorgar", "Ysolde", "Varian", "Lyra", "Elowen", "Brann"]
-TOWER = (-260.0, -4200.0)     # position logique de la tour au loin
 
 
-# =========================================================================== paysage 3D
-def _height(x, z):
-    """Relief en mètres (coordonnées 3D x, z)."""
-    h = 0.9 * math.sin(x * 0.13) + 0.7 * math.cos(z * 0.17 + x * 0.05) + 0.4 * math.sin(x * 0.31 + z * 0.23)
-    h += 3.2 * math.exp(-(x * x + (z - 1) ** 2) / 30)          # colline du héros
-    h -= 2.2 * math.exp(-((z + 30) ** 2) / 260)                 # vallée
-    h += 5 * max(0.0, (-z - 80) / 20) ** 1.5 if z < -80 else 0  # plateau de la tour
-    return h
+# =========================================================================== illustration du menu
+BG_FILE = "background menu.png"
+LOGO_FILE = "logo.png"
+_art_cache = {}
 
 
-def build_landscape(seed=7):
-    rng = random.Random(seed)
-    mb = MeshBuilder()
-    step = 2.0
-    xs = np.arange(-70, 70 + step, step)
-    zs = np.arange(-130, 16 + step, step)
-    quads = []
-    for zi in range(len(zs) - 1):
-        for xi in range(len(xs) - 1):
-            x0, x1, z0, z1 = xs[xi], xs[xi + 1], zs[zi], zs[zi + 1]
-            p = [(x0, _height(x0, z0), z0), (x1, _height(x1, z0), z0), (x1, _height(x1, z1), z1),
-                 (x0, _height(x0, z1), z1)]
-            a, b, c = np.array(p[0]), np.array(p[1]), np.array(p[3])
-            n = np.cross(c - a, b - a)
-            n = n / (np.linalg.norm(n) + 1e-9)
-            if n[1] < 0:
-                n = -n
-            hmid = sum(q[1] for q in p) / 4
-            g = rng.uniform(-0.05, 0.05)
-            dry = max(0.0, min(1.0, (hmid - 1.5) * 0.25))
-            col = (0.32 + g + dry * 0.25, 0.52 + g + dry * 0.05, 0.22 + g * 0.5)
-            if n[1] < 0.8:
-                col = (0.46 + g, 0.43 + g, 0.38 + g)
-            quads.append((p, n, col))
-    v = []
-    for p, n, col in quads:
-        for tri in ((0, 1, 2), (0, 2, 3)):
-            for i in tri:
-                v.extend((*p[i], *n, *col, 0.0))
-    mb.raw(np.array(v, dtype="f4").reshape(-1, STRIDE))
-    # arbres, rochers, herbes
-    for _ in range(90):
-        x, z = rng.uniform(-65, 65), rng.uniform(-80, 8)
-        if abs(x) < 6 and z > -8:
-            continue
-        h = _height(x, z)
-        s = rng.uniform(0.8, 1.6)
-        mb.add("cylinder", (x, h + 0.9 * s, z), (0.18 * s, 0, 0), (0, 0.9 * s, 0), (0, 0, 0.18 * s), (0.36, 0.25, 0.16))
-        g = rng.uniform(-0.05, 0.05)
-        mb.add("cone", (x, h + 2.4 * s, z), (1.1 * s, 0, 0), (0, 1.5 * s, 0), (0, 0, 1.1 * s), (0.2 + g, 0.4 + g, 0.2))
-        mb.add("cone", (x, h + 3.3 * s, z), (0.8 * s, 0, 0), (0, 1.1 * s, 0), (0, 0, 0.8 * s), (0.24 + g, 0.46 + g, 0.22))
-    for _ in range(60):
-        x, z = rng.uniform(-60, 60), rng.uniform(-70, 12)
-        s = rng.uniform(0.3, 1.1)
-        mb.add("sphere", (x, _height(x, z) + s * 0.3, z), (s, 0, 0), (0, s * 0.6, 0), (0, 0, s * 1.2),
-               (0.5, 0.49, 0.46))
-    for _ in range(700):
-        x, z = rng.gauss(0, 9), rng.gauss(-2, 7)
-        h = _height(x, z)
-        s = rng.uniform(0.08, 0.2)
-        g = rng.uniform(-0.06, 0.06)
-        mb.add("cone", (x, h + s, z), (0.03, 0, 0), (rng.uniform(-0.04, 0.04), s, 0), (0, 0, 0.03),
-               (0.34 + g, 0.62 + g, 0.24))
-    # ruines (clin d'œil au plateau du Prélude)
-    for i, (x, z, hh) in enumerate(((6, -6, 2.4), (8.5, -7.5, 1.2), (4.5, -9, 1.8), (9, -4.5, 0.8))):
-        h = _height(x, z)
-        mb.add("cylinder", (x, h + hh / 2, z), (0.45, 0, 0), (0, hh / 2, 0), (0, 0, 0.45), (0.62, 0.6, 0.56))
-    mb.box(5.5, _height(6, -7) + 2.4, -8.2, 9.2, _height(6, -7) + 2.8, -6.8, (0.58, 0.56, 0.52))
-    # montagnes lointaines
-    for i in range(11):
-        x = -150 + i * 30 + rng.uniform(-8, 8)
-        z = rng.uniform(-175, -150)
-        h = rng.uniform(26, 44)
-        rx = rng.uniform(28, 40)
-        mb.add("cone", (x, h / 2 - 4, z), (rx, 0, 0), (0, h / 2, 0), (0, 0, rx * 0.8), (0.4, 0.44, 0.58))
-        mb.add("cone", (x, h - 4 - h * 0.12, z), (rx * 0.24, 0, 0), (0, h * 0.12, 0), (0, 0, rx * 0.2),
-               (0.94, 0.95, 0.98))
-    # la tour
-    tx, tz = TOWER[0] * U, TOWER[1] * U
-    base = _height(tx, tz)
-    mb.add("cylinder", (tx, base + 9, tz), (2.6, 0, 0), (0, 9, 0), (0, 0, 2.6), (0.3, 0.28, 0.33))
-    mb.add("cylinder", (tx, base + 21, tz), (2.0, 0, 0), (0, 3.5, 0), (0, 0, 2.0), (0.27, 0.25, 0.3))
-    mb.add("cylinder", (tx, base + 25, tz), (2.4, 0, 0), (0, 0.5, 0), (0, 0, 2.4), (0.24, 0.22, 0.27))
-    mb.add("cone", (tx, base + 29, tz), (1.9, 0, 0), (0, 4, 0), (0, 0, 1.9), (0.2, 0.18, 0.22))
-    for i in range(4):
-        a = i / 4 * math.tau
-        mb.add("cylinder", (tx + math.cos(a) * 4.4, base + 5, tz + math.sin(a) * 4.4), (1.0, 0, 0), (0, 5, 0),
-               (0, 0, 1.0), (0.28, 0.26, 0.3))
-        mb.add("cone", (tx + math.cos(a) * 4.4, base + 11.5, tz + math.sin(a) * 4.4), (1.1, 0, 0), (0, 1.5, 0),
-               (0, 0, 1.1), (0.22, 0.2, 0.25))
-    return mb.build(), base
+def _art(name):
+    img = _art_cache.get(name)
+    if img is None:
+        img = pygame.image.load(os.path.join(ASSETS_DIR, name))
+        if name == LOGO_FILE:   # marges transparentes retirées
+            img = img.subsurface(img.get_bounding_rect()).copy()
+        _art_cache[name] = img
+    return img
 
 
-class Landscape:
-    """Paysage partagé par les écrans de titre et de chargement."""
+def draw_background(surf, t):
+    """Illustration plein écran (recadrée comme un fond « cover »), qui dérive très lentement."""
+    W, H = surf.get_size()
+    key = ("bg", W, H)
+    big = _art_cache.get(key)
+    if big is None:
+        img = _art(BG_FILE)
+        k = max(W / img.get_width(), H / img.get_height()) * 1.06
+        big = pygame.transform.smoothscale(img, (round(img.get_width() * k), round(img.get_height() * k)))
+        for old in [k_ for k_ in _art_cache if isinstance(k_, tuple) and k_[0] == "bg"]:
+            del _art_cache[old]
+        _art_cache[key] = big
+    ex, ey = big.get_width() - W, big.get_height() - H
+    ox = ex * (0.5 + 0.5 * math.sin(t * 0.04))
+    oy = ey * (0.2 + 0.08 * math.sin(t * 0.03))    # on garde surtout le haut : le vortex et la tour
+    surf.blit(big, (0, 0), pygame.Rect(int(ox), int(oy), W, H))
 
-    _cache = None
 
-    def __init__(self):
-        if Landscape._cache is None:
-            Landscape._cache = build_landscape()
-        self.mesh, self.tower_base = Landscape._cache
-        self.cam = Camera3D(yaw=9, pitch=6, dist=19, fov=44)
-        self.t = 0.0
-        self.hero_z = _height(0, 0) / U
-        self.flies = [[random.uniform(-300, 300), random.uniform(-500, 60), random.uniform(20, 160),
-                       random.random() * 10] for _ in range(40)]
-        self.hero_cls = "chasseur"
+def draw_embers(surf, t, n=44):
+    """Braises qui montent devant l'illustration."""
+    for i in range(n):
+        ph = i * 1.618
+        speed = 16 + (i * 37) % 26
+        y = SCREEN_H + 20 - ((t * speed + i * 97) % (SCREEN_H + 60))
+        x = (i * 211) % SCREEN_W + 26 * math.sin(t * 0.6 + ph)
+        k = 0.35 + 0.65 * abs(math.sin(t * 1.7 + ph))
+        col = (255, int(110 + 70 * k), 50)
+        if i % 4 == 0:
+            ui.glow(surf, x, y, 7 + 3 * k, ui.darker(col, 0.5 * k))
+        ui.circle(surf, (*col, int(230 * k)), (x, y), 1.1 + (i % 3) * 0.5)
 
-    def update(self, dt):
-        self.t += dt
 
-    def render(self, fr):
-        t = self.t
-        cam = self.cam
-        cam.yaw = 9 + 2.5 * math.sin(t * 0.07)
-        cam.tx, cam.ty, cam.tz = -70, -590, self.hero_z + 4
-        models.humanoid(fr, 0, 0, self.hero_z, -math.pi / 2 + 0.15, 0, models.PLAYER_SPECS[self.hero_cls],
-                        sc=1.0, moving=False)
-        # tourbillon du Tourment autour de la tour
-        tx, ty = TOWER
-        top = (self.tower_base + 30) / U
-        for i in range(36):
-            a = t * 0.45 + i * math.tau / 36
-            r = (7 + 2.5 * math.sin(t * 0.8 + i * 1.7)) / U
-            z = top + math.sin(a * 3 + t) * 90 + (i % 4) * 50
-            fr.glow(tx + math.cos(a) * r, ty + math.sin(a) * r, z, 150, (255, 45, 35), 0.45)
-        fr.glow(tx, ty, top + 60, 420, (170, 20, 20), 0.35)
-        fr.light(tx, ty, top, 1400, (255, 50, 40), 1.2)
-        # nuages doux
-        rng = random.Random(11)
-        for i in range(9):
-            x = ((rng.uniform(0, 8000) + t * 45) % 8000) - 4000
-            y = rng.uniform(-6200, -4500)
-            z = rng.uniform(1300, 2100)
-            for j in range(6):
-                fr.glow(x + j * 230 - 600, y + rng.uniform(-150, 150), z + rng.uniform(-70, 70),
-                        rng.uniform(380, 560), (250, 214, 214), 0.16)
-        # lucioles
-        for f in self.flies:
-            ph = t * 0.8 + f[3]
-            x = f[0] + math.sin(ph) * 30
-            y = f[1] + math.cos(ph * 0.7) * 30
-            fr.glow(x, y, f[2] + math.sin(ph * 1.3) * 10, 7, (255, 230, 150), 0.5 + 0.5 * math.sin(ph * 3))
-        env = Env(sky=((0.16, 0.24, 0.48), (0.78, 0.55, 0.58), (1.0, 0.72, 0.5), (0.63, 0.52, 1.0), (1.0, 0.7, 0.45)),
-                  clear=(0.9, 0.62, 0.5), sun_dir=(-0.45, -0.42, 0.78), sun_col=(0.95, 0.72, 0.55),
-                  amb_sky=(0.48, 0.46, 0.6), amb_ground=(0.24, 0.2, 0.2), shadows=True, shadow_extent=16.0, cut=0.0,
-                  fog_col=(0.93, 0.68, 0.58), fog=(30.0, 240.0), player=(0, 0, 0))
-        return cam, env
+def draw_logo(surf, cx, cy, a=255, width=620):
+    key = ("logo", width, VIEW.version)
+    img = _art_cache.get(key)
+    if img is None:
+        src = _art(LOGO_FILE)
+        w = round(width * VIEW.s)
+        img = pygame.transform.smoothscale(src, (w, round(w * src.get_height() / src.get_width())))
+        _art_cache[key] = img
+    if a < 255:
+        img = img.copy()
+        img.set_alpha(a)
+    ui.blit(surf, img, (cx, cy), anchor="center")
 
 
 # =========================================================================== écran titre
 class TitleScene(Scene):
     def __init__(self, game, skip_intro=False):
         super().__init__(game)
-        self.land = Landscape()
-        self.static_mesh = self.land.mesh
+        self.static_mesh = None
         self.saves = save.list_saves()
-        if self.saves:
-            self.land.hero_cls = self.saves[0]["cls"]
         self.phase = "menu" if skip_intro else "press"
         self.t = 0.0
         self.menu_t = 1.0 if skip_intro else 0.0
@@ -188,9 +95,11 @@ class TitleScene(Scene):
         self.items = []
         if self.saves:
             last = self.saves[0]
-            self.items.append((f"Continuer  ·  {last['name']}", lambda: self.start(last)))
-            self.items.append(("Charger une partie", lambda: game.change_scene(LoadScene(game))))
+            self.items.append(("Continuer", lambda: self.start(last)))
         self.items.append(("Nouvelle partie", lambda: game.change_scene(CreateScene(game))))
+        if self.saves:
+            self.items.append(("Charger une partie", lambda: game.change_scene(LoadScene(game))))
+        self.items.append(("Plein écran", game.toggle_fullscreen))
         self.items.append(("Quitter", game.quit))
 
     def start(self, data):
@@ -199,7 +108,7 @@ class TitleScene(Scene):
         self.game.change_scene(HubScene(self.game, p, f"Bon retour, {p.name}"))
 
     def item_rects(self):
-        return [pygame.Rect(90, 430 + i * 50, 380, 42) for i in range(len(self.items))]
+        return [pygame.Rect(SCREEN_W // 2 - 150, 392 + i * 54, 300, 44) for i in range(len(self.items))]
 
     def handle_event(self, e):
         if self.phase == "press":
@@ -230,63 +139,88 @@ class TitleScene(Scene):
 
     def update(self, dt):
         self.t += dt
-        self.land.update(dt)
         if self.phase == "menu":
             self.menu_t = min(1.0, self.menu_t + dt * 2.5)
 
-    def render3d(self, fr):
-        return self.land.render(fr)
-
-    def draw_logo(self, surf, cx, cy, a):
-        ui.draw_text(surf, "LA LÉGENDE DE LA", (cx, cy - 58), 17, (240, 236, 226), "title", anchor="center",
-                     alpha=a)
-        ui.draw_text(surf, "TOUR DES TOURMENTS", (cx, cy), 58, WHITE, "title", anchor="center", alpha=a)
-        w = 300
-        ui.line(surf, (236, 206, 140), (cx - w, cy + 40), (cx - 40, cy + 40), 1)
-        ui.line(surf, (236, 206, 140), (cx + 40, cy + 40), (cx + w, cy + 40), 1)
-        ui.draw_text(surf, "L'Ascension", (cx, cy + 40), 26, (240, 210, 140), "title", anchor="center", alpha=a)
-
     def draw_ui(self, surf):
-        # bas d'écran assombri pour la lisibilité
-        grad = pygame.Surface((1, 64), pygame.SRCALPHA)
-        for i in range(64):
-            grad.set_at((0, i), (0, 0, 0, int(170 * (i / 63) ** 1.6)))
-        g = pygame.transform.smoothscale(grad, (surf.get_width(), surf.get_height() // 2))
-        surf.blit(g, (0, surf.get_height() // 2))
+        draw_background(surf, self.t)
+        draw_embers(surf, self.t)
+        # dégradé plein écran : léger en haut, plus sombre en bas pour la lisibilité du menu
+        grad = pygame.Surface((1, 90), pygame.SRCALPHA)
+        for i in range(90):
+            k = i / 89
+            alpha = 110 * max(0.0, 1 - k / 0.3) ** 2 + 200 * max(0.0, (k - 0.4) / 0.6) ** 1.5
+            grad.set_at((0, i), (int(6 * alpha / 255), int(10 * alpha / 255), int(18 * alpha / 255), int(alpha)))
+            # (couleur prémultipliée : l'interface est composée en alpha prémultiplié)
+        surf.blit(pygame.transform.smoothscale(grad, surf.get_size()), (0, 0))
         a = int(255 * min(1.0, self.t / 1.5))
         if self.phase == "press":
-            self.draw_logo(surf, SCREEN_W / 2, 250, a)
+            draw_logo(surf, SCREEN_W / 2, 250, a, 700)
             k = 0.5 + 0.5 * math.sin(self.t * 3)
             if self.t > 1.2:
-                ui.draw_text(surf, "Appuyez sur une touche", (SCREEN_W / 2, 600), 20, WHITE, anchor="center",
-                             alpha=int(90 + 165 * k))
+                smallcaps(surf, "Appuyez sur une touche", (SCREEN_W / 2, 600), 20, WHITE, int(90 + 165 * k))
         else:
-            k = self.menu_t
-            e = 1 - (1 - k) ** 3
-            cx = SCREEN_W / 2 + (420 - SCREEN_W / 2) * e
-            cy = 250 - 70 * e
-            self.draw_logo(surf, cx, cy, 255)
+            e = 1 - (1 - self.menu_t) ** 3
+            draw_logo(surf, SCREEN_W / 2, 250 - 82 * e, 255, 700 - 80 * e)
             for i, ((label, _), r) in enumerate(zip(self.items, self.item_rects())):
                 sel = i == self.sel
-                x = r.x + (1 - e) * -60
+                y = r.centery + (1 - e) * 30
                 alpha = int(255 * e)
                 if sel:
-                    ui.rect(surf, (0, 0, 0, int(110 * e)), (x - 10, r.y, r.w, r.h), 0, 21)
-                    ui.line(surf, SHEIKAH, (x - 10, r.bottom - 2), (x + r.w - 60, r.bottom - 2), 2)
-                    ui.polygon(surf, SHEIKAH, [(x + 4, r.centery - 7), (x + 4, r.centery + 7), (x + 14, r.centery)])
-                ui.draw_text(surf, label, (x + 26, r.centery), 22 if sel else 20, WHITE if sel else SOFT, "title",
-                             anchor="midleft", alpha=alpha)
-            ui.draw_text(surf, "Flèches ou souris : choisir    Entrée ou clic : valider", (SCREEN_W - 26, SCREEN_H - 14), 13,
-                         SOFT, anchor="bottomright", alpha=int(200 * e))
-        ui.draw_text(surf, "v2.0 · 3D", (26, SCREEN_H - 14), 12, SOFT, anchor="bottomleft", alpha=160)
+                    cartouche(surf, pygame.Rect(r.x, y - r.h / 2, r.w, r.h), self.t, alpha)
+                smallcaps(surf, label, (SCREEN_W / 2, y), 21 if sel else 19, WHITE if sel else (226, 222, 204), alpha)
+            if self.saves and self.items[self.sel][0] == "Continuer":
+                d = self.saves[0]
+                info = (f"{d['name']}  ·  {CLASSES[d['cls']]['name']} niveau {d.get('level', 1)}  ·  "
+                        f"étage {d.get('max_floor', 1)}")
+                ui.draw_text(surf, info, (SCREEN_W / 2, SCREEN_H - 34), 14, (214, 208, 190), anchor="center",
+                             alpha=int(220 * e))
+        for i, line in enumerate(("Ver. 2.0", TITLE, "© 2026 elyugen")):
+            ui.draw_text(surf, line, (SCREEN_W - 30, SCREEN_H - 70 + i * 19), 13, (226, 222, 204), anchor="topright",
+                         alpha=190)
+
+
+def smallcaps(surf, text, center, size, color, alpha=255):
+    """Texte en petites capitales centré (initiales plus grandes), comme les menus de BotW."""
+    pieces = []
+    for wi, word in enumerate(text.split(" ")):
+        if wi:
+            pieces.append((" ", size * 0.8))
+        pieces.append((word[0].upper(), size))
+        if len(word) > 1:
+            pieces.append((word[1:].upper(), size * 0.78))
+    widths = [ui.text_size(t, sz, "title")[0] for t, sz in pieces]
+    x = center[0] - sum(widths) / 2
+    base = center[1] + size * 0.36
+    for (t, sz), w in zip(pieces, widths):
+        ui.draw_text(surf, t, (x, base), sz, color, "title", anchor="bottomleft", alpha=alpha)
+        x += w
+
+
+def cartouche(surf, r, t, alpha=255):
+    """Cartouche du choix actif : pointes latérales, liseré doré, losanges et chevrons aux extrémités."""
+    gold = (214, 190, 132)
+    cy = r.centery
+    pts = [(r.x, cy), (r.x + 18, r.y), (r.right - 18, r.y), (r.right, cy), (r.right - 18, r.bottom),
+           (r.x + 18, r.bottom)]
+    ui.polygon(surf, (26, 22, 20, int(215 * alpha / 255)), pts)
+    ui.polygon(surf, (*gold, alpha), pts, 2)
+    inner = [(r.x + 7, cy), (r.x + 21, r.y + 4), (r.right - 21, r.y + 4), (r.right - 7, cy),
+             (r.right - 21, r.bottom - 4), (r.x + 21, r.bottom - 4)]
+    ui.polygon(surf, (*ui.darker(gold, 0.6), int(alpha * 0.8)), inner, 1)
+    k = 2 * math.sin(t * 4)
+    for d in (-1, 1):
+        x = r.centerx + d * (r.w / 2 - 34) + d * k
+        ui.polygon(surf, (*gold, alpha), [(x, cy - 7), (x + 7, cy), (x, cy + 7), (x - 7, cy)])
+        ui.polygon(surf, (26, 22, 20, alpha), [(x, cy - 3), (x + 3, cy), (x, cy + 3), (x - 3, cy)])
+        ui.polygon(surf, (*gold, alpha), [(x - d * 11, cy - 5), (x - d * 17, cy), (x - d * 11, cy + 5)])
 
 
 # =========================================================================== chargement
 class LoadScene(Scene):
     def __init__(self, game):
         super().__init__(game)
-        self.land = Landscape()
-        self.static_mesh = self.land.mesh
+        self.static_mesh = None
         self.confirm = None
         self.t = 0.0
         self.refresh()
@@ -326,12 +260,9 @@ class LoadScene(Scene):
 
     def update(self, dt):
         self.t += dt
-        self.land.update(dt)
-
-    def render3d(self, fr):
-        return self.land.render(fr)
 
     def draw_ui(self, surf):
+        draw_background(surf, self.t)
         ui.veil(surf, (6, 12, 16), 170)
         ui.draw_text(surf, "Charger une partie", (SCREEN_W / 2, 84), 34, WHITE, "title", anchor="center")
         ui.line(surf, (120, 124, 120), (SCREEN_W / 2 - 240, 112), (SCREEN_W / 2 + 240, 112))
@@ -372,19 +303,62 @@ class CreateScene(Scene):
         self.cam = Camera3D(yaw=45, pitch=10, dist=5.6, fov=32)
         self.class_rects = {cid: pygame.Rect(640 + i * 206, 190, 196, 64) for i, cid in enumerate(CLASSES)}
         self.name_rect = pygame.Rect(640, 110, 402, 44)
-        self.go = ui.Button((SCREEN_W - 340, SCREEN_H - 84, 300, 50), "Entrer dans la Tour", self.create, 20)
-        self.back = ui.Button((640, SCREEN_H - 84, 200, 50), "Retour",
-                              lambda: game.change_scene(TitleScene(game, skip_intro=True)), 18)
+        # étape 0 : nom et classe ; étape 1 : apparence
+        self.step = 0
+        self.look = looks.default_look(self.cls)
+        self.look_edited = False
+        self.editor = None
+        self.rot = 0.0
+        self.drag = None
+        self.go = ui.Button((SCREEN_W - 340, SCREEN_H - 84, 300, 50), "Suivant : apparence", self.forward, 20)
+        self.back = ui.Button((640, SCREEN_H - 84, 200, 50), "Retour", self.backward, 18)
+        self.rand = ui.Button((640, 540, 200, 42), "Aléatoire", self.randomize, 17)
 
-    def create(self):
+    def name_ok(self):
         name = self.name.strip()
         if len(name) < 2:
             self.error = "Le nom doit contenir au moins 2 caractères."
-            return
-        if save.exists(name):
+        elif save.exists(name):
             self.error = "Un personnage porte déjà ce nom."
+        else:
+            return True
+        return False
+
+    def set_class(self, cid):
+        self.cls = cid
+        if not self.look_edited:
+            self.look = looks.default_look(cid)
+        sfx.play("click")
+
+    def forward(self):
+        if self.step == 1:
+            self.create()
+        elif self.name_ok():
+            self.step = 1
+            self.error = ""
+            self.editor = LookEditor((640, 104, 600, 0), self.look, self.cls)
+            self.go.text = "Entrer dans la Tour"
+
+    def backward(self):
+        if self.step == 1:
+            self.step = 0
+            self.go.text = "Suivant : apparence"
+        else:
+            self.game.change_scene(TitleScene(self.game, skip_intro=True))
+
+    def randomize(self):
+        if self.editor:
+            self.editor.randomize()
+            self.look_edited = True
+
+    def create(self):
+        if not self.name_ok():
+            self.step = 0
+            self.go.text = "Suivant : apparence"
             return
+        name = self.name.strip()
         data = save.new_character(name, self.cls)
+        data["look"] = dict(self.look)
         save.save_data(data)
         from .hub import HubScene
         p = Player(data)
@@ -393,27 +367,44 @@ class CreateScene(Scene):
     def handle_event(self, e):
         if self.go.handle(e) or self.back.handle(e):
             return
+        if self.step == 1:
+            self.handle_look(e)
+            return
         if e.type == pygame.MOUSEBUTTONDOWN and e.button == 1:
             for cid, r in self.class_rects.items():
                 if r.collidepoint(e.pos):
-                    self.cls = cid
-                    sfx.play("click")
+                    self.set_class(cid)
         elif e.type == pygame.KEYDOWN:
             if e.key == pygame.K_BACKSPACE:
                 self.name = self.name[:-1]
             elif e.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
-                self.create()
+                self.forward()
             elif e.key == pygame.K_ESCAPE:
-                self.game.change_scene(TitleScene(self.game, skip_intro=True))
+                self.backward()
             elif e.key in (pygame.K_LEFT, pygame.K_RIGHT):
                 ids = list(CLASSES)
-                i = (ids.index(self.cls) + (1 if e.key == pygame.K_RIGHT else -1)) % len(ids)
-                self.cls = ids[i]
-                sfx.play("click")
+                self.set_class(ids[(ids.index(self.cls) + (1 if e.key == pygame.K_RIGHT else -1)) % len(ids)])
         elif e.type == pygame.TEXTINPUT:
             if len(self.name) < 16 and all(ch.isalnum() or ch in " -'" for ch in e.text):
                 self.name += e.text
                 self.error = ""
+
+    def handle_look(self, e):
+        if e.type == pygame.KEYDOWN and e.key == pygame.K_ESCAPE:
+            self.backward()
+        elif e.type == pygame.KEYDOWN and e.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+            self.create()
+        elif self.rand.handle(e):
+            pass
+        elif self.editor.handle_event(e):
+            self.look_edited = True
+        elif e.type == pygame.MOUSEBUTTONDOWN and e.button == 1 and e.pos[0] < 600:
+            self.drag = e.pos[0]
+        elif e.type == pygame.MOUSEBUTTONUP and e.button == 1:
+            self.drag = None
+        elif e.type == pygame.MOUSEMOTION and self.drag is not None:
+            self.rot += (e.pos[0] - self.drag) * 0.012
+            self.drag = e.pos[0]
 
     def update(self, dt):
         self.t += dt
@@ -422,8 +413,12 @@ class CreateScene(Scene):
         t = self.t
         PX, PY = 0.0, 0.0
         c = CLASSES[self.cls]["color"]
-        models.humanoid(fr, PX, PY, 0, 0.9 + t * 0.6, t * 5 if int(t / 4) % 2 else 0,
-                        models.PLAYER_SPECS[self.cls], moving=bool(int(t / 4) % 2), swing=0)
+        spec = looks.hero_spec(self.cls, self.look)
+        if self.step == 1:
+            models.humanoid(fr, PX, PY, 0, 0.9 + self.rot, 0, spec, moving=False)
+        else:
+            models.humanoid(fr, PX, PY, 0, 0.9 + t * 0.6, t * 5 if int(t / 4) % 2 else 0, spec,
+                            moving=bool(int(t / 4) % 2), swing=0)
         fr.box(PX, PY, -6, 40, 40, 6, (34, 52, 60), mesh="cylinder")
         fr.decal(PX, PY, 46, 46, c, 0.6, kind=1, inner=0.9, lift=0.16)
         for i in range(10):
@@ -432,19 +427,28 @@ class CreateScene(Scene):
         fr.light(PX + 100, PY + 120, 110, 520, (255, 236, 214), 1.4)
         fr.light(PX - 90, PY - 70, 60, 320, c, 1.3)
         cam = self.cam
+        cam.dist = 4.2 if self.step == 1 else 5.6
         cam.tx, cam.ty, cam.tz = PX, PY, 26
-        cam.ndc_shift = (300 / SCREEN_W * 2 - 1, 1 - 400 / SCREEN_H * 2)
+        cam.ndc_shift = (300 / SCREEN_W * 2 - 1, 1 - 380 / SCREEN_H * 2)
         env = Env(clear=(0.03, 0.055, 0.07), shadow_extent=3.0, cut=0.0, fog=(30.0, 40.0),
                   amb_sky=(0.42, 0.45, 0.52), amb_ground=(0.14, 0.15, 0.17), sun_col=(0.55, 0.55, 0.6),
                   sun_dir=(-0.35, -1.0, -0.55), fog_col=(0.03, 0.055, 0.07), player=(PX, PY, 0))
         return cam, env
 
     def draw_ui(self, surf):
-        ui.draw_text(surf, "Nouveau héros", (60, 50), 36, WHITE, "title")
+        ui.draw_text(surf, "Nouveau héros" if self.step == 0 else "Apparence", (60, 50), 36, WHITE, "title")
         ui.line(surf, (120, 124, 120), (60, 92), (520, 92))
         c = CLASSES[self.cls]
-        ui.draw_text(surf, c["name"], (300, 610), 30, WHITE, "title", anchor="center")
-        ui.draw_text(surf, c["title"], (300, 646), 16, SOFT, anchor="center")
+        ui.draw_text(surf, c["name"] if self.step == 0 else self.name.strip(), (300, 610), 30, WHITE, "title",
+                     anchor="center")
+        ui.draw_text(surf, c["title"] if self.step == 0 else f"{c['name']} · glisser pour pivoter", (300, 646), 16,
+                     SOFT, anchor="center")
+        if self.step == 1:
+            self.editor.draw(surf, self.t)
+            self.rand.draw(surf)
+            self.go.draw(surf)
+            self.back.draw(surf)
+            return
         # nom
         ui.draw_text(surf, "Nom", (640, 84), 15, SOFT, "bold")
         r = self.name_rect

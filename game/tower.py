@@ -1,4 +1,4 @@
-"""Un étage de la Tour des Tourments : salles de monstres, sceau du gardien, boss, portail de sortie."""
+"""Un étage de Cendrespire : salles de monstres, sceau du gardien, boss, portail de sortie."""
 import math
 import random
 

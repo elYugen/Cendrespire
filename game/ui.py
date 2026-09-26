@@ -260,7 +260,7 @@ def selection_frame(surf, r, t, color=BOTW_YELLOW):
     """Crochets animés autour de l'élément sélectionné (comme dans l'inventaire de BotW)."""
     k = 4 + 2 * math.sin(t * 6)
     r = pygame.Rect(r).inflate(k * 2, k * 2)
-    L = max(8, r.w // 4)
+    L = max(8, min(r.w, r.h) // 4)
     for (x, y), (dx, dy) in ((r.topleft, (1, 1)), ((r.right, r.top), (-1, 1)),
                              ((r.left, r.bottom), (1, -1)), ((r.right, r.bottom), (-1, -1))):
         line(surf, color, (x, y), (x + dx * L, y), 3)

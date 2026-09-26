@@ -4,6 +4,7 @@ import random
 
 from ..dungeon import WALL, FLOOR, BARRIER
 from ..settings import TILE
+from . import camp
 from .meshes import MeshBuilder
 
 # Ambiances : couleurs du sol / des murs, torches, lumière
@@ -69,10 +70,10 @@ def build(d, theme_name, rng=None, hub=False):
         for x in range(d.w):
             if not is_floor(x, y):
                 continue
-            alt = rng.random() < (0.035 if hub else 0.12)
+            alt = rng.random() < 0.12
             c = _jit(th["alt"] if alt else th["floor"], 9, rng)
             if hub:
-                mb.box(x, -0.12, y, x + 1, 0, y + 1, c)
+                _camp_floor(mb, d, x, y, rng)
             else:
                 g = 0.03
                 h = rng.uniform(-0.015, 0.0)
@@ -85,7 +86,7 @@ def build(d, theme_name, rng=None, hub=False):
             if is_floor(x, y):
                 continue
             near = [(dx, dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1) if is_floor(x + dx, y + dy)]
-            if not near:
+            if not near and not hub:
                 continue
             walls.append((x, y, near))
     for x, y, near in walls:
@@ -98,6 +99,15 @@ def build(d, theme_name, rng=None, hub=False):
             mb.box(x + 0.08, 1.85, y + 0.08, x + 0.92, 2.1, y + 0.92, _f(th["top"]), 1.0)
             continue
         if hub and d.tiles[y][x] == WALL and getattr(d, "tower_tiles", None) and (x, y) in d.tower_tiles:
+            mb.box(x, 0, y, x + 1, 0.1, y + 1, _jit((70, 96, 58), 6, rng))
+            continue
+        if hub:
+            # clairière : talus herbeux bas couverts d'arbres
+            H = rng.uniform(0.3, 0.55)
+            mb.box(x, 0, y, x + 1, H, y + 1, _jit((104, 96, 84), 10, rng), 1.0)
+            mb.box(x - 0.02, H, y - 0.02, x + 1.02, H + 0.08, y + 1.02, _jit((64, 104, 52), 8, rng), 1.0)
+            if rng.random() < 0.8:
+                camp.tree(mb, x + rng.uniform(0.3, 0.7), H + 0.08, y + rng.uniform(0.3, 0.7), rng)
             continue
         H = rng.uniform(1.5, 1.9) if not hub else rng.uniform(1.0, 2.2)
         c = _jit(th["wall"], 8, rng)
@@ -155,8 +165,53 @@ def build(d, theme_name, rng=None, hub=False):
             col = rng.choice([(0.95, 0.85, 0.3), (0.9, 0.4, 0.5), (0.7, 0.6, 0.95), (1, 1, 1)])
             mb.add("cylinder", (cx, 0.07, cz), (0.01, 0, 0), (0, 0.07, 0), (0, 0, 0.01), (0.3, 0.6, 0.25))
             mb.add("sphere", (cx, 0.15, cz), (0.04, 0, 0), (0, 0.03, 0), (0, 0, 0.04), col)
+        elif kind == "buisson":
+            g = _jit((70, 128, 56), 18, rng)
+            for _ in range(rng.randint(2, 4)):
+                ox, oz = rng.uniform(-0.15, 0.15), rng.uniform(-0.15, 0.15)
+                r = rng.uniform(0.13, 0.22)
+                mb.add("sphere", (cx + ox, r * 0.7, cz + oz), (r, 0, 0), (0, r * 0.8, 0), (0, 0, r), g)
+        elif kind == "champignon":
+            for _ in range(rng.randint(1, 3)):
+                ox, oz = rng.uniform(-0.12, 0.12), rng.uniform(-0.12, 0.12)
+                h = rng.uniform(0.05, 0.09)
+                mb.add("cylinder", (cx + ox, h / 2, cz + oz), (0.015, 0, 0), (0, h / 2, 0), (0, 0, 0.015), (0.9, 0.88, 0.8))
+                mb.add("sphere", (cx + ox, h, cz + oz), (0.045, 0, 0), (0, 0.025, 0), (0, 0, 0.045), (0.8, 0.2, 0.16))
+        elif kind == "souche":
+            mb.add("cylinder", (cx, 0.07, cz), (0.14, 0, 0), (0, 0.07, 0), (0, 0, 0.14), (0.42, 0.3, 0.2))
+            mb.add("cylinder", (cx, 0.141, cz), (0.11, 0, 0), (0, 0.002, 0), (0, 0, 0.11), (0.72, 0.58, 0.38))
         elif kind == "rocher":
             s = rng.uniform(0.12, 0.3)
             mb.add("sphere", (cx, s * 0.5, cz), (s, 0, 0), (0, s * 0.7, 0), (0, 0, s * 1.1), _jit((120, 116, 110), 10, rng))
+    if hub:
+        camp.forest(mb, d, rng, is_floor)
+        camp.build(mb, geo, d, rng, TILE)
     geo.mesh = mb.build()
     return geo
+
+
+def _camp_floor(mb, d, x, y, rng):
+    """Sol du campement : herbe aux teintes douces, chemins de terre, place pavée autour du feu."""
+    if (x, y) in getattr(d, "plaza", ()):
+        mb.box(x, -0.12, y, x + 1, -0.01, y + 1, (0.2, 0.18, 0.15))
+        for i in range(2):
+            for j in range(2):
+                g = rng.uniform(0.03, 0.05)
+                h = rng.uniform(0.0, 0.015)
+                mb.box(x + i * 0.5 + g, -0.02, y + j * 0.5 + g, x + i * 0.5 + 0.5 - g, h, y + j * 0.5 + 0.5 - g,
+                       _jit((98, 94, 88), 14, rng))
+        return
+    if (x, y) in getattr(d, "paths", ()):
+        # herbe dessous, puis un disque de terre : les disques voisins se chevauchent en un chemin aux bords ronds
+        mb.box(x, -0.12, y, x + 1, 0, y + 1, _jit((84, 128, 58), 4, rng))
+        r = rng.uniform(0.66, 0.78)
+        mb.add("cylinder", (x + 0.5 + rng.uniform(-0.08, 0.08), 0.004, y + 0.5 + rng.uniform(-0.08, 0.08)), (r, 0, 0),
+               (0, 0.004, 0), (0, 0, r), _f((118, 96, 68)))
+        if rng.random() < 0.5:
+            s = rng.uniform(0.05, 0.09)
+            px, pz = x + rng.uniform(0.2, 0.8), y + rng.uniform(0.2, 0.8)
+            mb.add("sphere", (px, 0.0, pz), (s, 0, 0), (0, s * 0.5, 0), (0, 0, s * 1.2), _jit((120, 114, 104), 12, rng))
+        return
+    n = 0.5 + 0.5 * math.sin(x * 0.45 + y * 0.2) * math.cos(y * 0.37 - x * 0.13)
+    base = tuple(a + (b - a) * n for a, b in zip((72, 120, 52), (108, 150, 66)))
+    mb.box(x, -0.12, y, x + 1, 0, y + 1, _jit(base, 4, rng))

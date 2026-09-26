@@ -115,16 +115,26 @@ MONSTER_SPECS = {
 }
 
 NPC_SPECS = {
-    "marchand": dict(body=(124, 90, 56), skin=(216, 174, 134), legs=(82, 60, 42), arms="body", hood=(156, 114, 64),
-                     belt=(206, 176, 84), beard=(130, 118, 104), weapon=None, pack=(112, 82, 50)),
-    "forgeronne": dict(body=(98, 78, 66), skin=(228, 182, 144), legs=(66, 50, 40), arms="skin", apron=(74, 48, 32),
-                       hair=(220, 112, 52), weapon="hammer", bulky=True),
+    "marchand": dict(detailed=True, body=(124, 90, 56), skin=(216, 174, 134), legs=(82, 60, 42), arms="body",
+                     hood=(156, 114, 64), belt=(206, 176, 84), hair_style="Court", hair=(130, 118, 104),
+                     beard_style="Longue", beard=(150, 140, 128), eye_col=(104, 66, 38), weapon=None,
+                     pack=(112, 82, 50), boots=(70, 50, 34), build=1.05),
+    "forgeronne": dict(detailed=True, body=(98, 78, 66), skin=(228, 182, 144), legs=(66, 50, 40), arms="skin",
+                       apron=(74, 48, 32), hair_style="Tresses", hair=(206, 96, 44), eye_col=(70, 160, 80),
+                       weapon="hammer", build=1.18, boots=(56, 40, 30), bracers=(70, 46, 30), gloves=(80, 56, 36),
+                       belt=(60, 40, 26)),
+    "couturiere": dict(detailed=True, body=(112, 44, 110), skin=(178, 124, 84), legs=(54, 40, 60), arms="body",
+                       hair_style="Queue de cheval", hair=(38, 32, 30), eye_col=(214, 150, 40), weapon=None,
+                       sash=(226, 194, 120), collar=(226, 194, 120), boots=(60, 44, 36), marks="Tatouage runique",
+                       build=0.9),
 }
 
 
 # =========================================================================== humanoïde
 def humanoid(fr, x, y, z0, facing, phase, spec, sc=1.0, flash=False, tint_col=None, swing=0.0, moving=True,
              glow_eyes=True):
+    if spec.get("detailed"):
+        return hero(fr, x, y, z0, facing, phase, spec, sc, flash, tint_col, swing, moving)
     p = Painter(fr, flash, tint_col)
     f, s = frame_axes(facing)
     walk = math.sin(phase) if moving else 0.0
@@ -258,6 +268,261 @@ def humanoid(fr, x, y, z0, facing, phase, spec, sc=1.0, flash=False, tint_col=No
             _weapon(p, fr, spec, end, f, s, wdir, sc)
         if side == -1 and spec.get("weapon") == "bow":
             _bow(p, end, f, s, sc)
+
+
+# =========================================================================== héros détaillé
+def _sphere(p, c, r, color, emis=0.0):
+    p.part("sphere", c, (r, 0, 0), (0, 0, r), (0, r, 0), color, emis)
+
+
+def _on_head(hc, hr, f, s, fwd, side, up):
+    """Point à la surface de la tête (direction donnée dans le repère du visage) et sa normale."""
+    n = norm(add(mul(f, fwd), mul(s, side), mul(UP, up)))
+    return add(hc, mul(n, hr * 1.0)), n
+
+
+def _face_mark(p, hc, hr, f, s, fwd, side, up, size, color, emis=0.0):
+    c, n = _on_head(hc, hr, f, s, fwd, side, up)
+    t = norm(cross(UP, n))
+    p.ellipsoid(c, n, t, 0.28 * size[0], size[1], size[2], color, emis)
+
+
+def _hair(p, spec, hc, hr, f, s, sc):
+    style = spec.get("hair_style", "Court")
+    col = spec["hair"]
+    covered = spec.get("helmet") or spec.get("hat") or spec.get("hood")
+    if style == "Rasé":
+        return
+    if style == "Crête":
+        if not covered:
+            for i in range(5):
+                a = -0.7 + i * 0.35
+                c = add(hc, mul(f, math.sin(a) * hr * 0.95), (0, 0, math.cos(a) * hr * 0.92))
+                tip = add(c, mul(norm(add(mul(f, math.sin(a)), (0, 0, math.cos(a)))), 3.4 * sc))
+                p.rod(c, tip, 1.5 * sc, col, s, mesh="cone")
+        return
+    # calotte : couvre le haut et l'arrière du crâne en dégageant le visage
+    p.ellipsoid(add(hc, mul(f, -1.5 * sc), (0, 0, 2.0 * sc)), f, s, hr * 1.08, hr * 1.07, hr * 0.8, col)
+    for side in (-1, 1):   # mèches sur les tempes
+        p.ellipsoid(add(hc, mul(f, 1.4 * sc), mul(s, side * hr * 0.82), (0, 0, 1.8 * sc)), f, s, 2.2 * sc, 1.2 * sc,
+                    2.6 * sc, col)
+    if style == "Long":
+        p.ellipsoid(add(hc, mul(f, -3.6 * sc), (0, 0, -3.6 * sc)), f, s, 3.0 * sc, hr * 0.98, 7.2 * sc, col)
+    elif style == "Queue de cheval":
+        knot = add(hc, mul(f, -hr * 1.02), (0, 0, 1.2 * sc))
+        _sphere(p, knot, 1.9 * sc, col)
+        p.rod(knot, add(knot, mul(f, -3.5 * sc), (0, 0, -10 * sc)), 2.1 * sc, col, s, mesh="cone")
+    elif style == "Tresses":
+        for side in (-1, 1):
+            top = add(hc, mul(s, side * hr * 0.86), mul(f, -0.8 * sc), (0, 0, -1.2 * sc))
+            bot = add(top, mul(s, side * 0.8 * sc), mul(f, 1.4 * sc), (0, 0, -10 * sc))
+            p.rod(top, bot, 1.35 * sc, col, f)
+            _sphere(p, bot, 1.2 * sc, (220, 184, 96))
+
+
+def _beard(p, spec, hc, hr, f, s, sc):
+    style = spec.get("beard_style", "Aucune")
+    col = spec.get("beard", spec.get("hair", (90, 60, 40)))
+    if style == "Courte":
+        p.ellipsoid(add(hc, mul(f, hr * 0.6), (0, 0, -hr * 0.52)), f, s, 2.8 * sc, 4.4 * sc, 2.8 * sc, col)
+    elif style == "Longue":
+        p.ellipsoid(add(hc, mul(f, hr * 0.62), (0, 0, -hr * 0.55)), f, s, 2.8 * sc, 4.6 * sc, 3.6 * sc, col)
+        p.ellipsoid(add(hc, mul(f, hr * 0.66), (0, 0, -hr * 1.05)), f, s, 2.2 * sc, 3.2 * sc, 4.0 * sc, col)
+    if style in ("Longue", "Moustache", "Courte"):
+        for side in (-1, 1):
+            c = add(hc, mul(f, hr * 0.92), mul(s, side * 1.35 * sc), (0, 0, -1.9 * sc))
+            p.ellipsoid(c, f, s, 0.8 * sc, 1.7 * sc, 0.7 * sc, col)
+
+
+def _face(p, spec, hc, hr, f, s, sc):
+    skin = spec["skin"]
+    for side in (-1, 1):   # oreilles
+        p.ellipsoid(add(hc, mul(s, side * hr * 0.9), (0, 0, -0.2 * sc)), f, s, 1.3 * sc, 0.8 * sc, 1.8 * sc, skin)
+    eye_c = spec.get("eye_col", (90, 140, 200))
+    brow = spec.get("hair", (60, 40, 30)) if spec.get("hair_style") != "Rasé" else tint(skin, (40, 30, 26), 0.5)
+    for side in (-1, 1):
+        ep = add(hc, mul(f, hr * 0.8), mul(s, side * 2.2 * sc), (0, 0, 0.5 * sc))
+        p.ellipsoid(ep, f, s, 1.0 * sc, 1.3 * sc, 1.5 * sc, (246, 243, 236))
+        ip = add(ep, mul(f, 0.62 * sc))
+        p.ellipsoid(ip, f, s, 0.5 * sc, 0.85 * sc, 1.0 * sc, eye_c)
+        pp = add(ip, mul(f, 0.3 * sc))
+        p.ellipsoid(pp, f, s, 0.35 * sc, 0.45 * sc, 0.55 * sc, (18, 14, 16))
+        _sphere(p, add(pp, mul(f, 0.3 * sc), mul(s, -0.25 * sc), (0, 0, 0.4 * sc)), 0.2 * sc, (255, 255, 255), 0.8)
+        p.ellipsoid(add(hc, mul(f, hr * 0.86), mul(s, side * 2.3 * sc), (0, 0, 2.3 * sc)), f, s, 0.55 * sc, 1.5 * sc,
+                    0.45 * sc, brow)
+    p.ellipsoid(add(hc, mul(f, hr * 0.93), (0, 0, -0.5 * sc)), f, s, 1.0 * sc, 0.85 * sc, 1.25 * sc,
+                tint(skin, (60, 30, 20), 0.12))
+    p.ellipsoid(add(hc, mul(f, hr * 0.88), (0, 0, -2.4 * sc)), f, s, 0.4 * sc, 1.3 * sc, 0.35 * sc,
+                tint(skin, (120, 40, 40), 0.4))
+    marks = spec.get("marks", "Aucune")
+    if marks == "Peinture de guerre":
+        for side in (-1, 1):
+            for k in (0, 1):
+                _face_mark(p, hc, hr, f, s, 0.72, side * (0.5 + k * 0.14), -0.12, (1, 0.35 * sc, 1.6 * sc),
+                           (54, 100, 196))
+        _face_mark(p, hc, hr, f, s, 0.9, 0.0, 0.42, (1, 0.35 * sc, 1.4 * sc), (54, 100, 196))
+    elif marks == "Cicatrice":
+        for i in range(4):
+            _face_mark(p, hc, hr, f, s, 0.8, 0.5 - i * 0.02, 0.48 - i * 0.16, (1, 0.3 * sc, 0.75 * sc),
+                       tint(skin, (230, 140, 130), 0.55))
+    elif marks == "Tatouage runique":
+        _face_mark(p, hc, hr, f, s, 0.86, 0.0, 0.5, (1, 0.9 * sc, 0.3 * sc), (110, 230, 255), 0.9)
+        _face_mark(p, hc, hr, f, s, 0.86, 0.0, 0.5, (1, 0.3 * sc, 0.9 * sc), (110, 230, 255), 0.9)
+        for side in (-1, 1):
+            _face_mark(p, hc, hr, f, s, 0.7, side * 0.55, -0.2, (1, 0.35 * sc, 0.35 * sc), (110, 230, 255), 0.9)
+
+
+def hero(fr, x, y, z0, facing, phase, spec, sc=1.0, flash=False, tint_col=None, swing=0.0, moving=True):
+    """Héros et PNJ détaillés : visage, coiffure, barbe, marques, bras et jambes articulés (coudes, genoux)."""
+    p = Painter(fr, flash, tint_col)
+    f, s = frame_axes(facing)
+    walk = math.sin(phase) if moving else 0.0
+    bob = abs(math.sin(phase)) * 1.0 * sc if moving else 0.0
+    Wd = spec.get("build", 1.0)
+    base = (x, y, z0 + bob)
+    skin = spec["skin"]
+    body = spec["body"]
+    legs_c = spec.get("legs", body)
+    boots = spec.get("boots", legs_c)
+    robe = spec.get("robe")
+    hip = 15 * sc
+
+    # jambes : cuisse + tibia, le genou plie quand la jambe repasse vers l'arrière
+    for side in (-1, 1):
+        a = walk * 0.7 * side
+        if robe:
+            foot = add(base, mul(f, 1.6 * sc + walk * side * 3.5 * sc), mul(s, side * 3.2 * sc * Wd), (0, 0, 1.4 * sc))
+            p.ellipsoid(foot, f, s, 3.8 * sc, 2.5 * sc * Wd, 1.9 * sc, boots)
+            continue
+        piv = add(base, mul(s, side * 3.3 * sc * Wd), (0, 0, hip))
+        knee, _, _ = limb(p, piv, f, s, a, 2.9 * sc * Wd, 3.9 * sc, legs_c)
+        _sphere(p, knee, 2.6 * sc * Wd, legs_c)
+        bend = (0.1 + max(0.0, -walk * side) * 0.9) if moving else 0.06
+        ankle, fp2, up2 = limb(p, knee, f, s, a - bend, 2.5 * sc * Wd, 3.6 * sc, boots)
+        p.part("cylinder", add(knee, mul(up2, -1.6 * sc)), mul(fp2, 2.95 * sc * Wd), mul(up2, 0.9 * sc),
+               mul(s, 2.95 * sc * Wd), spec.get("cuff", boots))
+        p.ellipsoid(add(ankle, mul(f, 1.6 * sc), (0, 0, 1.0 * sc)), f, s, 4.0 * sc, 2.7 * sc * Wd, 2.0 * sc, boots)
+
+    # bassin, ventre, poitrine
+    if robe:
+        p.part("frustum", add(base, (0, 0, 13.5 * sc)), mul(f, 8.0 * sc * Wd), mul(UP, 13.5 * sc), mul(s, 8.4 * sc * Wd),
+               body)
+        if spec.get("trim"):
+            p.part("frustum", add(base, (0, 0, 1.6 * sc)), mul(f, 8.1 * sc * Wd), mul(UP, 1.2 * sc),
+                   mul(s, 8.5 * sc * Wd), spec["trim"])
+    else:
+        p.ellipsoid(add(base, (0, 0, hip + 0.5 * sc)), f, s, 4.6 * sc, 6.4 * sc * Wd, 3.4 * sc, legs_c)
+    # torse d'un seul volume, élargi aux épaules (silhouette en V)
+    p.ellipsoid(add(base, (0, 0, hip + 8.6 * sc)), f, s, 4.5 * sc, 6.3 * sc * Wd, 9.4 * sc, body)
+    p.ellipsoid(add(base, mul(f, -0.3 * sc), (0, 0, hip + 14.6 * sc)), f, s, 4.2 * sc, 8.2 * sc * Wd, 3.6 * sc, body)
+    belt = spec.get("sash") or spec.get("belt")
+    if belt:
+        p.part("cylinder", add(base, (0, 0, hip + 2.4 * sc)), mul(f, 4.75 * sc), mul(UP, 1.2 * sc),
+               mul(s, 6.35 * sc * Wd), belt)
+        p.boxv(add(base, mul(f, 4.8 * sc), (0, 0, hip + 2.4 * sc)), mul(f, 0.5 * sc), mul(s, 1.3 * sc),
+               mul(UP, 1.1 * sc), (224, 188, 100), 0.1)
+    if spec.get("strap"):
+        a = add(base, mul(f, 3.9 * sc), mul(s, -5.2 * sc * Wd), (0, 0, hip + 16 * sc))
+        m = add(base, mul(f, 5.5 * sc), mul(s, -0.3 * sc * Wd), (0, 0, hip + 10 * sc))
+        b = add(base, mul(f, 4.3 * sc), mul(s, 4.6 * sc * Wd), (0, 0, hip + 3.6 * sc))
+        p.rod(a, m, 0.9 * sc, spec["strap"], s)
+        p.rod(m, b, 0.9 * sc, spec["strap"], s)
+    if spec.get("fur"):
+        p.ellipsoid(add(base, (0, 0, hip + 16.8 * sc)), f, s, 5.4 * sc, 8.4 * sc * Wd, 2.8 * sc, spec["fur"])
+    if spec.get("collar"):
+        p.part("frustum", add(base, (0, 0, hip + 17.4 * sc)), mul(f, 4.6 * sc), mul(UP, 1.6 * sc),
+               mul(s, 6.0 * sc * Wd), spec["collar"])
+    if spec.get("apron"):
+        p.boxv(add(base, mul(f, 5.0 * sc), (0, 0, hip + 5 * sc)), mul(f, 0.6 * sc), mul(s, 5.2 * sc * Wd),
+               mul(UP, 9 * sc), spec["apron"])
+    if spec.get("cape"):
+        sw = 0.18 + 0.15 * abs(walk)
+        cc = add(base, mul(f, -5.8 * sc - 5 * sc * math.sin(sw)), (0, 0, 19 * sc))
+        p.boxv(cc, mul(norm(add(f, mul(UP, math.sin(sw)))), 0.7 * sc), mul(s, 6.8 * sc * Wd), mul(UP, 12.5 * sc),
+               spec["cape"])
+    if spec.get("pack"):
+        p.boxv(add(base, mul(f, -7 * sc), (0, 0, 26 * sc)), mul(f, 3 * sc), mul(s, 5 * sc), mul(UP, 6.5 * sc),
+               spec["pack"])
+    if spec.get("quiver"):
+        q0 = add(base, mul(f, -6 * sc), mul(s, -3 * sc), (0, 0, 20 * sc))
+        q1 = add(base, mul(f, -7 * sc), mul(s, 3 * sc), (0, 0, 36 * sc))
+        p.rod(q0, q1, 2.4 * sc, spec["quiver"], f)
+        for i in range(3):
+            tip = add(q1, mul(s, (i - 1) * 1.2 * sc), (0, 0, 3.5 * sc))
+            p.rod(q1, tip, 0.35 * sc, (220, 220, 210), f)
+            _sphere(p, tip, 0.8 * sc, (190, 60, 50))
+
+    # cou et tête
+    p.part("cylinder", add(base, (0, 0, hip + 18.6 * sc)), (2.1 * sc, 0, 0), (0, 0, 1.8 * sc), (0, 2.1 * sc, 0), skin)
+    hr = 6.0 * sc
+    hc = add(base, (0, 0, hip + 19.4 * sc + hr))
+    p.ellipsoid(hc, f, s, hr * 0.97, hr * 0.93, hr * 1.04, skin)
+    _face(p, spec, hc, hr, f, s, sc)
+    _hair(p, spec, hc, hr, f, s, sc)
+    _beard(p, spec, hc, hr, f, s, sc)
+    if spec.get("helmet"):
+        p.ellipsoid(add(hc, (0, 0, 1.9 * sc)), f, s, hr * 1.1, hr * 1.1, hr * 0.78, spec["helmet"])
+        p.part("cylinder", add(hc, (0, 0, 0.9 * sc)), mul(f, hr * 1.12), mul(UP, 0.7 * sc), mul(s, hr * 1.12),
+               tint(spec["helmet"], (60, 50, 40), 0.35))
+        p.boxv(add(hc, mul(f, hr * 1.04), (0, 0, 1.2 * sc)), mul(f, 0.5 * sc), mul(s, 0.45 * sc), mul(UP, 1.6 * sc),
+               spec["helmet"])
+    if spec.get("hood"):
+        p.ellipsoid(add(hc, mul(f, -1.6 * sc), (0, 0, 1.0 * sc)), f, s, hr * 1.12, hr * 1.16, hr * 1.12, spec["hood"])
+        p.rod(add(hc, mul(f, -4 * sc), (0, 0, hr * 0.6)), add(hc, mul(f, -10 * sc), (0, 0, hr * 0.9)), 3.2 * sc,
+              spec["hood"], s, mesh="cone")
+    if spec.get("hat"):
+        h = spec["hat"]
+        p.part("cylinder", add(hc, (0, 0, hr * 0.75)), mul(f, 11 * sc), mul(UP, 0.8 * sc), mul(s, 11 * sc), h)
+        p.part("cylinder", add(hc, (0, 0, hr * 0.95)), mul(f, 6.4 * sc), mul(UP, 0.9 * sc), mul(s, 6.4 * sc),
+               spec.get("trim", h))
+        p.rod(add(hc, (0, 0, hr * 0.8)), add(hc, mul(f, -6 * sc), (0, 0, hr + 17 * sc)), 6.2 * sc, h, s, mesh="cone")
+    if spec.get("horns"):
+        for side in (-1, 1):
+            hb = add(hc, mul(s, side * hr * 0.85), (0, 0, hr * 0.45))
+            mid = add(hb, mul(s, side * 4.2 * sc), (0, 0, 2.5 * sc), mul(f, 1.0 * sc))
+            p.rod(hb, mid, 1.9 * sc, spec["horns"], f)
+            p.rod(mid, add(mid, mul(s, side * 1.8 * sc), (0, 0, 6 * sc), mul(f, 1.2 * sc)), 1.9 * sc, spec["horns"], f,
+                  mesh="cone")
+
+    # bras : épaule, coude, main
+    sh_z = hip + 15.8 * sc
+    k = max(0.0, min(1.0, -swing / 1.4)) if swing < 0 else 0.0
+    spin = swing > 0.2
+    bow = spec.get("weapon") == "bow"
+    upper_c = skin if spec.get("arms") == "skin" else body
+    hand_c = spec.get("gloves", skin)
+    for side in (-1, 1):
+        piv = add(base, mul(s, side * (7.0 * Wd + 2.1) * sc), (0, 0, sh_z))
+        if side == 1:
+            t = walk * -0.6 + 1.6 * k + (1.3 if spin else 0)
+            bend = 0.35 - 0.3 * k
+        else:
+            t = walk * 0.6 + (1.0 if bow else 0)
+            bend = 0.35 + (0.25 if bow else 0.0)
+        _sphere(p, piv, 2.7 * sc * Wd, upper_c)
+        elbow, _, _ = limb(p, piv, f, s, t, 2.3 * sc * Wd, 3.5 * sc, upper_c)
+        _sphere(p, elbow, 2.15 * sc * Wd, upper_c)
+        hand, fp2, up2 = limb(p, elbow, f, s, t + bend, 2.05 * sc * Wd, 3.3 * sc, upper_c if robe else skin
+                              if spec.get("arms") == "skin" else body)
+        if robe:
+            p.part("frustum", add(elbow, mul(up2, -4.6 * sc)), mul(fp2, 3.0 * sc * Wd), mul(up2, 1.8 * sc),
+                   mul(s, 3.0 * sc * Wd), spec.get("trim", body))
+        if spec.get("bracers"):
+            p.part("cylinder", add(elbow, mul(up2, -4.2 * sc)), mul(fp2, 2.3 * sc * Wd), mul(up2, 1.7 * sc),
+                   mul(s, 2.3 * sc * Wd), spec["bracers"])
+        _sphere(p, hand, 2.35 * sc * Wd, hand_c)
+        if spec.get("pauldrons"):
+            p.ellipsoid(add(piv, (0, 0, 1.4 * sc)), f, s, 4.2 * sc, 4.2 * sc, 3.0 * sc, spec["pauldrons"])
+            p.part("sphere", add(piv, (0, 0, 3.6 * sc)), (1.0 * sc, 0, 0), (0, 0, 1.0 * sc), (0, 1.0 * sc, 0),
+                   (200, 196, 190))
+        if side == 1:
+            g = 0.35 + 1.6 * k
+            wdir = norm(add(mul(UP, math.cos(g)), mul(f, math.sin(g))))
+            if spin:
+                wdir = norm(add(s, (0, 0, 0.25)))
+            _weapon(p, fr, spec, hand, f, s, wdir, sc)
+        if side == -1 and bow:
+            _bow(p, hand, f, s, sc)
 
 
 def _weapon(p, fr, spec, hand, f, s, wdir, sc):

@@ -1,4 +1,4 @@
-# Tour des Tourments
+# Cendrespire
 
 Action-RPG roguelike en 3D, écrit en Python. Les inspirations :
 - **Torghast** (World of Warcraft) pour la structure : une tour à étages, des pouvoirs d'anima, des gardiens ;
@@ -6,7 +6,7 @@ Action-RPG roguelike en 3D, écrit en Python. Les inspirations :
 - **Diablo** pour l'ambiance des donjons ;
 - **Zelda Breath of the Wild** pour l'interface et l'écran titre.
 
-Tout est généré par le code : les modèles 3D en formes simples (sphères, cylindres, cônes, blocs), les niveaux et les sons. Il n'y a aucun fichier d'asset.
+Presque tout est généré par le code : les modèles 3D en formes simples (sphères, cylindres, cônes, blocs), les niveaux et les sons. Seuls l'illustration et le logo du menu principal sont des images (`assets/`).
 
 ## Lancer le jeu
 
@@ -17,6 +17,14 @@ python3 -m venv .venv
 ```
 
 Il faut une carte graphique compatible OpenGL 3.3, ce qui est le cas de tout Mac récent. Le jeu s'affiche à la résolution native de l'écran, Retina compris. F11 bascule en plein écran. Les sauvegardes sont écrites dans `saves/`.
+
+## Installeur Windows
+
+```powershell
+.\build_installer.ps1
+```
+
+Le script empaquette le jeu avec PyInstaller (`dist\Cendrespire`), puis compile l'installeur avec Inno Setup 6 (`winget install JRSoftware.InnoSetup`). Résultat : `installer\Output\Cendrespire-2.0-Setup.exe`. L'installation ne demande pas de droits administrateur et propose un raccourci sur le bureau. La version installée écrit ses sauvegardes dans `%APPDATA%\Cendrespire\saves`.
 
 ## Commandes
 
@@ -29,13 +37,12 @@ Il faut une carte graphique compatible OpenGL 3.3, ce qui est le cas de tout Mac
 | R · T · G | Artefacts |
 | F | Potion de soins (illimitée, avec temps de recharge) |
 | E | Interagir |
-| I · C | Menu Équipement · Personnage (met le jeu en pause) |
+| I · C · Échap | Menu : pages Inventaire · Personnage · Système (met le jeu en pause) |
 | Tab | Grande carte |
-| Échap | Pause |
 
 ## Boucle de jeu
 
-1. **Campement** : on y trouve le marchand (équipement et artefacts), la forgeronne (améliorations jusqu'à +5) et le portail de la Tour.
+1. **Campement** : une clairière au pied de la tour, avec feu de camp, chemins, lanternes et lucioles. On y trouve le marchand (équipement et artefacts), la forgeronne (améliorations jusqu'à +5), la couturière (changer d'apparence) et le portail de la Tour.
 2. **Étage** : un donjon 3D généré aléatoirement. Chaque étage a son ambiance : Geôles, Ossuaire, Forges avec lave, Sanctuaire, Cryptes de givre…
 3. **Sceau du gardien** : il se brise quand 60% des créatures de l'étage sont tuées. L'arène se referme alors sur le gardien.
 4. **Victoire** : l'étage suivant est débloqué, le gardien laisse du butin (objet légendaire garanti à la première victoire) et un portail ramène au campement.
@@ -43,6 +50,7 @@ Il faut une carte graphique compatible OpenGL 3.3, ce qui est le cas de tout Mac
 
 ## Systèmes
 
+- **Apparence personnalisable** à la création puis chez la couturière : teint, carrure, coiffure, couleur des cheveux, barbe, yeux, marques (peinture de guerre, cicatrice, tatouage runique), deux couleurs de tenue, couvre-chef visible ou non.
 - **3 classes**, chacune avec son attaque de base et 4 sorts débloqués aux niveaux 1, 3, 6 et 10 :
   - Barbare : corps à corps ;
   - Sorcier : magie à distance ;
@@ -52,6 +60,9 @@ Il faut une carte graphique compatible OpenGL 3.3, ce qui est le cas de tout Mac
 - **Artefacts** : 9 objets actifs avec temps de recharge, à trouver en butin ou chez le marchand. Par exemple : Pierre d'orage, Totem de régénération, Crâne infernal, Lanterne des âmes (qui invoque un feu follet allié)…
 - **Pouvoirs d'anima** : ils sont rares. Les orbes tombent parfois sur les élites et dans les coffres. Chaque orbe propose 3 pouvoirs, avec une rareté Commun, Rare ou Épique qui multiplie leur effet. Ils durent jusqu'à la fin de l'ascension.
 - **Butin** : 4 raretés et des bonus aléatoires. Dans le menu, des flèches vertes ou rouges indiquent l'effet de l'objet sur l'attaque, la défense et la vie, comme dans BotW.
+- **Menu façon BotW** : trois pages, Personnage · Inventaire · Système, parcourues avec ← → ou Tab.
+  - Inventaire : catégories à pictogrammes (armes, armures, bijoux, artefacts), grille 5×4 avec pages, équipement porté sur fond bleu, héros en 3D qu'on fait pivoter à la souris, encadré de description avec enchantements. Clic ou Entrée sur un objet : menu Équiper / Recycler ; clic droit : équiper directement ; R T G sur un artefact : le placer sur cette touche. ZQSD déplace le curseur.
+  - Système : l'ancien menu pause (reprendre, abandonner l'ascension, sauvegarder, plein écran, menu principal, quitter) et le rappel des commandes. Échap ouvre directement cette page.
 - **Gardiens** : le Boucher, Varkul la Liche, le Golem d'ossements et Mal'zahar. Leurs attaques sont annoncées au sol, on peut donc les esquiver. Chacun passe en phase enragée sous 50% de vie.
 
 ## Rendu
@@ -77,6 +88,8 @@ Il faut une carte graphique compatible OpenGL 3.3, ce qui est le cas de tout Mac
 ```
 main.py              fenêtre OpenGL, boucle, composition 3D + interface
 game/data.py         classes, sorts, monstres, boss, anima, artefacts, enchantements  <- équilibrage
+game/looks.py        options d'apparence des héros, construction du modèle
+game/wardrobe.py     éditeur d'apparence (création, garde-robe du campement)
 game/items.py        objets, raretés, affixes, artefacts, emplacements d'enchantement
 game/dungeon.py      génération des étages, carte du campement, minicarte
 game/entities.py     héros, monstres, projectiles, butin, PNJ, coffres, portails
@@ -88,8 +101,9 @@ game/world.py        scène de jeu : logique, combat, rendu 3D, interface en jeu
 game/tower.py        un étage de la tour
 game/hub.py          le campement
 game/hud.py          HUD façon BotW
-game/panels.py       menus (équipement avec héros 3D, enchantements, marchand, forge…)
-game/scenes.py       écran titre 3D façon BotW, chargement, création de personnage
+game/panels.py       menus (inventaire avec héros 3D, personnage, système, marchand, forge…)
+game/scenes.py       écran titre façon BotW (illustration, logo), chargement, création de personnage
 game/ui.py, gfx.py   boîte à outils d'interface (nette en Retina)
-game/r3d/            moteur 3D : renderer, shaders, caméra, maillages, modèles, niveaux
+assets/              illustration et logo du menu principal
+game/r3d/            moteur 3D : renderer, shaders, caméra, maillages, modèles, niveaux, décor du campement
 ```

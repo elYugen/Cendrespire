@@ -117,7 +117,7 @@ MONSTERS = {
                    proj_speed=340, proj_color=(235, 220, 180)),
     "diablotin": dict(name="Diablotin", hp=24, dmg=(3, 6), speed=165, radius=12, ai="melee",
                       range=22, cd=0.8, windup=0.25, xp=10, floor=2),
-    "cultiste": dict(name="Cultiste des Tourments", hp=42, dmg=(8, 12), speed=85, radius=14, ai="caster",
+    "cultiste": dict(name="Cultiste des Cendres", hp=42, dmg=(8, 12), speed=85, radius=14, ai="caster",
                      range=360, cd=2.8, windup=0.7, xp=20, floor=3),
     "brute": dict(name="Brute démoniaque", hp=140, dmg=(14, 20), speed=78, radius=21, ai="brute",
                   range=40, cd=2.2, windup=0.8, xp=36, floor=4),
@@ -138,7 +138,7 @@ BOSSES = {
                   speed=95, radius=24, ai="boss", range=40, cd=1.3, windup=0.5, xp=300),
     "golem": dict(id="golem", name="Golem d'ossements", title="Colosse des Forges", hp=900, dmg=(16, 24),
                   speed=72, radius=34, ai="boss", range=50, cd=1.8, windup=0.7, xp=340),
-    "seigneur": dict(id="seigneur", name="Mal'zahar", title="Seigneur des Tourments", hp=1150, dmg=(15, 22),
+    "seigneur": dict(id="seigneur", name="Mal'zahar", title="Maître de Cendrespire", hp=1150, dmg=(15, 22),
                      speed=115, radius=30, ai="boss", range=44, cd=1.4, windup=0.55, xp=500),
 }
 BOSS_ORDER = ["boucher", "liche", "golem", "seigneur"]

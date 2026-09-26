@@ -3,7 +3,7 @@ import math
 import random
 from collections import defaultdict
 
-from . import sfx
+from . import looks, sfx
 from .data import (CLASSES, SPELLS, MONSTERS, ATTRS, ELITE_AFFIXES, MAX_LEVEL, POINTS_PER_LEVEL, ANIMA_POWERS,
                    POTION_CD, POTION_HEAL, ROLL_CD, ROLL_DUR, ROLL_DIST, xp_needed, floor_scaling)
 from .fx import RingFX
@@ -19,6 +19,8 @@ class Player:
     def __init__(self, data):
         self.name = data["name"]
         self.cls_id = data["cls"]
+        self.look = looks.clean_look(data.get("look"), self.cls_id)
+        self._spec = None
         self.level = data.get("level", 1)
         self.xp = data.get("xp", 0)
         self.alloc = {a: data.get("alloc", {}).get(a, 0) for a in ATTRS}
@@ -79,7 +81,15 @@ class Player:
         return {"name": self.name, "cls": self.cls_id, "level": self.level, "xp": self.xp, "alloc": self.alloc,
                 "points": self.points, "gold": self.gold, "max_floor": self.max_floor,
                 "cleared": sorted(self.cleared), "equipment": self.equipment, "inventory": self.inventory,
-                "kills": self.kills, "deaths": self.deaths, "created_at": self.created_at}
+                "kills": self.kills, "deaths": self.deaths, "created_at": self.created_at, "look": dict(self.look)}
+
+    @property
+    def spec(self):
+        """Spécification du modèle 3D, recalculée quand l'apparence change."""
+        key = tuple(sorted(self.look.items()))
+        if not self._spec or self._spec[0] != key:
+            self._spec = (key, looks.hero_spec(self.cls_id, self.look))
+        return self._spec[1]
 
     # ------------------------------------------------------------------ enchantements
     @property
@@ -283,7 +293,7 @@ class Player:
             sc = 1 - 0.3 * math.sin(math.pi * k)
         if self.invuln > 0 and not (self.leap or self.dash) and int(self.invuln * 20) % 2:
             return
-        models.humanoid(fr, self.x, self.y, lift, self.facing, self.walk, models.PLAYER_SPECS[self.cls_id], sc=sc,
+        models.humanoid(fr, self.x, self.y, lift, self.facing, self.walk, self.spec, sc=sc,
                         flash=self.flash > 0, swing=self.swing, moving=self.moving or bool(self.dash))
         if "cri" in self.buffs:
             fr.decal(self.x, self.y, 30, 30, (255, 60, 30), 0.5, kind=1, inner=0.75)
@@ -718,18 +728,20 @@ class Portal(Interactable):
 
 
 class NPC(Interactable):
-    def __init__(self, x, y, name, prompt, spec, action, facing=math.pi / 2):
+    def __init__(self, x, y, name, prompt, spec, action, facing=math.pi / 2, work=False):
         super().__init__(x, y)
         self.label = name
         self.prompt, self.spec, self.action = prompt, spec, action
         self.facing = facing
+        self.work = work     # frappe l'enclume en boucle
 
     def interact(self, world):
         self.action(world)
 
     def render(self, fr, t):
-        models.humanoid(fr, self.x, self.y, 0, self.facing + 0.1 * math.sin(t * 0.7), t * 2, self.spec, sc=1.05,
-                        moving=False)
+        swing = -1.4 * max(0.0, math.sin(t * 2.6)) if self.work else 0.0
+        models.humanoid(fr, self.x, self.y, 0, self.facing + (0.0 if self.work else 0.1 * math.sin(t * 0.7)), t * 2,
+                        self.spec, sc=1.05, moving=False, swing=swing)
 
 
 class Campfire(Interactable):

@@ -1,15 +1,33 @@
 """Constantes globales du jeu."""
 import os
+import sys
 
 # Résolution « de conception » : toute l'interface est positionnée dans cet espace,
 # puis dessinée à la résolution réelle de l'écran (Retina compris) pour rester nette.
 SCREEN_W, SCREEN_H = 1280, 720
 FPS = 60
 TILE = 40
-TITLE = "Tour des Tourments"
+TITLE = "Cendrespire"
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SAVE_DIR = os.path.join(ROOT_DIR, "saves")
+
+
+def _save_dir():
+    """Depuis les sources : saves/ à côté du code. Version installée (exécutable) : dossier de données utilisateur,
+    car le dossier d'installation (Program Files) n'est pas inscriptible."""
+    if not getattr(sys, "frozen", False):
+        return os.path.join(ROOT_DIR, "saves")
+    if sys.platform == "win32":
+        base = os.environ.get("APPDATA") or os.path.expanduser("~")
+    elif sys.platform == "darwin":
+        base = os.path.expanduser("~/Library/Application Support")
+    else:
+        base = os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share")
+    return os.path.join(base, TITLE, "saves")
+
+
+SAVE_DIR = _save_dir()
+ASSETS_DIR = os.path.join(ROOT_DIR, "assets")   # illustrations du menu principal
 
 
 class View:

@@ -1,27 +1,34 @@
-"""Interface de combat, style Zelda Breath of the Wild :
-cœurs en haut à gauche, roue de mana près du héros, minicarte circulaire, grande carte façon tablette Sheikah."""
+"""Interface de jeu façon Zelda Breath of the Wild.
+
+- cœurs en haut à gauche (quarts de cœur), effets actifs juste en dessous ;
+- emplacements de sorts en haut à droite, artefacts / potion / roulade en dessous ;
+- minicarte carrée arrondie en bas à droite, avec jauge « thermomètre » (sceau) et jauge de « bruit » (menace) ;
+- roue de mana à côté du héros (comme la roue d'endurance) ;
+- bulles d'interaction avec touche ronde, notifications de butin en bas à gauche, titres de zone au centre.
+"""
 import math
 
 import pygame
 
-from .data import SPELLS, ANIMA_POWERS, xp_needed
-from .settings import SCREEN_W, SCREEN_H, TEXT, TEXT_DIM, GOLD_BRIGHT
-from .ui import draw_text, draw_tooltip_lines, text_surf, wrap, darker, lighter
+from . import ui
+from .data import SPELLS, ANIMA_POWERS, ARTIFACTS, ARTIFACT_KEYS, anima_desc, xp_needed
+from .items import ART_SLOTS
+from .settings import SCREEN_W, SCREEN_H, VIEW, TEXT, TEXT_DIM, GOLD_BRIGHT, WHITE, SHEIKAH, UI_LINE, RARITY_COLORS
 
-WHITE = (242, 240, 232)
-HUD_LINE = (230, 228, 218)
-SHEIKAH = (90, 210, 255)
-HEART_RED = (222, 38, 52)
-MM_R = 86
-MM_CENTER = (SCREEN_W - MM_R - 26, SCREEN_H - MM_R - 26)
 HEART = 26
+MM = pygame.Rect(SCREEN_W - 24 - 172, SCREEN_H - 24 - 172, 172, 172)
+SOFT = (210, 216, 216)
+
+
+def minimap_rect():
+    return MM
+
 
 # --------------------------------------------------------------------------- cœurs
 _heart_cache = {}
 
 
-def _heart_shape(surf, size, color, inset):
-    s = size
+def _heart_shape(surf, s, color, inset):
     r = s * 0.27 - inset * 0.7
     pygame.draw.circle(surf, color, (s * 0.3, s * 0.36), r)
     pygame.draw.circle(surf, color, (s * 0.7, s * 0.36), r)
@@ -29,35 +36,39 @@ def _heart_shape(surf, size, color, inset):
                                       (s * 0.5, s * 0.93 - inset * 1.3)])
 
 
-def heart_surfs(size):
-    if size not in _heart_cache:
-        full = pygame.Surface((size, size), pygame.SRCALPHA)
-        _heart_shape(full, size, (250, 246, 236), 0)
-        _heart_shape(full, size, HEART_RED, 2)
-        pygame.draw.ellipse(full, (255, 170, 170), (size * 0.2, size * 0.22, size * 0.2, size * 0.14))
-        empty = pygame.Surface((size, size), pygame.SRCALPHA)
-        _heart_shape(empty, size, (215, 210, 200, 210), 0)
-        _heart_shape(empty, size, (22, 16, 16, 190), 2)
-        _heart_cache[size] = (full, empty)
-    return _heart_cache[size]
+def heart_surfs(size_px):
+    key = (size_px, VIEW.version)
+    if key not in _heart_cache:
+        big = size_px * 4   # sur-échantillonné puis réduit : bords lisses
+        full = pygame.Surface((big, big), pygame.SRCALPHA)
+        _heart_shape(full, big, (250, 247, 238), 0)
+        _heart_shape(full, big, (226, 38, 54), big * 0.07)
+        pygame.draw.ellipse(full, (255, 176, 176), (big * 0.2, big * 0.22, big * 0.2, big * 0.13))
+        empty = pygame.Surface((big, big), pygame.SRCALPHA)
+        _heart_shape(empty, big, (220, 216, 206, 215), 0)
+        _heart_shape(empty, big, (22, 16, 16, 200), big * 0.07)
+        _heart_cache[key] = (pygame.transform.smoothscale(full, (size_px, size_px)),
+                             pygame.transform.smoothscale(empty, (size_px, size_px)))
+    return _heart_cache[key]
 
 
 def draw_heart(surf, x, y, frac, size=HEART):
-    full, empty = heart_surfs(size)
-    surf.blit(empty, (x, y))
+    px = max(4, int(size * VIEW.s))
+    full, empty = heart_surfs(px)
+    X, Y = round(x * VIEW.s), round(y * VIEW.s)
+    surf.blit(empty, (X, Y))
     if frac <= 0:
         return
     if frac >= 1:
-        surf.blit(full, (x, y))
+        surf.blit(full, (X, Y))
         return
     part = full.copy()
-    # efface la portion manquante (en quarts, comme dans Zelda)
-    c = size / 2
+    c = px / 2
     a0 = -math.pi / 2 + math.tau * frac
-    pts = [(c, c)] + [(c + math.cos(a0 + (math.tau * (1 - frac)) * i / 16) * size,
-                       c + math.sin(a0 + (math.tau * (1 - frac)) * i / 16) * size) for i in range(17)]
+    pts = [(c, c)] + [(c + math.cos(a0 + math.tau * (1 - frac) * i / 20) * px,
+                       c + math.sin(a0 + math.tau * (1 - frac) * i / 20) * px) for i in range(21)]
     pygame.draw.polygon(part, (0, 0, 0, 0), pts)
-    surf.blit(part, (x, y))
+    surf.blit(part, (X, Y))
 
 
 def draw_hearts(surf, world, x, y):
@@ -73,54 +84,63 @@ def draw_hearts(surf, world, x, y):
             frac = math.ceil(frac * 4) / 4
         hx = x + (i % 10) * (HEART + 3)
         hy = y + (i // 10) * (HEART + 3)
-        last_filled = frac > 0 and (i + 1 >= n or hp - (i + 1) * per <= 0)
-        if low and last_filled:
-            k = 1 + 0.18 * max(0, math.sin(world.time * 9))
-            size = int(HEART * k)
-            d = (size - HEART) // 2
-            draw_heart(surf, hx - d, hy - d, frac, size)
+        last = frac > 0 and (i + 1 >= n or hp - (i + 1) * per <= 0)
+        if low and last:
+            k = 1 + 0.2 * max(0, math.sin(world.time * 9))
+            size = HEART * k
+            draw_heart(surf, hx - (size - HEART) / 2, hy - (size - HEART) / 2, frac, size)
         else:
             draw_heart(surf, hx, hy, frac)
-    rows = (n - 1) // 10 + 1
-    return y + rows * (HEART + 3)
+    return y + ((n - 1) // 10 + 1) * (HEART + 3)
 
 
-# --------------------------------------------------------------------------- roue de mana (façon endurance)
-def draw_mana_wheel(surf, world, sx, sy):
+# --------------------------------------------------------------------------- roue de mana
+def _ring(surf, cx, cy, r_out, r_in, frac, color):
+    if frac <= 0:
+        return
+    n = max(3, int(48 * frac))
+    outer = [(cx + math.cos(-math.pi / 2 + math.tau * frac * i / n) * r_out,
+              cy + math.sin(-math.pi / 2 + math.tau * frac * i / n) * r_out) for i in range(n + 1)]
+    inner = [(cx + math.cos(-math.pi / 2 + math.tau * frac * i / n) * r_in,
+              cy + math.sin(-math.pi / 2 + math.tau * frac * i / n) * r_in) for i in range(n + 1)]
+    pygame.draw.polygon(surf, color, outer + inner[::-1])
+
+
+def draw_mana_wheel(surf, world, x, y):
     p = world.player
     frac = max(0.0, min(1.0, p.mana / p.stats["max_mana"]))
     target = 0 if frac >= 0.999 else 255
-    a = world.wheel_alpha = world.wheel_alpha + (target - world.wheel_alpha) * 0.12
+    world.wheel_alpha += (target - world.wheel_alpha) * 0.12
+    a = world.wheel_alpha
     if a < 4:
         return
-    r_out, r_in = 17, 10
-    size = r_out * 2 + 4
-    s = pygame.Surface((size, size), pygame.SRCALPHA)
+    s = VIEW.s
+    ro, ri = 17 * s, 10 * s
+    size = int(ro * 2 + 6)
+    t = pygame.Surface((size, size), pygame.SRCALPHA)
     c = size / 2
-
-    def ring(f, color):
-        if f <= 0:
-            return
-        n = max(2, int(40 * f))
-        outer = [(c + math.cos(-math.pi / 2 + math.tau * f * i / n) * r_out,
-                  c + math.sin(-math.pi / 2 + math.tau * f * i / n) * r_out) for i in range(n + 1)]
-        inner = [(c + math.cos(-math.pi / 2 + math.tau * f * i / n) * r_in,
-                  c + math.sin(-math.pi / 2 + math.tau * f * i / n) * r_in) for i in range(n + 1)]
-        pygame.draw.polygon(s, color, outer + inner[::-1])
-    ring(1.0, (20, 30, 40, 170))
+    _ring(t, c, c, ro, ri, 1.0, (20, 30, 40, 170))
     empty = frac < 0.15 and int(world.time * 6) % 2
-    ring(frac, (230, 80, 60, 255) if empty else (*SHEIKAH, 255))
-    pygame.draw.circle(s, (240, 240, 235, 200), (c, c), r_out + 1, 1)
-    s.set_alpha(int(a))
-    surf.blit(s, (sx + 26 - c, sy - 58 - c))
+    _ring(t, c, c, ro, ri, frac, (235, 90, 70, 255) if empty else (*SHEIKAH, 255))
+    pygame.draw.circle(t, (240, 240, 235, 200), (c, c), ro + 1, max(1, int(s)))
+    t.set_alpha(int(a))
+    surf.blit(t, (x * s - c, y * s - c))
 
 
-# --------------------------------------------------------------------------- barre de sorts
-def rounded_box(surf, rect, alpha=150, border=HUD_LINE, radius=9):
-    s = pygame.Surface(rect.size, pygame.SRCALPHA)
-    pygame.draw.rect(s, (0, 0, 0, alpha), s.get_rect(), border_radius=radius)
-    surf.blit(s, rect)
-    pygame.draw.rect(surf, border, rect, 1, border_radius=radius)
+# --------------------------------------------------------------------------- emplacements
+def _cooldown(surf, rect, frac, radius=10):
+    if frac <= 0:
+        return
+    pr = ui.R(rect)
+    t = pygame.Surface(pr.size, pygame.SRCALPHA)
+    cx, cy = pr.w / 2, pr.h / 2
+    pts = [(cx, cy)] + [(cx + math.cos(-math.pi / 2 + math.tau * frac * i / 30) * pr.w,
+                         cy + math.sin(-math.pi / 2 + math.tau * frac * i / 30) * pr.h) for i in range(31)]
+    pygame.draw.polygon(t, (0, 0, 0, 175), pts)
+    mask = pygame.Surface(pr.size, pygame.SRCALPHA)
+    pygame.draw.rect(mask, (255, 255, 255, 255), mask.get_rect(), border_radius=int(radius * VIEW.s))
+    t.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
+    surf.blit(t, pr)
 
 
 def spell_label(name):
@@ -128,322 +148,451 @@ def spell_label(name):
     return (parts[0][0] + (parts[-1][0] if len(parts) > 1 else parts[0][1])).upper()
 
 
-def draw_skill_slot(surf, rect, color, label, key, cd_frac, locked, lacking, level_req=0):
-    rounded_box(surf, rect, 150, HUD_LINE if not locked else (110, 110, 105))
+def slot_box(surf, rect, border=UI_LINE, alpha=150):
+    ui.botw_box(surf, rect, alpha, border, radius=10)
+
+
+def draw_skill(surf, rect, color, label, key, cd_frac, cd_left, locked, lacking, level_req=0):
+    slot_box(surf, rect, UI_LINE if not locked else (110, 110, 105))
+    c = rect.center
     if locked:
-        draw_text(surf, f"Niv {level_req}", rect.center, 13, TEXT_DIM, anchor="center", shadow=False)
+        ui.draw_text(surf, f"Niv {level_req}", c, 13, TEXT_DIM, anchor="center", shadow=False)
     else:
-        pygame.draw.circle(surf, darker(color, 0.45), rect.center, rect.w * 0.34)
-        pygame.draw.circle(surf, lighter(color, 1.2), rect.center, rect.w * 0.34, 2)
-        draw_text(surf, label, rect.center, 17, WHITE, "title", anchor="center")
+        ui.circle(surf, ui.darker(color, 0.4), c, rect.w * 0.34)
+        ui.circle(surf, ui.lighter(color, 1.2), c, rect.w * 0.34, 2)
+        ui.draw_text(surf, label, c, 17, WHITE, "title_bold", anchor="center")
         if lacking:
-            s = pygame.Surface(rect.size, pygame.SRCALPHA)
-            pygame.draw.rect(s, (30, 60, 160, 120), s.get_rect(), border_radius=9)
-            surf.blit(s, rect)
-        if cd_frac > 0:
-            s = pygame.Surface(rect.size, pygame.SRCALPHA)
-            cx, cy = rect.w / 2, rect.h / 2
-            pts = [(cx, cy)] + [(cx + math.cos(-math.pi / 2 + math.tau * cd_frac * i / 24) * rect.w,
-                                 cy + math.sin(-math.pi / 2 + math.tau * cd_frac * i / 24) * rect.h) for i in range(25)]
-            pygame.draw.polygon(s, (0, 0, 0, 175), pts)
-            mask = pygame.Surface(rect.size, pygame.SRCALPHA)
-            pygame.draw.rect(mask, (255, 255, 255, 255), mask.get_rect(), border_radius=9)
-            s.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
-            surf.blit(s, rect)
-    key_badge(surf, key, rect)
+            ui.rect(surf, (30, 60, 170, 120), rect, 0, 10)
+        _cooldown(surf, rect, cd_frac)
+        if cd_left > 0.95:
+            ui.draw_text(surf, f"{cd_left:.0f}", c, 17, WHITE, "bold", anchor="center")
+    ui.key_badge(surf, key, (rect.centerx, rect.bottom), 11)
 
 
-def key_badge(surf, key, rect):
-    w = max(20, text_surf(key, 11, WHITE).get_width() + 10)
-    kr = pygame.Rect(0, 0, w, 16)
-    kr.center = (rect.centerx, rect.bottom)
-    pygame.draw.rect(surf, (15, 15, 15), kr, border_radius=5)
-    pygame.draw.rect(surf, HUD_LINE, kr, 1, border_radius=5)
-    draw_text(surf, key, kr.center, 11, WHITE, anchor="center", shadow=False)
-
-
-def draw_skills(surf, world):
+def draw_slots(surf, world):
     p = world.player
-    size, gap = 50, 12
-    x0 = SCREEN_W // 2 - (6 * size + 5 * gap) // 2
-    y0 = SCREEN_H - size - 26
     world.skill_rects = []
+    size, gap = 52, 10
+    right = SCREEN_W - 22
+    y0 = 20
     atk = p.cls["attack"]
-    rc = pygame.Rect(x0, y0, size, size)
-    draw_skill_slot(surf, rc, atk.get("color", p.cls["color"]), spell_label(atk["name"]), "LMB",
-                    p.atk_cd / max(0.01, atk["cd"]), False, False)
-    world.skill_rects.append((rc, ("attack", None)))
-    for i, sid in enumerate(p.spells):
-        sp = SPELLS[sid]
-        rc = pygame.Rect(x0 + (i + 1) * (size + gap), y0, size, size)
-        tot = p.cd_total.get(sid, 1) or 1
-        draw_skill_slot(surf, rc, sp["color"], spell_label(sp["name"]), str(i + 1), p.cds.get(sid, 0) / tot,
-                        not p.spell_unlocked(sid), p.mana < sp["mana"], sp["level"])
-        world.skill_rects.append((rc, ("spell", sid)))
-    rc = pygame.Rect(x0 + 5 * (size + gap), y0, size, size)
-    rounded_box(surf, rc)
-    fx, fy = rc.centerx, rc.centery + 3
-    pygame.draw.circle(surf, (200, 30, 40), (fx, fy + 3), 12)
-    pygame.draw.rect(surf, (200, 30, 40), (fx - 4, fy - 12, 8, 8))
-    pygame.draw.rect(surf, (230, 220, 200), (fx - 5, fy - 15, 10, 4))
-    pygame.draw.circle(surf, (255, 160, 160), (fx - 4, fy), 3)
-    if p.potion_cd > 0:
-        s = pygame.Surface(rc.size, pygame.SRCALPHA)
-        pygame.draw.rect(s, (0, 0, 0, 150), s.get_rect(), border_radius=9)
-        surf.blit(s, rc)
-    draw_text(surf, f"x{p.potions}", (rc.right - 4, rc.y + 2), 13, WHITE, anchor="topright")
-    key_badge(surf, "F", rc)
-    world.skill_rects.append((rc, ("potion", None)))
+    entries = [("attack", None)] + [("spell", sid) for sid in p.spells]
+    x0 = right - len(entries) * size - (len(entries) - 1) * gap
+    for i, (kind, sid) in enumerate(entries):
+        rc = pygame.Rect(x0 + i * (size + gap), y0, size, size)
+        if kind == "attack":
+            draw_skill(surf, rc, atk.get("color", p.cls["color"]), spell_label(atk["name"]), "LMB",
+                       p.atk_cd / max(0.01, atk["cd"]), 0, False, False)
+        else:
+            sp = SPELLS[sid]
+            tot = p.cd_total.get(sid, 1) or 1
+            cd = p.cds.get(sid, 0)
+            draw_skill(surf, rc, sp["color"], spell_label(sp["name"]), str(i), cd / tot, cd,
+                       not p.spell_unlocked(sid), p.mana < sp["mana"], sp["level"])
+        world.skill_rects.append((rc, (kind, sid)))
+    # rangée 2 : artefacts, potion, roulade
+    s2, g2 = 44, 12
+    y1 = y0 + size + 18
+    row = [("art", slot) for slot in ART_SLOTS] + [("potion", None), ("roll", None)]
+    x1 = right - len(row) * s2 - (len(row) - 1) * g2
+    for i, (kind, key) in enumerate(row):
+        rc = pygame.Rect(x1 + i * (s2 + g2), y1, s2, s2)
+        if kind == "art":
+            it = p.equipment.get(key)
+            slot_box(surf, rc, RARITY_COLORS[it["rarity"]] if it else (100, 100, 98), 150 if it else 90)
+            if it:
+                a = ARTIFACTS[it["art"]]
+                ui.draw_artifact_icon(surf, it["art"], rc, a["color"])
+                cd = p.art_cds.get(key, 0)
+                _cooldown(surf, rc, cd / (p.art_total.get(key, 1) or 1))
+                if cd > 0.95:
+                    ui.draw_text(surf, f"{cd:.0f}", rc.center, 15, WHITE, "bold", anchor="center")
+            ui.key_badge(surf, ARTIFACT_KEYS[i], (rc.centerx, rc.bottom), 10)
+        elif kind == "potion":
+            slot_box(surf, rc)
+            fx, fy = rc.centerx, rc.centery + 3
+            ui.circle(surf, (210, 34, 46), (fx, fy + 3), 11)
+            ui.rect(surf, (210, 34, 46), (fx - 4, fy - 11, 8, 8))
+            ui.rect(surf, (230, 220, 200), (fx - 5, fy - 14, 10, 4))
+            ui.circle(surf, (255, 170, 170), (fx - 4, fy), 3)
+            _cooldown(surf, rc, p.potion_cd / max(0.01, p.potion_total))
+            if p.potion_cd > 0.95:
+                ui.draw_text(surf, f"{p.potion_cd:.0f}", rc.center, 15, WHITE, "bold", anchor="center")
+            ui.key_badge(surf, "F", (rc.centerx, rc.bottom), 10)
+        else:
+            slot_box(surf, rc)
+            c = rc.center
+            ui.arc(surf, (180, 230, 190), pygame.Rect(c[0] - 12, c[1] - 12, 24, 24), 0.6, 5.4, 3)
+            ui.polygon(surf, (180, 230, 190), [(c[0] + 12, c[1] - 2), (c[0] + 6, c[1] - 12), (c[0] + 16, c[1] - 10)])
+            _cooldown(surf, rc, p.roll_cd / max(0.01, p.roll_total))
+            ui.key_badge(surf, "Espace", (rc.centerx, rc.bottom), 10)
+        world.skill_rects.append((rc, (kind, key)))
+    # or : apparaît brièvement quand il change (comme les rubis)
+    if world.gold_shown > 0 or world.show_inv:
+        a = min(1.0, world.gold_shown / 0.5) if not world.show_inv else 1.0
+        r = pygame.Rect(right - 130, y1 + s2 + 20, 130, 28)
+        ui.botw_box(surf, r, int(150 * a), None, radius=14)
+        ui.circle(surf, (240, 196, 70), (r.x + 16, r.centery), 8)
+        ui.circle(surf, (255, 230, 140), (r.x + 14, r.centery - 2), 3)
+        ui.draw_text(surf, f"{world.player.gold}", (r.right - 12, r.centery), 16, WHITE, "bold",
+                     anchor="midright", alpha=int(255 * a))
+
+
+# --------------------------------------------------------------------------- effets actifs (sous les cœurs)
+def draw_effects(surf, world, x, y):
+    p = world.player
+    world.anima_rects = []
+    items = []
+    for key, name, col in (("cri", "Cri de guerre", (255, 90, 60)), ("bottes", "Célérité", (120, 220, 230)),
+                           ("talisman", "Talisman de fer", (210, 214, 230))):
+        if key in p.buffs:
+            items.append(("buff", key, name, col, p.buffs[key]))
+    for pid, n in p.anima.items():
+        items.append(("anima", pid, ANIMA_POWERS[pid]["name"], ANIMA_POWERS[pid]["color"], n))
+    for i, (kind, key, name, col, val) in enumerate(items):
+        c = (x + 14 + (i % 9) * 32, y + 14 + (i // 9) * 32)
+        ui.circle(surf, (0, 0, 0, 170), c, 14)
+        ui.circle(surf, ui.darker(col, 0.55), c, 11)
+        ui.circle(surf, col, c, 14, 1)
+        txt = f"{val:.0f}" if kind == "buff" else f"x{val}"
+        ui.draw_text(surf, txt, c, 11, WHITE, "bold", anchor="center")
+        world.anima_rects.append((pygame.Rect(c[0] - 14, c[1] - 14, 28, 28), (kind, key, name, val)))
 
 
 # --------------------------------------------------------------------------- HUD principal
 def draw_hud(surf, world):
     p = world.player
     y = draw_hearts(surf, world, 22, 20)
-    # niveau et expérience, discrets sous les cœurs
     need = xp_needed(p.level)
-    draw_text(surf, f"Niv. {p.level}", (22, y + 4), 15, WHITE)
-    bar = pygame.Rect(76, y + 11, 180, 5)
-    pygame.draw.rect(surf, (0, 0, 0), bar.inflate(2, 2), border_radius=3)
-    pygame.draw.rect(surf, (235, 200, 90), (bar.x, bar.y, bar.w * min(1, p.xp / need), bar.h), border_radius=3)
+    ui.draw_text(surf, f"Niv. {p.level}", (22, y + 3), 15, WHITE, "bold")
+    bar = pygame.Rect(78, y + 11, 170, 5)
+    ui.rect(surf, (0, 0, 0, 200), bar.inflate(2, 2), 0, 3)
+    ui.rect(surf, (236, 200, 90), (bar.x, bar.y, max(1, bar.w * min(1, p.xp / need)), bar.h), 0, 3)
     y += 26
+    hints = []
     if p.points:
-        draw_text(surf, f"+{p.points} points à répartir  [C]", (22, y), 14, (140, 235, 140))
-        y += 20
-    if "cri" in p.buffs:
-        draw_text(surf, f"Cri de guerre  {p.buffs['cri']:.0f}s", (22, y), 14, (255, 120, 90))
-        y += 20
-    draw_text(surf, f"{p.gold} or", (22, y), 14, GOLD_BRIGHT)
-    draw_skills(surf, world)
-    # pouvoirs d'anima : pastilles en haut à droite
-    world.anima_rects = []
-    for i, (pid, n) in enumerate(p.anima.items()):
-        pw = ANIMA_POWERS[pid]
-        c = (SCREEN_W - 30 - (i % 10) * 34, 30 + (i // 10) * 34)
-        pygame.draw.circle(surf, (0, 0, 0), c, 14)
-        pygame.draw.circle(surf, darker(pw["color"], 0.5), c, 12)
-        pygame.draw.circle(surf, HUD_LINE, c, 14, 1)
-        draw_text(surf, str(n), c, 13, WHITE, anchor="center")
-        world.anima_rects.append((pygame.Rect(c[0] - 14, c[1] - 14, 28, 28), pid))
-    if not world.big_map:
-        draw_minimap(surf, world)
+        hints.append((f"+{p.points} points de caractéristique", (140, 235, 140)))
+    if p.ench_points > 0:
+        hints.append((f"+{p.ench_points} point(s) d'enchantement", (200, 150, 255)))
+    for txt, col in hints:
+        ui.draw_text(surf, txt + "  [C / I]", (22, y), 13, col, "bold")
+        y += 19
+    draw_effects(surf, world, 18, y + 2)
+    draw_slots(surf, world)
+    draw_minimap(surf, world)
+    draw_gauges(surf, world)
     draw_top(surf, world)
+    draw_notifs(surf, world)
     draw_messages(surf, world)
 
 
 def draw_hud_tooltips(surf, world):
-    mouse = pygame.mouse.get_pos()
+    mouse = ui.mouse_pos()
     p = world.player
     for rc, (kind, sid) in world.skill_rects:
+        if not rc.collidepoint(mouse):
+            continue
+        if kind == "attack":
+            a = p.cls["attack"]
+            lines = [(a["name"], GOLD_BRIGHT, 17), ("Attaque de base (clic gauche maintenu)", TEXT_DIM, 14),
+                     (f"{int(a['mult'] * 100)}% des dégâts de l'arme", TEXT, 15)]
+            if a.get("mana_gain"):
+                lines.append((f"Chaque ennemi touché rend {a['mana_gain']} mana", (120, 160, 255), 14))
+        elif kind == "spell":
+            sp = SPELLS[sid]
+            lines = [(sp["name"], GOLD_BRIGHT, 17), (f"Mana {sp['mana']}  ·  Recharge {sp['cd']} s", (120, 170, 255), 14)]
+            lines += [(l, TEXT, 15) for l in ui.wrap(sp["desc"], 15, 300)]
+            if not p.spell_unlocked(sid):
+                lines.append((f"Débloqué au niveau {sp['level']}", (240, 100, 80), 14))
+        elif kind == "art":
+            it = p.equipment.get(sid)
+            if it:
+                ui.item_tooltip(surf, it, (mouse[0], mouse[1] + 10), p, side="left")
+                return
+            lines = [("Emplacement d'artefact", GOLD_BRIGHT, 17),
+                     ("Équipez un artefact depuis l'inventaire (I).", TEXT, 15)]
+        elif kind == "potion":
+            lines = [("Potion de soins", GOLD_BRIGHT, 17), ("Rend 50% de la vie maximum (touche F).", TEXT, 15),
+                     (f"Recharge : {p.potion_total:.0f} s", (120, 170, 255), 14)]
+        else:
+            lines = [("Roulade", GOLD_BRIGHT, 17), ("Esquive rapide et invulnérable (Espace).", TEXT, 15),
+                     (f"Recharge : {p.roll_total:.1f} s", (120, 170, 255), 14)]
+        ui.draw_tooltip_lines(surf, lines, (mouse[0], mouse[1] + 10), side="left")
+        return
+    for rc, (kind, key, name, val) in world.anima_rects:
         if rc.collidepoint(mouse):
-            if kind == "attack":
-                a = p.cls["attack"]
-                lines = [(a["name"], GOLD_BRIGHT, 18), ("Attaque de base (clic gauche maintenu)", TEXT_DIM, 14),
-                         (f"{int(a['mult'] * 100)}% des dégâts de l'arme", TEXT, 15)]
-                if a.get("mana_gain"):
-                    lines.append((f"Chaque ennemi touché rend {a['mana_gain']} mana", (120, 150, 255), 14))
-            elif kind == "spell":
-                sp = SPELLS[sid]
-                lines = [(sp["name"], GOLD_BRIGHT, 18),
-                         (f"Mana : {sp['mana']}   ·   Recharge : {sp['cd']} s", (120, 150, 255), 14)]
-                lines += [(l, TEXT, 15) for l in wrap(sp["desc"], 15, 300)]
-                if not p.spell_unlocked(sid):
-                    lines.append((f"Débloqué au niveau {sp['level']}", (230, 90, 70), 14))
+            if kind == "anima":
+                pw = ANIMA_POWERS[key]
+                ui.draw_tooltip_lines(surf, [(f"{name}  x{val}", pw["color"], 16), (anima_desc(key, val), TEXT, 15),
+                                             ("Pouvoir d'anima (dure l'ascension)", TEXT_DIM, 13)], mouse)
             else:
-                lines = [("Potion de soins", GOLD_BRIGHT, 18), ("Rend 45% de la vie maximum (touche F)", TEXT, 15),
-                         (f"{p.potions} en réserve", TEXT_DIM, 14)]
-            draw_tooltip_lines(surf, lines, (mouse[0], mouse[1] - 160))
-            return
-    for rc, pid in world.anima_rects:
-        if rc.collidepoint(mouse):
-            pw = ANIMA_POWERS[pid]
-            draw_tooltip_lines(surf, [(f"{pw['name']} x{p.anima[pid]}", pw["color"], 17), (pw["desc"], TEXT, 15)],
-                               mouse, side="left")
+                ui.draw_tooltip_lines(surf, [(name, GOLD_BRIGHT, 16), (f"{val:.1f} s restantes", TEXT, 14)], mouse)
             return
 
 
-# --------------------------------------------------------------------------- minicarte circulaire
+# --------------------------------------------------------------------------- minicarte
 _mask_cache = {}
 
 
-def _circle_mask(r):
-    if r not in _mask_cache:
-        m = pygame.Surface((r * 2, r * 2), pygame.SRCALPHA)
-        pygame.draw.circle(m, (255, 255, 255, 255), (r, r), r)
-        _mask_cache[r] = m
-    return _mask_cache[r]
+def _round_mask(w, h, r):
+    key = (w, h, r)
+    if key not in _mask_cache:
+        m = pygame.Surface((w, h), pygame.SRCALPHA)
+        pygame.draw.rect(m, (255, 255, 255, 255), m.get_rect(), border_radius=r)
+        _mask_cache[key] = m
+    return _mask_cache[key]
 
 
-def _player_arrow(surf, x, y, ang, size=9):
+def _rot(dx, dy):
+    """Rotation de 45° : l'orientation de la carte suit celle de la caméra."""
+    return (dx - dy) * 0.7071, (dx + dy) * 0.7071
+
+
+def _arrow(surf, x, y, ang, size):
+    s = VIEW.s
     pts = [(x + math.cos(ang) * size, y + math.sin(ang) * size),
            (x + math.cos(ang + 2.5) * size * 0.8, y + math.sin(ang + 2.5) * size * 0.8),
-           (x + math.cos(ang + math.pi) * size * 0.25, y + math.sin(ang + math.pi) * size * 0.25),
+           (x + math.cos(ang + math.pi) * size * 0.2, y + math.sin(ang + math.pi) * size * 0.2),
            (x + math.cos(ang - 2.5) * size * 0.8, y + math.sin(ang - 2.5) * size * 0.8)]
-    pygame.draw.polygon(surf, (255, 222, 60), pts)
-    pygame.draw.polygon(surf, (60, 40, 0), pts, 1)
+    pygame.draw.polygon(surf, (255, 224, 60), [(a * s, b * s) for a, b in pts])
+    pygame.draw.polygon(surf, (70, 50, 0), [(a * s, b * s) for a, b in pts], max(1, int(s)))
+
+
+def _markers(surf, world, cx, cy, scale, clip):
+    """Repères en coordonnées de conception ; scale = unités de conception par unité monde."""
+    p = world.player
+    seen = world.minimap.seen
+
+    def pos(x, y):
+        u, v = _rot((x - p.x) * scale, (y - p.y) * scale)
+        return cx + u, cy + v
+    for m in world.monsters:
+        if m.dead or (int(m.x // 40), int(m.y // 40)) not in seen:
+            continue
+        x, y = pos(m.x, m.y)
+        if not clip.collidepoint(x, y):
+            continue
+        if m.boss:
+            ui.circle(surf, (255, 70, 70), (x, y), 6)
+            ui.circle(surf, WHITE, (x, y), 6, 1)
+        elif math.hypot(m.x - p.x, m.y - p.y) < 560:
+            ui.circle(surf, (255, 180, 60) if m.elite else (240, 80, 70), (x, y), 3 if m.elite else 2.2)
+    for o in world.interactables:
+        name = o.__class__.__name__
+        if name not in ("Portal", "Chest", "NPC") or (int(o.x // 40), int(o.y // 40)) not in seen:
+            continue
+        x, y = pos(o.x, o.y)
+        if not clip.collidepoint(x, y):
+            continue
+        if name == "Portal":
+            pts = [(x, y - 7), (x + 6, y), (x, y + 7), (x - 6, y)]
+            ui.polygon(surf, SHEIKAH, pts)
+            ui.polygon(surf, WHITE, pts, 1)
+        elif name == "Chest" and not o.opened:
+            ui.rect(surf, (244, 204, 80), (x - 4, y - 3, 8, 6))
+        elif name == "NPC":
+            ui.circle(surf, (250, 222, 130), (x, y), 4.5)
+            ui.circle(surf, (60, 40, 10), (x, y), 4.5, 1)
+    for l in world.loot:
+        if l.kind == "anima":
+            x, y = pos(l.x, l.y)
+            if clip.collidepoint(x, y):
+                ui.circle(surf, (130, 200, 255), (x, y), 3.5)
 
 
 def draw_minimap(surf, world):
     mm = world.minimap
     p = world.player
-    R = MM_R
-    zoom = 2
-    k = mm.S * zoom / 40  # pixels écran par pixel monde
-    cx, cy = MM_CENTER
-    disc = pygame.Surface((R * 2, R * 2), pygame.SRCALPHA)
-    disc.fill((12, 22, 28, 175))
-    # portion de carte autour du joueur, agrandie
-    src_w = int(R * 2 / zoom) + 2
-    sx, sy = p.x / 40 * mm.S - src_w / 2, p.y / 40 * mm.S - src_w / 2
-    area = pygame.Surface((src_w, src_w), pygame.SRCALPHA)
-    area.blit(mm.surf, (-sx, -sy))
-    area = pygame.transform.scale(area, (src_w * zoom, src_w * zoom))
-    disc.blit(area, (R - src_w * zoom / 2, R - src_w * zoom / 2))
-    # repères
-    ox, oy = R - p.x * k, R - p.y * k
-    seen = mm.seen
-    for m in world.monsters:
-        if m.dead or (int(m.x // 40), int(m.y // 40)) not in seen:
-            continue
-        mx, my = ox + m.x * k, oy + m.y * k
-        if m.boss:
-            pygame.draw.circle(disc, (255, 60, 60), (mx, my), 6)
-            pygame.draw.circle(disc, WHITE, (mx, my), 6, 1)
-        elif math.hypot(m.x - p.x, m.y - p.y) < 520:
-            pygame.draw.circle(disc, (255, 170, 60) if m.elite else (240, 70, 60), (mx, my), 3 if m.elite else 2)
-    _markers(disc, world, ox, oy, k)
-    disc.blit(_circle_mask(R), (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
-    surf.blit(disc, (cx - R, cy - R))
-    # cadre
-    pygame.draw.circle(surf, (0, 0, 0), (cx, cy), R + 4, 3)
-    pygame.draw.circle(surf, HUD_LINE, (cx, cy), R + 1, 2)
-    for i in range(24):
-        a = i / 24 * math.tau
-        l = 6 if i % 6 == 0 else 3
-        pygame.draw.line(surf, HUD_LINE, (cx + math.cos(a) * (R + 2), cy + math.sin(a) * (R + 2)),
-                         (cx + math.cos(a) * (R + 2 + l), cy + math.sin(a) * (R + 2 + l)), 1)
-    nx, ny = cx, cy - R - 2
-    pygame.draw.circle(surf, (20, 20, 20), (nx, ny), 10)
-    pygame.draw.circle(surf, HUD_LINE, (nx, ny), 10, 1)
-    draw_text(surf, "N", (nx, ny), 13, WHITE, anchor="center", shadow=False)
-    _player_arrow(surf, cx, cy, p.facing)
-    title, _ = world.hud_title()
+    s = VIEW.s
+    zoom = 2.2                         # unités de conception par pixel de minicarte
+    box = MM
+    src = int(box.w * 1.45 / zoom) + 4
+    px, py = p.x / 40 * mm.S, p.y / 40 * mm.S
+    area = pygame.Surface((src, src), pygame.SRCALPHA)
+    area.blit(mm.surf, (-(px - src / 2), -(py - src / 2)))
+    rot = pygame.transform.rotate(area, -45)
+    k = zoom * s
+    rot = pygame.transform.smoothscale(rot, (int(rot.get_width() * k), int(rot.get_height() * k)))
+    pb = ui.R(box)
+    disc = pygame.Surface(pb.size, pygame.SRCALPHA)
+    disc.fill((10, 20, 26, 190))
+    disc.blit(rot, (pb.w / 2 - rot.get_width() / 2, pb.h / 2 - rot.get_height() / 2))
+    disc.blit(_round_mask(pb.w, pb.h, int(18 * s)), (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
+    surf.blit(disc, pb)
+    old = surf.get_clip()
+    surf.set_clip(pb)
+    _markers(surf, world, box.centerx, box.centery, zoom * mm.S / 40, box)
+    surf.set_clip(old)
+    ui.rect(surf, (0, 0, 0), box.inflate(6, 6), 3, 21)
+    ui.rect(surf, UI_LINE, box, 2, 18)
+    _arrow(surf, box.centerx, box.centery, math.atan2(*reversed(_rot(math.cos(p.facing), math.sin(p.facing)))), 9)
+    n = (box.centerx, box.y - 2)
+    ui.circle(surf, (16, 18, 20), n, 10)
+    ui.circle(surf, UI_LINE, n, 10, 1)
+    ui.draw_text(surf, "N", n, 12, WHITE, "bold", anchor="center", shadow=False)
+    title, sub = world.hud_title()
     if title:
-        draw_text(surf, title, (cx, cy + R + 8), 13, WHITE, anchor="midtop")
+        ui.draw_text(surf, title, (box.right, box.y - 18), 14, WHITE, "bold", anchor="bottomright")
 
 
-def _markers(surf, world, ox, oy, k):
-    seen = world.minimap.seen
-    for o in world.interactables:
-        name = o.__class__.__name__
-        if (int(o.x // 40), int(o.y // 40)) not in seen or name == "Campfire":
-            continue
-        x, y = ox + o.x * k, oy + o.y * k
-        if name == "Portal":
-            pts = [(x, y - 7), (x + 6, y), (x, y + 7), (x - 6, y)]
-            pygame.draw.polygon(surf, SHEIKAH, pts)
-            pygame.draw.polygon(surf, WHITE, pts, 1)
-        elif name == "Chest":
-            if not o.opened:
-                pygame.draw.rect(surf, (240, 200, 70), (x - 4, y - 3, 8, 6))
-                pygame.draw.rect(surf, (80, 50, 10), (x - 4, y - 3, 8, 6), 1)
-        else:
-            pygame.draw.circle(surf, (250, 220, 120), (x, y), 5)
-            pygame.draw.circle(surf, (60, 40, 10), (x, y), 5, 1)
+def draw_gauges(surf, world):
+    """Jauge « thermomètre » (sceau du gardien) et jauge de « bruit » (menace) à gauche de la minicarte."""
+    t = world.time
+    x = MM.x - 22
+    prog = world.seal_progress()
+    if prog is not None:
+        frac, broken = prog
+        top, bot = MM.y + 10, MM.bottom - 26
+        ui.rect(surf, (0, 0, 0, 170), (x - 6, top - 4, 12, bot - top + 8), 0, 6)
+        h = (bot - top) * min(1.0, frac)
+        col = (255, 110, 60) if not broken else (120, 230, 140)
+        ui.rect(surf, col, (x - 3, bot - h, 6, h), 0, 3)
+        for i in range(1, 5):
+            yy = top + (bot - top) * i / 5
+            ui.line(surf, (200, 200, 196), (x - 9, yy), (x - 6, yy), 1)
+        ui.circle(surf, (0, 0, 0, 170), (x, MM.bottom - 12), 11)
+        ui.circle(surf, col, (x, MM.bottom - 12), 8)
+        ui.rect(surf, UI_LINE, (x - 6, top - 4, 12, bot - top + 8), 1, 6)
+        x -= 34
+    threat = sum(1 for m in world.monsters if m.aggro and not m.dead)
+    cx, cy = x, MM.bottom - 26
+    ui.circle(surf, (0, 0, 0, 160), (cx, cy), 16)
+    ui.circle(surf, UI_LINE, (cx, cy), 16, 1)
+    amp = min(1.0, threat / 8)
+    pts = []
+    for i in range(17):
+        u = -12 + i * 1.5
+        pts.append((cx + u, cy + math.sin(t * 12 + i * 0.9) * 9 * amp * (1 - abs(u) / 13)))
+    ui.lines(surf, (255, 120, 90) if amp > 0.5 else (230, 230, 220), False, pts, 2)
 
 
-# --------------------------------------------------------------------------- grande carte (Tab)
 def draw_big_map(surf, world):
     mm = world.minimap
     p = world.player
-    veil = pygame.Surface((SCREEN_W, SCREEN_H), pygame.SRCALPHA)
-    veil.fill((10, 20, 26, 235))
-    surf.blit(veil, (0, 0))
+    ui.veil(surf, (8, 18, 24), 238)
     for x in range(0, SCREEN_W, 64):
-        pygame.draw.line(surf, (30, 52, 62), (x, 0), (x, SCREEN_H))
+        ui.line(surf, (26, 50, 60), (x, 0), (x, SCREEN_H))
     for y in range(0, SCREEN_H, 64):
-        pygame.draw.line(surf, (30, 52, 62), (0, y), (SCREEN_W, y))
-    area_w, area_h = SCREEN_W - 160, SCREEN_H - 170
-    scale = min(area_w / mm.surf.get_width(), area_h / mm.surf.get_height())
-    ms = pygame.transform.scale(mm.surf, (int(mm.surf.get_width() * scale), int(mm.surf.get_height() * scale)))
-    x0 = (SCREEN_W - ms.get_width()) // 2
-    y0 = (SCREEN_H - ms.get_height()) // 2 + 10
-    surf.blit(ms, (x0, y0))
-    k = mm.S * scale / 40
-    seen = mm.seen
-    for m in world.monsters:
-        if m.boss and not m.dead and (int(m.x // 40), int(m.y // 40)) in seen:
-            pygame.draw.circle(surf, (255, 60, 60), (x0 + m.x * k, y0 + m.y * k), 8)
-            pygame.draw.circle(surf, WHITE, (x0 + m.x * k, y0 + m.y * k), 8, 1)
-    _markers(surf, world, x0, y0, k)
-    _player_arrow(surf, x0 + p.x * k, y0 + p.y * k, p.facing, 12)
-    # cadre façon tablette
+        ui.line(surf, (26, 50, 60), (0, y), (SCREEN_W, y))
+    rot = pygame.transform.rotate(mm.surf, -45)
+    avail_w, avail_h = (SCREEN_W - 180) * VIEW.s, (SCREEN_H - 190) * VIEW.s
+    k = min(avail_w / rot.get_width(), avail_h / rot.get_height())
+    rot = pygame.transform.smoothscale(rot, (int(rot.get_width() * k), int(rot.get_height() * k)))
+    r = rot.get_rect(center=(SCREEN_W / 2 * VIEW.s, (SCREEN_H / 2 + 12) * VIEW.s))
+    surf.blit(rot, r)
+    # centre de la carte (monde) -> position du joueur à l'écran
+    scale = k / VIEW.s * mm.S / 40
+    cx0 = mm.surf.get_width() / 2 / mm.S * 40
+    cy0 = mm.surf.get_height() / 2 / mm.S * 40
+    u, v = _rot((p.x - cx0) * scale, (p.y - cy0) * scale)
+    pcx, pcy = r.centerx / VIEW.s + u, r.centery / VIEW.s + v
+    _markers(surf, world, pcx, pcy, scale, pygame.Rect(0, 0, SCREEN_W, SCREEN_H))
+    _arrow(surf, pcx, pcy, math.atan2(*reversed(_rot(math.cos(p.facing), math.sin(p.facing)))), 13)
     frame = pygame.Rect(40, 40, SCREEN_W - 80, SCREEN_H - 80)
     for (ax, ay), (dx, dy) in (((frame.left, frame.top), (1, 1)), ((frame.right, frame.top), (-1, 1)),
                                ((frame.left, frame.bottom), (1, -1)), ((frame.right, frame.bottom), (-1, -1))):
-        pygame.draw.line(surf, SHEIKAH, (ax, ay), (ax + dx * 40, ay), 2)
-        pygame.draw.line(surf, SHEIKAH, (ax, ay), (ax, ay + dy * 40), 2)
+        ui.line(surf, SHEIKAH, (ax, ay), (ax + dx * 44, ay), 2)
+        ui.line(surf, SHEIKAH, (ax, ay), (ax, ay + dy * 44), 2)
     title, sub = world.hud_title()
-    draw_text(surf, title or "Carte", (70, 56), 28, WHITE, "title")
+    ui.draw_text(surf, title or "Carte", (72, 54), 30, WHITE, "title")
     if sub:
-        draw_text(surf, sub, (72, 92), 15, (190, 215, 225))
-    legend = [((255, 222, 60), "Vous"), (SHEIKAH, "Portail"), ((240, 200, 70), "Coffre"), ((255, 60, 60), "Gardien")]
+        ui.draw_text(surf, sub, (74, 94), 15, (190, 215, 225))
+    legend = [((255, 224, 60), "Vous"), (SHEIKAH, "Portail"), ((244, 204, 80), "Coffre"), ((255, 70, 70), "Gardien"),
+              ((130, 200, 255), "Anima")]
     lx = SCREEN_W - 70
     for col, name in reversed(legend):
-        r = draw_text(surf, name, (lx, SCREEN_H - 70), 15, WHITE, anchor="bottomright")
-        pygame.draw.circle(surf, col, (r.x - 12, r.centery), 6)
-        lx = r.x - 34
-    draw_text(surf, "[Tab] Fermer", (70, SCREEN_H - 70), 15, (190, 215, 225), anchor="bottomleft")
+        rr = ui.draw_text(surf, name, (lx, SCREEN_H - 66), 15, WHITE, anchor="bottomright")
+        ui.circle(surf, col, (rr.x - 12, rr.centery), 6)
+        lx = rr.x - 34
+    ui.draw_text(surf, "[Tab] Fermer", (72, SCREEN_H - 66), 15, (190, 215, 225), anchor="bottomleft")
 
 
-# --------------------------------------------------------------------------- titre, boss, messages
+# --------------------------------------------------------------------------- éléments divers
+def draw_prompt(surf, text, pt):
+    """Bulle d'interaction façon BotW : touche ronde + libellé."""
+    tw, th = ui.text_size(text, 15, "bold")
+    r = pygame.Rect(0, 0, tw + 46, 30)
+    r.midleft = (pt[0] + 26, pt[1])
+    ui.botw_box(surf, r, 175, UI_LINE, radius=15)
+    b = (r.x + 16, r.centery)
+    ui.circle(surf, (245, 243, 235), b, 11)
+    ui.draw_text(surf, "E", b, 13, (20, 20, 20), "bold", anchor="center", shadow=False)
+    ui.draw_text(surf, text, (r.x + 34, r.centery), 15, WHITE, "bold", anchor="midleft")
+
+
+def low_hp_veil(surf, alpha):
+    w, h = surf.get_size()
+    key = ("veil", w, h)
+    v = _mask_cache.get(key)
+    if v is None:
+        v = pygame.Surface((w // 4, h // 4), pygame.SRCALPHA)
+        v.fill((150, 0, 0, 255))
+        cx, cy = v.get_width() / 2, v.get_height() / 2
+        n = 30
+        for i in range(n + 1):
+            k = i / n
+            a = int(255 * (1 - k) ** 2)
+            sx, sy = cx * (1.25 - 0.6 * k), cy * (1.25 - 0.6 * k)
+            pygame.draw.ellipse(v, (150, 0, 0, a), (cx - sx, cy - sy, sx * 2, sy * 2))
+        v = pygame.transform.smoothscale(v, (w, h))
+        _mask_cache[key] = v
+    t = v.copy()
+    t.set_alpha(int(alpha))
+    surf.blit(t, (0, 0))
+
+
 def draw_top(surf, world):
-    title, sub = world.hud_title()
-    if title and not world.big_map:
-        draw_text(surf, title, (SCREEN_W // 2, 12), 20, WHITE, "title", anchor="midtop")
-        if sub:
-            draw_text(surf, sub, (SCREEN_W // 2, 40), 15, (215, 225, 230), anchor="midtop")
     boss = world.active_boss()
     if boss:
         w = 560
-        r = pygame.Rect(SCREEN_W // 2 - w // 2, SCREEN_H - 128, w, 12)
-        draw_text(surf, boss.name, (r.x, r.y - 4), 18, WHITE, "title", anchor="bottomleft")
-        draw_text(surf, boss.title, (r.right, r.y - 5), 14, (215, 215, 210), anchor="bottomright")
-        pygame.draw.rect(surf, (0, 0, 0), r.inflate(4, 4), border_radius=6)
-        pygame.draw.rect(surf, (60, 10, 12), r, border_radius=5)
-        fw = int(r.w * max(0, boss.hp / boss.max_hp))
-        if fw > 0:
-            pygame.draw.rect(surf, (225, 40, 50), (r.x, r.y, fw, r.h), border_radius=5)
-            pygame.draw.line(surf, (255, 140, 140), (r.x + 4, r.y + 2), (r.x + fw - 4, r.y + 2))
-        pygame.draw.rect(surf, HUD_LINE, r.inflate(4, 4), 1, border_radius=6)
-
-
-def draw_messages(surf, world):
-    y = SCREEN_H - 120
-    for text, color, t in reversed(world.messages[-6:]):
-        if t <= 0:
-            continue
-        s = text_surf(text, 15, color)
-        if t < 1:
-            s = s.copy()
-            s.set_alpha(int(255 * t))
-        surf.blit(s, (22, y))
-        y -= 22
+        r = pygame.Rect(SCREEN_W // 2 - w // 2, SCREEN_H - 58, w, 12)
+        ui.draw_text(surf, boss.name, (r.x, r.y - 4), 20, WHITE, "title", anchor="bottomleft")
+        ui.draw_text(surf, boss.title, (r.right, r.y - 5), 14, SOFT, anchor="bottomright")
+        ui.rect(surf, (0, 0, 0), r.inflate(4, 4), 0, 6)
+        ui.rect(surf, (60, 10, 12), r, 0, 5)
+        fw = r.w * max(0.0, boss.hp / boss.max_hp)
+        if fw > 1:
+            ui.rect(surf, (226, 40, 52), (r.x, r.y, fw, r.h), 0, 5)
+            ui.line(surf, (255, 150, 150), (r.x + 4, r.y + 2), (r.x + fw - 4, r.y + 2))
+        ui.rect(surf, UI_LINE, r.inflate(4, 4), 1, 6)
     b = world.banner
     if b:
         text, sub, color, t, dur = b
-        k = min(1, t / 0.4, (dur - t) / 0.6)
+        k = max(0.0, min(1, t / 0.5, (dur - t) / 0.7))
         if k > 0:
-            ts = text_surf(text, 38, color, "title").copy()
-            ts.set_alpha(int(255 * k))
-            sh = text_surf(text, 38, (0, 0, 0), "title").copy()
-            sh.set_alpha(int(180 * k))
-            r = ts.get_rect(center=(SCREEN_W // 2, 170))
-            surf.blit(sh, r.move(2, 2))
-            surf.blit(ts, r)
-            lw = int(r.w * 0.6 * k)
-            pygame.draw.line(surf, color, (SCREEN_W // 2 - lw, r.bottom + 6), (SCREEN_W // 2 + lw, r.bottom + 6), 1)
+            cy = 150
             if sub:
-                ss = text_surf(sub, 19, WHITE).copy()
-                ss.set_alpha(int(255 * k))
-                surf.blit(ss, ss.get_rect(center=(SCREEN_W // 2, r.bottom + 24)))
+                ui.draw_text(surf, sub, (SCREEN_W / 2, cy - 30), 16, SOFT, anchor="center", alpha=int(255 * k))
+            r = ui.draw_text(surf, text, (SCREEN_W / 2, cy), 40, color, "title", anchor="center", alpha=int(255 * k))
+            L = 160 * k
+            for d in (-1, 1):
+                x0 = SCREEN_W / 2 + d * (r.w / 2 + 18)
+                ui.line(surf, color, (x0, cy + 2), (x0 + d * L, cy + 2), 1)
+                ui.circle(surf, color, (x0, cy + 2), 2.5)
+
+
+def draw_notifs(surf, world):
+    y = SCREEN_H - 30
+    for it, t in reversed(world.notifs):
+        k = min(1.0, t / 0.5, (4.0 - t) / 0.25 if t > 3.75 else 1.0)
+        col = RARITY_COLORS[it["rarity"]]
+        tw, th = ui.text_size(it["name"], 15, "bold")
+        r = pygame.Rect(22 - (1 - k) * 60, y - 34, tw + 64, 34)
+        ui.botw_box(surf, r, int(170 * k), col, radius=17)
+        icon = pygame.Rect(r.x + 5, r.y + 3, 28, 28)
+        if it["slot"] == "artefact":
+            ui.draw_artifact_icon(surf, it["art"], icon, ARTIFACTS[it["art"]]["color"])
+        else:
+            ui.draw_item_icon(surf, it, icon, bg=False)
+        ui.draw_text(surf, it["name"], (r.x + 42, r.centery), 15, col, "bold", anchor="midleft", alpha=int(255 * k))
+        y -= 40
+
+
+def draw_messages(surf, world):
+    y = SCREEN_H - 40 - 40 * len(world.notifs) - 10
+    for text, color, t in reversed(world.messages[-5:]):
+        if t <= 0:
+            continue
+        a = int(255 * min(1.0, t))
+        ui.draw_text(surf, text, (24, y - 22), 15, color, "bold", alpha=a)
+        y -= 24

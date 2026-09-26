@@ -312,6 +312,46 @@ class Button:
 
 
 # --------------------------------------------------------------------------- icônes d'objets
+def draw_artifact_icon(surf, aid, box, color):
+    c = box.center
+    w = box.w
+    x, y = c
+    col = color
+    if aid == "foudre":
+        polygon(surf, col, [(x + w * .08, y - w * .32), (x - w * .16, y + w * .04), (x + w * .02, y + w * .04),
+                               (x - w * .08, y + w * .32), (x + w * .18, y - w * .06), (x, y - w * .06)])
+    elif aid == "totem":
+        rect(surf, (140, 100, 60), (x - w * .06, y - w * .1, w * .12, w * .42))
+        circle(surf, col, (x, y - w * .18), w * .14)
+    elif aid == "corne":
+        arc(surf, col, pygame.Rect(x - w * .28, y - w * .26, w * .56, w * .52), 0.4, 3.0, 4)
+        circle(surf, col, (x + w * .22, y - w * .02), w * .08)
+    elif aid == "bottes":
+        polygon(surf, col, [(x - w * .14, y - w * .28), (x + w * .06, y - w * .28), (x + w * .06, y + w * .12),
+                               (x + w * .28, y + w * .18), (x + w * .28, y + w * .3), (x - w * .14, y + w * .3)])
+    elif aid == "talisman":
+        polygon(surf, col, [(x - w * .24, y - w * .28), (x + w * .24, y - w * .28), (x + w * .24, y + w * .02),
+                               (x, y + w * .32), (x - w * .24, y + w * .02)])
+    elif aid == "gel":
+        for i in range(3):
+            a = i * math.pi / 3
+            line(surf, col, (x - math.cos(a) * w * .3, y - math.sin(a) * w * .3),
+                    (x + math.cos(a) * w * .3, y + math.sin(a) * w * .3), 3)
+    elif aid == "crane":
+        circle(surf, (230, 226, 210), (x, y - w * .04), w * .24)
+        rect(surf, (230, 226, 210), (x - w * .14, y + w * .1, w * .28, w * .14))
+        circle(surf, col, (x - w * .09, y - w * .05), w * .06)
+        circle(surf, col, (x + w * .09, y - w * .05), w * .06)
+    elif aid == "fiole":
+        circle(surf, col, (x, y + w * .1), w * .2)
+        rect(surf, (200, 200, 210), (x - w * .06, y - w * .3, w * .12, w * .22))
+    elif aid == "lanterne":
+        rect(surf, (90, 80, 70), (x - w * .18, y - w * .22, w * .36, w * .46), 0, 4)
+        rect(surf, col, (x - w * .12, y - w * .14, w * .24, w * .3), 0, 3)
+    else:
+        circle(surf, col, c, w * .25)
+
+
 def draw_item_icon(surf, item, r, bg=True):
     r = pygame.Rect(r)
     col = RARITY_COLORS[item["rarity"]]
@@ -324,6 +364,10 @@ def draw_item_icon(surf, item, r, bg=True):
         return (x + px * w, y + py * h)
 
     lw = max(2, w / 14)
+    if item["slot"] == "artefact":
+        from .data import ARTIFACTS
+        draw_artifact_icon(surf, item["art"], r.inflate(-w * 0.1, -h * 0.1), ARTIFACTS[item["art"]]["color"])
+        return
     metal, metal_d = (190, 192, 204), (96, 98, 110)
     wood, leather = (140, 94, 52), (130, 90, 58)
     gem = col if item["rarity"] != "commun" else (190, 70, 70)

@@ -1,0 +1,129 @@
+{
+ "name": "Sakou",
+ "cls": "barbare",
+ "level": 2,
+ "xp": 196,
+ "alloc": {
+  "force": 0,
+  "dex": 0,
+  "int": 0,
+  "vit": 0
+ },
+ "points": 5,
+ "gold": 161,
+ "potions": 3,
+ "max_floor": 1,
+ "cleared": [],
+ "equipment": {
+  "arme": {
+   "uid": 26878292862916,
+   "slot": "arme",
+   "rarity": "magique",
+   "ilvl": 1,
+   "upgrade": 0,
+   "affixes": {
+    "force": 3,
+    "armure": 7
+   },
+   "wclass": "barbare",
+   "base": "Fléau",
+   "dmg": [
+    8,
+    13
+   ],
+   "name": "Fléau de l'Ours"
+  },
+  "casque": null,
+  "torse": null,
+  "gants": null,
+  "bottes": null,
+  "amulette": {
+   "uid": 178159368756929,
+   "slot": "amulette",
+   "rarity": "magique",
+   "ilvl": 1,
+   "upgrade": 0,
+   "affixes": {
+    "int": 3
+   },
+   "base": "Amulette",
+   "name": "Amulette du Sage"
+  },
+  "anneau": {
+   "uid": 273698933120379,
+   "slot": "anneau",
+   "rarity": "magique",
+   "ilvl": 1,
+   "upgrade": 0,
+   "affixes": {
+    "lifesteal": 1
+   },
+   "base": "Chevalière",
+   "name": "Chevalière du Vampire"
+  }
+ },
+ "inventory": [
+  {
+   "uid": 5605946012680,
+   "slot": "arme",
+   "rarity": "rare",
+   "ilvl": 1,
+   "upgrade": 0,
+   "affixes": {
+    "mana": 9,
+    "force": 4,
+    "crit": 2
+   },
+   "wclass": "chasseur",
+   "base": "Arc composite",
+   "dmg": [
+    8,
+    14
+   ],
+   "name": "Faim de Givre"
+  },
+  {
+   "uid": 28842707622728,
+   "slot": "arme",
+   "rarity": "commun",
+   "ilvl": 1,
+   "upgrade": 0,
+   "affixes": {},
+   "wclass": "barbare",
+   "base": "Fléau",
+   "dmg": [
+    7,
+    13
+   ],
+   "name": "Fléau"
+  },
+  {
+   "uid": 4373600424672,
+   "slot": "anneau",
+   "rarity": "commun",
+   "ilvl": 1,
+   "upgrade": 0,
+   "affixes": {
+    "int": 3
+   },
+   "base": "Chevalière",
+   "name": "Chevalière"
+  },
+  {
+   "uid": 50706745956398,
+   "slot": "anneau",
+   "rarity": "magique",
+   "ilvl": 1,
+   "upgrade": 0,
+   "affixes": {
+    "atk_speed": 4
+   },
+   "base": "Bague",
+   "name": "Bague de Célérité"
+  }
+ ],
+ "kills": 16,
+ "deaths": 0,
+ "created_at": 1790432904.3347578,
+ "saved_at": 1790433083.1145332
+}

@@ -56,6 +56,7 @@ class Camera3D:
         self.tz = 0.0
         self.shake = 0.0
         self.shake_off = (0.0, 0.0)
+        self.ndc_shift = (0.0, 0.0)   # décale l'image (portrait dans un menu)
         self.w, self.h = 1280, 720
         self.eye = np.zeros(3, dtype="f4")
         self.target = np.zeros(3, dtype="f4")
@@ -72,6 +73,10 @@ class Camera3D:
         self.target = t
         self.view = look_at(self.eye, t)
         self.proj = perspective(math.radians(self.fov), self.w / self.h, 0.5, 120.0)
+        if self.ndc_shift != (0.0, 0.0):
+            T = np.identity(4, dtype="f4")
+            T[0, 3], T[1, 3] = self.ndc_shift
+            self.proj = T @ self.proj
         self.vp = (self.proj @ self.view).astype("f4")
         self.inv_vp = np.linalg.inv(self.vp)
         self.right = self.view[0, :3].copy()

@@ -12,7 +12,7 @@ from .entities import Loot
 from .fx import Particles, RingFX, Blast, Lightning
 from .items import generate_item, item_value, buy_price, ench_spent, ART_SLOTS
 from .panels import (InventoryPanel, MenuScreen, MerchantPanel, ForgePanel, AnimaPanel, PausePanel, DeathPanel)
-from .r3d import level
+from .r3d import level, models
 from .r3d.camera import Camera3D
 from .r3d.renderer import Env
 from .settings import (SCREEN_W, SCREEN_H, TILE, VIEW, SC_UP, SC_DOWN, SC_LEFT, SC_RIGHT, SC_SPELLS, SC_POTION,
@@ -798,7 +798,31 @@ class World(Scene):
         pass
 
     # ------------------------------------------------------------------ rendu 3D
+    def render_portrait(self, fr, menu):
+        """Héros en 3D sur un socle, qui tourne lentement (menu façon BotW)."""
+        p = self.player
+        PX, PY = -3000.0, -3000.0
+        t = menu.t
+        sx, sy, zoom = menu.portrait_spot()
+        models.humanoid(fr, PX, PY, 0, 0.9 + t * 0.45, 0, models.PLAYER_SPECS[p.cls_id], moving=False)
+        fr.box(PX, PY, -5, 34, 34, 5, (36, 58, 68), mesh="cylinder")
+        fr.decal(PX, PY, 40, 40, (90, 210, 255), 0.5 + 0.15 * math.sin(t * 2), kind=1, inner=0.9, lift=0.14)
+        fr.light(PX + 90, PY + 110, 110, 500, (255, 236, 214), 1.4)
+        fr.light(PX - 90, PY - 60, 60, 300, (90, 200, 255), 1.2)
+        if not hasattr(self, "pcam"):
+            self.pcam = Camera3D(yaw=45, pitch=12, dist=4.0, fov=30)
+        cam = self.pcam
+        cam.dist = 4.0 / zoom
+        cam.tx, cam.ty, cam.tz = PX, PY, 24
+        cam.ndc_shift = (sx / SCREEN_W * 2 - 1, 1 - sy / SCREEN_H * 2)
+        env = Env(clear=(0.03, 0.055, 0.07), shadow_extent=3.0, cut=0.0, fog=(30.0, 40.0),
+                  amb_sky=(0.42, 0.45, 0.52), amb_ground=(0.14, 0.15, 0.17), sun_col=(0.55, 0.55, 0.6),
+                  sun_dir=(-0.35, -1.0, -0.55), fog_col=(0.03, 0.055, 0.07), player=(PX, PY, 0))
+        return cam, env
+
     def render3d(self, fr):
+        if isinstance(self.modal, MenuScreen):
+            return self.render_portrait(fr, self.modal)
         p = self.player
         t = self.time
         cam = self.cam

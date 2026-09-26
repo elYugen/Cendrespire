@@ -514,9 +514,6 @@ class InventoryPanel(Panel):
             "gants": pygame.Rect(cx - S // 2 - S - 22, top + 2 * S + 36, S, S),
             "bottes": pygame.Rect(cx - S // 2, top + 2 * S + 36, S, S),
         }
-        for i, s in enumerate(ART_SLOTS):
-            self.slot_rects[s] = pygame.Rect(cx + S // 2 + 22, top + 2 * S + 36 + (i - 1) * 0, 44, 44) if i == 0 else \
-                pygame.Rect(cx + S // 2 + 22 + (i) * 0, top + 2 * S + 36, 44, 44)
         base_y = top + 3 * S + 50
         for i, s in enumerate(ART_SLOTS):
             self.slot_rects[s] = pygame.Rect(r.x + 110 + i * 60, base_y, 44, 44)

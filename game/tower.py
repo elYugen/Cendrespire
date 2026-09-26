@@ -2,43 +2,40 @@
 import math
 import random
 
-import pygame
-
 from . import sfx
 from .bosses import Boss
 from .data import MONSTERS, ELITE_AFFIXES, floor_name, floor_boss
-from .dungeon import Dungeon, BARRIER
+from .dungeon import Dungeon
 from .entities import Monster, Chest, Portal, Loot
-from .fx import RingFX, glow
+from .fx import RingFX
 from .items import generate_item
 from .panels import DeathPanel
-from .settings import TILE, GOLD_BRIGHT, RED, SCREEN_W, SCREEN_H
+from .r3d import level
+from .settings import TILE, GOLD_BRIGHT, WHITE
 from .world import World
 
 
 class TowerScene(World):
     is_tower = True
-    theme = "tower"
-    ambient = (22, 18, 26)
 
     def __init__(self, game, player, floor):
         self.floor = floor
         rng = random.Random()
         d = Dungeon(64, 46)
         d.generate(rng, n_rooms=10 + min(4, floor // 2))
-        super().__init__(game, player, d, rng)
+        super().__init__(game, player, d, level.floor_theme(floor), rng)
         player.reset_run()
         sx, sy = d.start_room.center_px
         player.x, player.y = sx, sy
+        self.cam.tx, self.cam.ty = sx, sy
         self.kills = 0
         self.run_gold = 0
         self.barrier_active = True
         self.boss_started = False
         self.boss_dead = False
         self.populate()
-        self.snap_camera()
-        self.show_banner(f"Étage {floor}", floor_name(floor), GOLD_BRIGHT, 4)
-        self.message("Éliminez les créatures pour briser le sceau du gardien.", (220, 210, 190), 8)
+        self.show_banner(floor_name(floor), f"Étage {floor}", WHITE, 4.5)
+        self.message("Éliminez les créatures pour briser le sceau du gardien.", (220, 214, 200), 8)
         sfx.play("portal")
 
     def floor_level(self):
@@ -77,7 +74,7 @@ class TowerScene(World):
 
     # ------------------------------------------------------------------ progression
     def hud_title(self):
-        title = f"Étage {self.floor} — {floor_name(self.floor)}"
+        title = f"Étage {self.floor} · {floor_name(self.floor)}"
         if self.boss_dead:
             return title, "Le gardien est vaincu. Empruntez le portail."
         if self.boss_started:
@@ -85,6 +82,9 @@ class TowerScene(World):
         if self.barrier_active:
             return title, f"Sceau du gardien : {min(self.kills, self.seal_needed)} / {self.seal_needed} créatures"
         return title, "Le sceau est brisé : le gardien vous attend."
+
+    def seal_progress(self):
+        return (min(1.0, self.kills / self.seal_needed), not self.barrier_active or self.boss_started)
 
     def active_boss(self):
         return self.boss if self.boss_started and not self.boss_dead else None
@@ -104,11 +104,12 @@ class TowerScene(World):
         room = self.dungeon.boss_room
         if self.barrier_active and not self.boss_started and self.kills >= self.seal_needed:
             self.set_barrier(False)
-            self.show_banner("Le sceau est brisé !", "Le gardien de l'étage vous attend.", (255, 90, 60))
+            self.show_banner("Le sceau est brisé", "Le gardien de l'étage vous attend", (255, 110, 80))
             sfx.play("seal")
             self.shake_screen(8)
             for tx, ty in self.dungeon.barrier_tiles:
-                self.particles.emit((tx + 0.5) * TILE, (ty + 0.5) * TILE, (255, 60, 40), n=12, speed=120, life=0.8, size=4)
+                self.particles.emit((tx + 0.5) * TILE, (ty + 0.5) * TILE, (255, 70, 50), n=14, speed=120, life=0.9,
+                                    size=4, up=160, z=20)
         if not self.boss_started and not self.barrier_active:
             tx, ty = int(p.x // TILE), int(p.y // TILE)
             if room.contains(tx, ty, margin=1):
@@ -116,14 +117,14 @@ class TowerScene(World):
                 self.boss.active = True
                 self.boss.aggro = True
                 self.set_barrier(True)
-                self.show_banner(self.boss.name, self.boss.title, (255, 80, 60))
+                self.show_banner(self.boss.name, self.boss.title, (255, 90, 70))
                 sfx.play("roar")
                 self.shake_screen(10)
         if self.barrier_active:
             for tx, ty in self.dungeon.barrier_tiles:
-                if random.random() < 0.08:
-                    self.particles.emit((tx + random.random()) * TILE, (ty + 1) * TILE, (255, 50, 30), n=1, speed=20,
-                                        life=0.9, size=3, up=60)
+                if random.random() < 0.1:
+                    self.particles.emit((tx + random.random()) * TILE, (ty + random.random()) * TILE, (255, 60, 40),
+                                        n=1, speed=10, life=1.0, size=3, up=90, zs=0)
 
     def on_boss_killed(self, boss):
         self.boss_dead = True
@@ -140,16 +141,16 @@ class TowerScene(World):
             self.loot.append(Loot(x, y, "item", generate_item(f, cls_id=p.cls_id, tier=2)))
         if first:
             self.loot.append(Loot(x, y, "item", generate_item(f, rarity="legendaire", cls_id=p.cls_id)))
-        self.loot.append(Loot(x, y, "potion"))
-        self.loot.append(Loot(x, y, "potion"))
-        self.particles.emit(x, y - 20, (255, 120, 60), n=80, speed=320, life=1.0, size=5)
-        self.effects.append(RingFX(x, y, 20, 320, 0.8, (255, 200, 120), 8))
+        self.loot.append(Loot(x, y, "orb"))
+        self.particles.emit(x, y, (255, 130, 70), n=90, speed=300, life=1.1, size=5, up=260, z=30)
+        self.effects.append(RingFX(x, y, 20, 340, 0.8, (255, 200, 120), 8))
+        self.flash_light(x, y, 600, (255, 180, 120), 0.8)
         self.shake_screen(14)
         sfx.play("explosion")
         cx, cy = self.dungeon.boss_room.center_px
-        self.interactables.append(Portal(cx, cy + 90, "Retourner au campement",
-                                         lambda w: w.exit_to_hub(f"Étage {f} purifié ! L'étage {f + 1} est désormais accessible.")))
-        self.show_banner("Gardien vaincu !", f"L'étage {f + 1} est débloqué." + (" Butin légendaire !" if first else ""),
+        self.interactables.append(Portal(cx, cy + 100, "Retourner au campement",
+                                         lambda w: w.exit_to_hub(f"Étage {f} purifié. L'étage {f + 1} est accessible.")))
+        self.show_banner("Gardien vaincu", f"L'étage {f + 1} est débloqué" + (" · butin légendaire" if first else ""),
                          GOLD_BRIGHT, 5)
         for m in self.monsters:
             if m.minion:
@@ -164,11 +165,9 @@ class TowerScene(World):
             self.loot.append(Loot(chest.x, chest.y, "gold", amount=self.gold_amount(random.randint(6, 14))))
         for _ in range(random.randint(1, 2)):
             self.loot.append(Loot(chest.x, chest.y, "item", generate_item(f, cls_id=p.cls_id, tier=1)))
-        if random.random() < 0.5:
-            self.loot.append(Loot(chest.x, chest.y, "anima"))
         if random.random() < 0.4:
-            self.loot.append(Loot(chest.x, chest.y, "potion"))
-        self.particles.emit(chest.x, chest.y - 10, (255, 210, 90), n=30, speed=160, life=0.7, size=3, up=60)
+            self.loot.append(Loot(chest.x, chest.y, "anima"))
+        self.particles.emit(chest.x, chest.y, (255, 214, 100), n=34, speed=140, life=0.8, size=3, up=200, z=15)
 
     def death_penalty(self):
         lost = self.run_gold // 2
@@ -184,35 +183,23 @@ class TowerScene(World):
         self.game.change_scene(HubScene(self.game, p, message))
 
     # ------------------------------------------------------------------ rendu
-    def draw_ground(self, surf, cx, cy):
-        if not self.barrier_active:
-            return
+    def render_extra(self, fr):
         t = self.time
-        for tx, ty in self.dungeon.barrier_tiles:
-            x, y = tx * TILE - cx, ty * TILE - cy
-            if -TILE < x < SCREEN_W and -TILE < y < SCREEN_H:
-                s = pygame.Surface((TILE, TILE), pygame.SRCALPHA)
-                s.fill((170, 20, 20, 90 + int(40 * math.sin(t * 4 + tx + ty))))
-                for i in range(4):
-                    lx = (i * 11 + t * 30 + tx * 7) % TILE
-                    pygame.draw.line(s, (255, 90, 60, 160), (lx, 0), (lx, TILE), 1)
-                surf.blit(s, (x, y))
-
-    def draw_post(self, surf, cx, cy):
+        p = self.player
+        room = self.dungeon.boss_room
+        cx, cy = room.center_px
+        if abs(cx - p.x) < 1000 and abs(cy - p.y) < 1000:
+            k = 0.5 + 0.5 * math.sin(t * 1.5)
+            fr.decal(cx, cy, 190, 190, (200, 30, 30), 0.25 + 0.15 * k, kind=1, inner=0.9)
+            fr.decal(cx, cy, 120, 120, (200, 30, 30), 0.18 + 0.1 * k, kind=1, inner=0.93)
         if not self.barrier_active:
             return
-        for tx, ty in self.dungeon.barrier_tiles:
-            x, y = (tx + 0.5) * TILE - cx, (ty + 0.5) * TILE - cy
-            if -TILE < x < SCREEN_W + TILE and -TILE < y < SCREEN_H + TILE:
-                glow(surf, x, y, 30 + 4 * math.sin(self.time * 5 + tx), (150, 20, 10))
-
-    def collect_lights(self):
-        lights = super().collect_lights()
-        if self.barrier_active:
-            for i, (tx, ty) in enumerate(self.dungeon.barrier_tiles):
-                if i % 2 == 0:
-                    lights.append(((tx + 0.5) * TILE, (ty + 0.5) * TILE, 110, (170, 30, 20)))
-        if self.boss_started and not self.boss_dead:
-            b = self.boss
-            lights.append((b.x, b.y, 200, (90, 30, 30)))
-        return lights
+        for i, (tx, ty) in enumerate(self.dungeon.barrier_tiles):
+            x, y = (tx + 0.5) * TILE, (ty + 0.5) * TILE
+            if abs(x - p.x) > 900 or abs(y - p.y) > 900:
+                continue
+            k = 0.6 + 0.4 * math.sin(t * 4 + tx + ty)
+            fr.part("cube", (x, y, 36), (20, 0, 0), (0, 0, 36), (0, 20, 0), (255, 50, 30), 0.55 * k, additive=True)
+            fr.decal(x, y, 22, 22, (255, 60, 40), 0.5, kind=2)
+            if i % 2 == 0:
+                fr.light(x, y, 30, 150, (255, 50, 30), 0.9)

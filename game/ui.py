@@ -348,7 +348,9 @@ def draw_artifact_icon(surf, aid, box, color):
         rect(surf, (90, 80, 70), (x - w * .18, y - w * .22, w * .36, w * .46), 0, 4)
         rect(surf, col, (x - w * .12, y - w * .14, w * .24, w * .3), 0, 3)
     else:
-        circle(surf, col, c, w * .25)
+        from . import icons     # artefact ajouté par data/artifacts.json : pictogramme « icon »
+        from .data import ARTIFACTS
+        icons.glyph(surf, ARTIFACTS.get(aid, {}).get("icon", "star"), c, w * .3, col)
 
 
 def draw_item_icon(surf, item, r, bg=True):

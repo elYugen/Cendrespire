@@ -8,9 +8,50 @@ import sys
 import moderngl
 import pygame
 
-from game import sfx
-from game.r3d.renderer import Renderer, Frame
-from game.settings import SCREEN_W, SCREEN_H, FPS, TITLE, VIEW
+from game import content
+
+
+def content_error_screen(msg):
+    """Un fichier de data/ est invalide : on affiche l'erreur (fichier, élément, champ) au lieu de planter."""
+    import textwrap
+    import pygame.freetype as ft
+    from game.settings import FONT_FILES
+    pygame.init()
+    screen = pygame.display.set_mode((960, 420))
+    pygame.display.set_caption("Cendrespire — erreur dans les données")
+    try:
+        font = ft.Font(FONT_FILES["text"][0], 20)
+        bold = ft.Font(FONT_FILES["bold"][0], 26)
+    except (OSError, FileNotFoundError):
+        font, bold = ft.Font(None, 20), ft.Font(None, 26)
+    lines = textwrap.wrap(msg, 80)
+    while True:
+        for e in pygame.event.get():
+            if e.type == pygame.QUIT or (e.type == pygame.KEYDOWN and e.key == pygame.K_ESCAPE):
+                pygame.quit()
+                return
+        screen.fill((18, 20, 24))
+        bold.render_to(screen, (40, 36), "Le contenu du jeu (dossier data) contient une erreur", (240, 200, 110))
+        for i, line in enumerate(lines):
+            font.render_to(screen, (40, 96 + i * 30), line, (230, 230, 230))
+        font.render_to(screen, (40, 370), "Corrigez le fichier JSON puis relancez le jeu (Échap pour quitter).",
+                       (150, 150, 160))
+        pygame.display.flip()
+        pygame.time.wait(50)
+
+
+if content.ERROR is None:
+    try:
+        import game.talents  # noqa: F401  (valide aussi les arbres de talents)
+    except content.ContentError as _e:
+        content.ERROR = str(_e)
+if content.ERROR is not None and __name__ == "__main__":
+    content_error_screen(content.ERROR)
+    sys.exit(1)
+
+from game import sfx  # noqa: E402
+from game.r3d.renderer import Renderer, Frame  # noqa: E402
+from game.settings import SCREEN_W, SCREEN_H, FPS, TITLE, VIEW  # noqa: E402
 
 MOUSE_EVENTS = (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP, pygame.MOUSEMOTION)
 

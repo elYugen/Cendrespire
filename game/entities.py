@@ -4,7 +4,7 @@ import random
 from collections import defaultdict
 
 from . import looks, sfx, talents
-from .data import (CLASSES, SPELLS, MONSTERS, ATTRS, ELITE_AFFIXES, MAX_LEVEL, POINTS_PER_LEVEL, ANIMA_POWERS,
+from .data import (CLASSES, SPELLS, BUFFS, MONSTERS, ATTRS, ELITE_AFFIXES, MAX_LEVEL, POINTS_PER_LEVEL, ANIMA_POWERS,
                    POTION_CD, POTION_HEAL, ROLL_CD, ROLL_DUR, ROLL_DIST, xp_needed, floor_scaling)
 from .fx import RingFX
 from .items import SLOTS, ART_SLOTS, EQUIP_SLOTS, item_stats, ench_stats, ench_spent
@@ -190,12 +190,8 @@ class Player:
         return self.stats["ench"].get(eid, 0)
 
     def damage_reduction(self):
-        armor = self.stats["armor"] * (1.5 if "cri" in self.buffs else 1)
-        dr = armor / (armor + 220) + self.stats["dr_bonus"]
-        if "talisman" in self.buffs:
-            dr += self.buffs_val.get("talisman", 0) / 100
-        if "egide" in self.buffs:
-            dr += 0.35
+        armor = self.stats["armor"] * (1 + self.buff_sum("armor_pct") / 100)
+        dr = armor / (armor + 220) + self.stats["dr_bonus"] + self.buff_sum("dr") / 100
         if self.t("low_hp_dr") and self.hp < self.stats["max_hp"] * 0.35:
             dr += self.t("low_hp_dr") / 100
         return min(0.85, dr)
@@ -209,8 +205,7 @@ class Player:
     def roll_damage(self, mult, crit_bonus=0.0):
         s = self.stats
         d = random.uniform(s["dmg_min"], s["dmg_max"]) * mult * s["dmg_mult"]
-        if "cri" in self.buffs:
-            d *= 1.35
+        d *= 1 + self.buff_sum("dmg_pct") / 100
         if self.t("berserk"):
             missing = 1 - max(0.0, self.hp) / s["max_hp"]
             d *= 1 + self.t("berserk") / 100 * missing
@@ -223,10 +218,16 @@ class Player:
         self.hp = min(self.stats["max_hp"], self.hp + amount)
 
     def speed(self):
-        k = 1.0
-        if "bottes" in self.buffs:
-            k += self.buffs_val.get("bottes", 0) / 100
-        return self.stats["speed"] * k
+        return self.stats["speed"] * (1 + self.buff_sum("move_pct") / 100)
+
+    def buff_sum(self, key):
+        """Somme d'une statistique sur les effets temporaires actifs (data/buffs.json ; "v" = valeur transmise)."""
+        total = 0.0
+        for bid in self.buffs:
+            v = BUFFS.get(bid, {}).get(key)
+            if v is not None:
+                total += self.buffs_val.get(bid, 0) if v == "v" else v
+        return total
 
     def take_damage(self, world, amount, attacker=None, melee=False):
         if self.invuln > 0 or self.dead or self.leap or self.dash:
@@ -333,13 +334,15 @@ class Player:
             return
         models.humanoid(fr, self.x, self.y, lift, self.facing, self.walk, self.spec, sc=sc,
                         flash=self.flash > 0, swing=self.swing, moving=self.moving or bool(self.dash))
-        if "cri" in self.buffs:
-            fr.decal(self.x, self.y, 30, 30, (255, 60, 30), 0.5, kind=1, inner=0.75)
-        if "talisman" in self.buffs:
-            fr.part("sphere", (self.x, self.y, 26), (26, 0, 0), (0, 0, 32), (0, 26, 0), (200, 210, 230), 0.25,
-                    additive=True)
-        if "bottes" in self.buffs:
-            fr.glow(self.x, self.y, 4, 26, (120, 220, 230), 0.6)
+        for bid in self.buffs:
+            b = BUFFS.get(bid, {})
+            vis, col = b.get("visual"), b.get("color", (255, 255, 255))
+            if vis == "ring":
+                fr.decal(self.x, self.y, 30, 30, col, 0.5, kind=1, inner=0.75)
+            elif vis == "bubble":
+                fr.part("sphere", (self.x, self.y, 26), (26, 0, 0), (0, 0, 32), (0, 26, 0), col, 0.25, additive=True)
+            elif vis == "glow":
+                fr.glow(self.x, self.y, 4, 26, col, 0.6)
 
 
 # =========================================================================== monstres

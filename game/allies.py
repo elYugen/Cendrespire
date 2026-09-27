@@ -1,7 +1,8 @@
-"""Serviteurs alliés : squelettes levés par le Nécromancien."""
+"""Serviteurs alliés : squelettes levés par le Nécromancien, feu follet de la Lanterne des âmes."""
 import math
 import random
 
+from .entities import Projectile
 from .r3d import models
 
 SPEC = dict(models.MONSTER_SPECS["squelette"], eyes=(120, 255, 160))
@@ -66,3 +67,48 @@ class SkeletonMinion:
         models.humanoid(fr, self.x, self.y, -36 * (1 - rise), self.facing, self.phase, SPEC, sc=0.9,
                         swing=self.swing, moving=self.moving)
         fr.decal(self.x, self.y, 16, 16, (120, 255, 160), 0.35, kind=1, inner=0.75)
+
+
+def _near(world, x, y, r, n=99):
+    ms = [m for m in world.monsters if not m.dead and m.targetable and math.hypot(m.x - x, m.y - y) < r + m.r]
+    ms.sort(key=lambda m: math.hypot(m.x - x, m.y - y))
+    return ms[:n]
+
+
+class Wisp:
+    """Feu follet allié : suit le héros et tire sur l'ennemi le plus proche."""
+
+    def __init__(self, x, y, mult, life=10.0):
+        self.x, self.y, self.z = x, y, 50
+        self.mult = mult
+        self.life = life
+        self.cd = 0.3
+        self.t = 0.0
+        self.alive = True
+
+    def update(self, dt, world):
+        self.t += dt
+        self.life -= dt
+        self.alive = self.life > 0
+        p = world.player
+        a = self.t * 1.8
+        tx, ty = p.x + math.cos(a) * 50, p.y + math.sin(a) * 50
+        self.x += (tx - self.x) * min(1, dt * 4)
+        self.y += (ty - self.y) * min(1, dt * 4)
+        self.cd -= dt
+        if self.cd <= 0:
+            tg = _near(world, self.x, self.y, 380, 1)
+            if tg:
+                m = tg[0]
+                ang = math.atan2(m.y - self.y, m.x - self.x)
+                pr = Projectile(self.x, self.y, ang, 560, "player", (160, 255, 220), mult=self.mult, radius=6, life=1.0)
+                world.projectiles.append(pr)
+                self.cd = 0.7
+        if random.random() < 0.5:
+            world.particles.emit(self.x, self.y, (160, 255, 220), n=1, speed=15, life=0.5, size=3, z=self.z)
+
+    def render(self, fr, t):
+        z = self.z + 5 * math.sin(self.t * 5)
+        fr.part("sphere", (self.x, self.y, z), (6, 0, 0), (0, 0, 6), (0, 6, 0), (200, 255, 235), 1.0)
+        fr.glow(self.x, self.y, z, 40, (140, 255, 210), 0.9)
+        fr.light(self.x, self.y, z, 150, (140, 255, 210), 0.8)

@@ -1,0 +1,139 @@
+{
+  "_info": "Gardiens. abilities : [technique, intervalle phase 1 (null = inactive), intervalle phase 2]. Techniques : charge, slam, bolts, nova, summon, blink, boulders, waves.",
+  "order": ["boucher", "liche", "golem", "seigneur"],
+  "bosses": {
+    "boucher": {
+      "id": "boucher",
+      "name": "Le Boucher",
+      "title": "Geôlier des chairs",
+      "hp": 650,
+      "dmg": [12, 18],
+      "speed": 125,
+      "radius": 28,
+      "ai": "boss",
+      "range": 40,
+      "cd": 1.3,
+      "windup": 0.5,
+      "xp": 260,
+      "model": {
+        "body": [180, 112, 102],
+        "skin": [196, 128, 114],
+        "legs": [92, 58, 48],
+        "arms": "skin",
+        "apron": [156, 28, 28],
+        "weapon": "cleaver",
+        "eyes": [255, 50, 30],
+        "bulky": true,
+        "belt": [74, 42, 30],
+        "hunch": true
+      },
+      "melee": true,
+      "keep": 0,
+      "abilities": [
+        ["charge", 7, 5],
+        ["slam", null, 8]
+      ]
+    },
+    "liche": {
+      "id": "liche",
+      "name": "Varkul la Liche",
+      "title": "Gardienne de l'Ossuaire",
+      "hp": 560,
+      "dmg": [10, 15],
+      "speed": 95,
+      "radius": 24,
+      "ai": "boss",
+      "range": 40,
+      "cd": 1.3,
+      "windup": 0.5,
+      "xp": 300,
+      "model": {
+        "body": [48, 62, 104],
+        "skin": [228, 232, 222],
+        "robe": true,
+        "arms": "body",
+        "skull": true,
+        "crown": [240, 200, 84],
+        "weapon": "staff",
+        "orb": [120, 235, 255],
+        "eyes": [120, 235, 255],
+        "cape": [32, 42, 74]
+      },
+      "melee": false,
+      "keep": 260,
+      "abilities": [
+        ["bolts", 1.6, 1.1],
+        ["nova", 7, 5.5],
+        ["summon", 12, 10],
+        ["blink", 6, 4.5]
+      ]
+    },
+    "golem": {
+      "id": "golem",
+      "name": "Golem d'ossements",
+      "title": "Colosse des Forges",
+      "hp": 900,
+      "dmg": [16, 24],
+      "speed": 72,
+      "radius": 34,
+      "ai": "boss",
+      "range": 50,
+      "cd": 1.8,
+      "windup": 0.7,
+      "xp": 340,
+      "model": {
+        "body": [152, 146, 126],
+        "skin": [172, 164, 142],
+        "legs": [130, 124, 106],
+        "arms": "skin",
+        "bulky": true,
+        "weapon": null,
+        "eyes": [255, 150, 40],
+        "rocky": true,
+        "cracks": [255, 120, 30]
+      },
+      "melee": true,
+      "keep": 0,
+      "abilities": [
+        ["boulders", 6, 4.5],
+        ["waves", 11, 8]
+      ]
+    },
+    "seigneur": {
+      "id": "seigneur",
+      "name": "Mal'zahar",
+      "title": "Maître de Cendrespire",
+      "hp": 1150,
+      "dmg": [15, 22],
+      "speed": 115,
+      "radius": 30,
+      "ai": "boss",
+      "range": 44,
+      "cd": 1.4,
+      "windup": 0.55,
+      "xp": 500,
+      "model": {
+        "body": [80, 30, 102],
+        "skin": [104, 42, 74],
+        "legs": [48, 20, 58],
+        "arms": "body",
+        "horns": [44, 28, 28],
+        "weapon": "sword",
+        "blade": [120, 255, 150],
+        "eyes": [120, 255, 150],
+        "bulky": true,
+        "wings": [56, 20, 56],
+        "pauldrons": [44, 40, 50],
+        "cape": [116, 22, 32]
+      },
+      "melee": true,
+      "keep": 0,
+      "abilities": [
+        ["charge", 8, 6],
+        ["nova", 9, 6],
+        ["boulders", 7, 5],
+        ["summon", null, 12]
+      ]
+    }
+  }
+}

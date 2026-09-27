@@ -1,0 +1,36 @@
+{
+  "_info": "Effets temporaires (sorts « buff » et artefacts). Statistiques : dmg_pct (+% dégâts), armor_pct (+% armure), dr (% de dégâts subis en moins), move_pct (+% vitesse), atk_speed (+% vitesse d'attaque), poison (fraction des dégâts d'arme par seconde appliquée par les attaques). \"v\" = valeur transmise par l'effet (artefact). visual : ring, bubble, glow ou absent. hidden : true pour ne pas l'afficher sous les cœurs.",
+  "buffs": {
+    "cri": {
+      "name": "Cri de guerre",
+      "color": [255, 90, 60],
+      "dmg_pct": 35,
+      "armor_pct": 50,
+      "visual": "ring"
+    },
+    "egide": {
+      "name": "Égide divine",
+      "color": [255, 236, 170],
+      "dr": 35,
+      "visual": "bubble"
+    },
+    "venin": {
+      "name": "Lames empoisonnées",
+      "color": [120, 230, 90],
+      "poison": 0.4,
+      "visual": "glow"
+    },
+    "bottes": {
+      "name": "Célérité",
+      "color": [120, 220, 230],
+      "move_pct": "v",
+      "visual": "glow"
+    },
+    "talisman": {
+      "name": "Talisman de fer",
+      "color": [210, 214, 230],
+      "dr": "v",
+      "visual": "bubble"
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "_info": "Bibliothèque de modèles 3D (.obj + .mtl). Chaque famille : dossier, fichiers, échelle (1 unité du fichier = 1 tuile), variation d'échelle et de teinte, palette (remplace les couleurs Kd des matériaux, en RVB 0-1). normals_up : éclaire le modèle comme le sol (herbe). Pour ajouter un modèle : copier le .obj/.mtl dans le dossier et ajouter son nom à la famille. Modèles Nature Kit par Kenney (CC0, voir nature/LICENSE-Kenney.txt).",
+  "palettes": {
+    "foret": {
+      "leafsDark": [0.17, 0.33, 0.21], "leafsGreen": [0.29, 0.45, 0.22], "leafsFall": [0.62, 0.36, 0.14],
+      "woodBark": [0.36, 0.25, 0.16], "woodBarkDark": [0.30, 0.21, 0.14], "wood": [0.52, 0.38, 0.24],
+      "woodInner": [0.70, 0.56, 0.37], "woodDark": [0.28, 0.20, 0.13], "woodBirch": [0.80, 0.77, 0.70],
+      "grass": [0.30, 0.47, 0.22], "dirt": [0.42, 0.32, 0.22], "dirtDark": [0.32, 0.24, 0.17],
+      "stone": [0.50, 0.49, 0.46], "stoneDark": [0.38, 0.37, 0.35],
+      "colorRed": [0.78, 0.20, 0.16], "colorRedDark": [0.56, 0.14, 0.13], "colorTan": [0.80, 0.68, 0.50],
+      "colorWhite": [0.92, 0.90, 0.84], "colorYellow": [0.95, 0.80, 0.30], "colorPurple": [0.62, 0.50, 0.90],
+      "_defaultMat": [0.86, 0.84, 0.78]
+    }
+  },
+  "families": {
+    "pine":     {"folder": "nature", "scale": 1.45, "scale_jitter": 0.15, "tint_jitter": 0.08, "palette": "foret",
+                 "files": ["tree_pineTallA", "tree_pineTallB", "tree_pineTallC", "tree_pineTallD", "tree_pineDefaultA",
+                           "tree_pineDefaultB", "tree_pineRoundA", "tree_pineRoundC", "tree_cone"]},
+    "leafy":    {"folder": "nature", "scale": 1.25, "scale_jitter": 0.15, "tint_jitter": 0.08, "palette": "foret",
+                 "files": ["tree_default", "tree_oak", "tree_detailed", "tree_fat"]},
+    "bush":     {"folder": "nature", "scale": 1.4, "scale_jitter": 0.2, "tint_jitter": 0.08, "palette": "foret",
+                 "files": ["plant_bush", "plant_bushLarge", "plant_bushSmall", "plant_bushDetailed"]},
+    "rock":     {"folder": "nature", "scale": 1.3, "scale_jitter": 0.3, "tint_jitter": 0.06, "palette": "foret",
+                 "files": ["rock_smallA", "rock_smallB", "rock_smallC", "rock_smallE"]},
+    "rock_large": {"folder": "nature", "scale": 1.0, "scale_jitter": 0.2, "tint_jitter": 0.06, "palette": "foret",
+                 "files": ["rock_largeA", "rock_largeB"]},
+    "mushroom": {"folder": "nature", "scale": 0.5, "scale_jitter": 0.2, "tint_jitter": 0.05, "palette": "foret",
+                 "files": ["mushroom_red", "mushroom_redGroup", "mushroom_tan", "mushroom_tanGroup"]},
+    "stump":    {"folder": "nature", "scale": 0.9, "scale_jitter": 0.15, "tint_jitter": 0.06, "palette": "foret",
+                 "files": ["stump_round", "stump_old", "stump_oldTall"]},
+    "flower":   {"folder": "nature", "scale": 0.7, "scale_jitter": 0.2, "tint_jitter": 0.0, "palette": "foret",
+                 "files": ["flower_redA", "flower_redB", "flower_yellowA", "flower_yellowB", "flower_purpleA"]},
+    "grass":    {"folder": "nature", "scale": 0.7, "scale_jitter": 0.25, "tint_jitter": 0.1, "palette": "foret", "normals_up": true,
+                 "files": ["grass", "grass_large", "grass_leafs"]},
+    "log":      {"folder": "nature", "scale": 1.0, "scale_jitter": 0.15, "tint_jitter": 0.05, "palette": "foret",
+                 "files": ["log", "log_large"]}
+  }
+}

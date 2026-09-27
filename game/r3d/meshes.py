@@ -119,6 +119,17 @@ class MeshBuilder:
     def raw(self, arr):
         self.parts.append(arr)
 
+    def add_model(self, arr, pos, scale, rot, flag=0.0, tint=1.0):
+        """Modèle importé (objmodels.load) : échelle uniforme, rotation autour de l'axe vertical, puis translation."""
+        c, s = np.cos(rot), np.sin(rot)
+        R = np.array([[c, 0, s], [0, 1, 0], [-s, 0, c]], dtype="f4")
+        out = arr.copy()
+        out[:, 0:3] = arr[:, 0:3] @ R.T * scale + np.array(pos, dtype="f4")
+        out[:, 3:6] = arr[:, 3:6] @ R.T
+        out[:, 6:9] = np.clip(arr[:, 6:9] * tint, 0, 1)
+        out[:, 9] = flag
+        self.parts.append(out)
+
     def build(self):
         if not self.parts:
             return np.zeros((0, STRIDE), dtype="f4")

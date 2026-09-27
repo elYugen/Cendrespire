@@ -24,7 +24,7 @@ Il faut une carte graphique compatible OpenGL 3.3, ce qui est le cas de tout Mac
 .\build_installer.ps1
 ```
 
-Le script empaquette le jeu avec PyInstaller (`dist\Cendrespire`), puis compile l'installeur avec Inno Setup 6 (`winget install JRSoftware.InnoSetup`). Résultat : `installer\Output\Cendrespire-2.0-Setup.exe`. L'installation ne demande pas de droits administrateur et propose un raccourci sur le bureau. La version installée écrit ses sauvegardes dans `%APPDATA%\Cendrespire\saves`.
+Le script empaquette le jeu avec PyInstaller (`dist\Cendrespire`), puis compile l'installeur avec Inno Setup 6 (`winget install JRSoftware.InnoSetup`). Avant l'empaquetage, le script vérifie que le contenu JSON est valide (`installer\check_content.py`). Résultat : `installer\Output\Cendrespire-2.1-Setup.exe`, qui embarque `assets\` (polices, modèles 3D) et `data\` (contenu du jeu). L'installation ne demande pas de droits administrateur et propose un raccourci sur le bureau. La version installée écrit ses sauvegardes dans `%APPDATA%\Cendrespire\saves`. Un fichier JSON copié dans `%APPDATA%\Cendrespire\data` remplace celui du jeu, ce qui permet de modifier le contenu d'une version installée.
 
 ## Commandes
 
@@ -39,6 +39,12 @@ Le script empaquette le jeu avec PyInstaller (`dist\Cendrespire`), puis compile 
 | E | Interagir |
 | I · C · N · Échap | Menu : pages Inventaire · Personnage · Talents · Système (met le jeu en pause) |
 | Tab | Grande carte |
+
+Les commandes sont aussi affichées en jeu : menu Système > Commandes.
+
+## Contenu modifiable (dossier `data/`)
+
+Classes, sorts, talents, effets temporaires, artefacts, monstres, boss, anima, enchantements et noms d'étages sont décrits en JSON. Les sorts et les artefacts sont des listes d'effets génériques (projectile, nova, zone, bond, invocation…) exécutées par `game/spells.py`. On peut donc en ajouter sans écrire de code. Les notes de mise à jour (`data/updates/<version>.json`) s'affichent dans le menu Système. Le format complet est documenté dans [data/LISEZMOI.md](data/LISEZMOI.md).
 
 ## Boucle de jeu
 
@@ -78,7 +84,8 @@ Le script empaquette le jeu avec PyInstaller (`dist\Cendrespire`), puis compile 
   - anticrénelage 4× ;
   - zones d'attaque dessinées au sol ;
   - particules ;
-  - murs qui s'effacent quand ils masquent le héros.
+  - murs qui s'effacent quand ils masquent le héros ;
+  - modèles importés (.obj/.mtl) : arbres, buissons, rochers, souches, fleurs et champignons du campement, tirés du [Nature Kit de Kenney](https://kenney.nl/assets/nature-kit) (CC0). Ils sont déclarés dans `assets/models/models.json`, avec leur échelle et une palette accordée à l'ambiance du jeu. Si un modèle manque, le décor procédural d'origine le remplace.
 - **Interface** (pygame) : dessinée à la résolution native, puis posée sur l'image 3D, ce qui garde les textes nets. Police Lato embarquée (`assets/fonts`, licence OFL) : même rendu sur toutes les machines.
 - **HUD façon BotW** :
   - cœurs par quarts en haut à gauche ;
@@ -92,15 +99,21 @@ Le script empaquette le jeu avec PyInstaller (`dist\Cendrespire`), puis compile 
 
 ```
 main.py              fenêtre OpenGL, boucle, composition 3D + interface
-game/data.py         classes, sorts, monstres, boss, anima, artefacts, enchantements  <- équilibrage
+data/*.json          contenu du jeu : classes, sorts, talents, monstres, boss, anima, artefacts…  <- équilibrage
+data/updates/        notes de mise à jour (une version par fichier)
+game/content.py      chargement et validation du dossier data/
+game/data.py         constantes et accès au contenu chargé
+game/talents.py      règles des arbres de talents
+game/updates.py      lecture des notes de mise à jour
 game/looks.py        options d'apparence des héros, construction du modèle
 game/wardrobe.py     éditeur d'apparence (création, garde-robe du campement)
 game/items.py        objets, raretés, affixes, artefacts, emplacements d'enchantement
 game/dungeon.py      génération des étages, carte du campement, minicarte
 game/entities.py     héros, monstres, projectiles, butin, PNJ, coffres, portails
 game/bosses.py       techniques des gardiens
-game/spells.py       attaques et sorts
-game/artifacts.py    effets des artefacts
+game/spells.py       attaque de base, lancement des sorts, interpréteur d'effets (sorts et artefacts)
+game/artifacts.py    utilisation des artefacts
+game/allies.py       serviteurs (squelettes, feu follet)
 game/fx.py           particules 3D, zones au sol, attaques annoncées
 game/world.py        scène de jeu : logique, combat, rendu 3D, interface en jeu
 game/tower.py        un étage de la tour
@@ -109,6 +122,8 @@ game/hud.py          HUD façon BotW
 game/panels.py       menus (inventaire avec héros 3D, personnage, système, marchand, forge…)
 game/scenes.py       écran titre façon BotW (illustration, logo), chargement, création de personnage
 game/ui.py, gfx.py   boîte à outils d'interface (nette en Retina)
-assets/              illustration et logo du menu principal
+assets/              illustration du menu principal, polices, modèles 3D (assets/models)
 game/r3d/            moteur 3D : renderer, shaders, caméra, maillages, modèles, niveaux, décor du campement
+game/r3d/objmodels.py  chargeur OBJ/MTL et bibliothèque de modèles importés
+installer/           script Inno Setup, icône, vérification du contenu
 ```

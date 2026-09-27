@@ -6,7 +6,7 @@ import math
 
 import pygame
 
-from . import sfx, ui
+from . import updates, sfx, ui
 from .data import (ATTRS, ATTR_NAMES, ATTR_DESC, SPELLS, ANIMA_POWERS, ANIMA_TIERS, BAG_SIZE, ARTIFACTS, ENCHANTS,
                    CLASSES, xp_needed, floor_name, floor_boss, BOSSES, anima_desc, ench_value)
 from .items import (SLOT_NAMES, AFFIX_DEF, ART_SLOTS, buy_price, upgrade_cost, MAX_UPGRADE, item_lines, item_stats,
@@ -191,6 +191,9 @@ class MenuScreen(Panel):
         self.ench_hover = None
         self.sys_cursor = 0
         self.sys_entries = self.build_system()
+        self.sys_sub = None            # "controls" : écran des commandes ouvert par-dessus le menu Système
+        self.notes_scroll = 0.0
+        self.notes = updates.load()
         self.sys_rects = [pygame.Rect(150, 160 + i * 58, 420, 48) for i in range(len(self.sys_entries))]
 
     def portrait_spot(self):
@@ -205,6 +208,7 @@ class MenuScreen(Panel):
         if page != self.page:
             self.page = page
             self.ctx = None
+            self.sys_sub = None
             sfx.play("click")
 
     # ------------------------------------------------------------------ inventaire : données
@@ -337,10 +341,14 @@ class MenuScreen(Panel):
             es.append(("Abandonner l'ascension", "Quitter l'étage et revenir au campement.",
                        lambda: w.exit_to_hub("Vous avez abandonné l'ascension.")))
         es += [("Sauvegarder", "Enregistrer la progression du personnage.", self.do_save),
+               ("Commandes", "Afficher les touches du jeu.", self.open_controls),
                ("Plein écran", "Basculer entre fenêtre et plein écran (F11).", w.game.toggle_fullscreen),
                ("Menu principal", "Sauvegarder, puis revenir à l'écran titre.", w.save_and_menu),
                ("Quitter le jeu", "Sauvegarder, puis fermer le jeu.", w.save_and_quit)]
         return es
+
+    def open_controls(self):
+        self.sys_sub = "controls"
 
     def do_save(self):
         self.world.save()
@@ -355,6 +363,10 @@ class MenuScreen(Panel):
         w = self.world
         if e.type == pygame.KEYDOWN:
             if self.ctx and self.ctx_key(e):
+                return True
+            if self.sys_sub and self.page == PAGE_SYS:
+                if e.key in (pygame.K_ESCAPE, pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE, pygame.K_BACKSPACE):
+                    self.sys_sub = None
                 return True
             if e.key == pygame.K_ESCAPE:
                 w.close_modal()
@@ -378,6 +390,8 @@ class MenuScreen(Panel):
         elif e.type == pygame.MOUSEMOTION and self.drag is not None:
             self.rot += (e.pos[0] - self.drag) * 0.012
             self.drag = e.pos[0]
+        elif e.type == pygame.MOUSEWHEEL and self.page == PAGE_SYS and not self.sys_sub:
+            self.notes_scroll = max(0.0, self.notes_scroll - e.y * 40)
         elif e.type == pygame.MOUSEWHEEL and self.page == PAGE_INV:
             if HERO_ZONE.collidepoint(ui.mouse_pos()):
                 self.rot += e.y * 0.25
@@ -395,6 +409,8 @@ class MenuScreen(Panel):
             self.char_click(e)
         elif self.page == PAGE_TAL:
             self.talent_click(e)
+        elif self.sys_sub:
+            self.sys_sub = None
         elif e.button == 1:
             for i, rc in enumerate(self.sys_rects):
                 if rc.collidepoint(e.pos):
@@ -1095,22 +1111,88 @@ class MenuScreen(Panel):
                 ui.selection_frame(surf, rc, self.t, WHITE)
         last = self.sys_rects[-1]
         ui.draw_wrapped(surf, self.sys_entries[self.sys_cursor][1], last.x, last.bottom + 22, last.w, 15, SOFT)
+        self.draw_notes(surf)
+        if self.sys_sub == "controls":
+            self.draw_controls(surf)
+
+    def draw_notes(self, surf):
+        """Notes de mise à jour (data/updates/*.json), la plus récente en haut ; molette pour défiler."""
         box = ui.botw_box(surf, (660, 140, 470, 470), 170, FRAME, radius=4)
-        ui.draw_text(surf, "Commandes", (box.centerx, box.y + 16), 20, WHITE, "title", anchor="midtop")
+        ui.draw_text(surf, "Notes de mise à jour", (box.centerx, box.y + 16), 20, WHITE, "title", anchor="midtop")
         ui.rect(surf, (110, 112, 108), (box.x + 24, box.y + 52, box.w - 48, 1))
+        view = pygame.Rect(box.x + 16, box.y + 60, box.w - 32, box.h - 72)
+        if not self.notes:
+            ui.draw_text(surf, "Aucune note (dossier data/updates).", view.center, 15, SOFT, anchor="center")
+            return
+        # contenu mis en page d'abord (pour connaître sa hauteur et borner le défilement)
+        items, y = [], 0
+        tw = view.w - 28
+        for u in self.notes:
+            items.append(("ver", u, y))
+            y += 30
+            if u.get("title"):
+                items.append(("title", u["title"], y))
+                y += len(ui.wrap(u["title"], 15, tw, "bold")) * 20 + 4
+            for sec in u.get("sections", []):
+                items.append(("sec", sec.get("name", ""), y))
+                y += 24
+                for n in sec.get("notes", []):
+                    lines = ui.wrap(n, 14, tw - 16)
+                    items.append(("note", lines, y))
+                    y += len(lines) * 19 + 5
+            y += 18
+        total = y
+        self.notes_scroll = min(self.notes_scroll, max(0.0, total - view.h))
+        off = view.y + 4 - self.notes_scroll
+        clip = surf.get_clip()
+        surf.set_clip(ui.R(view))
+        for kind, v, yy in items:
+            y0 = off + yy
+            if y0 > view.bottom or y0 < view.y - 200:
+                continue
+            x = view.x + 10
+            if kind == "ver":
+                ui.rect(surf, (40, 60, 70, 110), (view.x, y0 - 2, view.w, 26), 0, 4)
+                ui.draw_text(surf, f"Version {v['version']}", (x, y0 + 11), 16, BOTW_YELLOW, "bold", anchor="midleft")
+                if v.get("date"):
+                    ui.draw_text(surf, v["date"], (view.right - 10, y0 + 11), 13, SOFT, anchor="midright")
+            elif kind == "title":
+                ui.draw_wrapped(surf, v, x, y0, tw, 15, WHITE, kind="bold")
+            elif kind == "sec":
+                ui.draw_text(surf, v, (x, y0 + 2), 14, (150, 200, 220), "bold")
+            else:
+                ui.circle(surf, SOFT, (x + 5, y0 + 9), 2)
+                for k, line in enumerate(v):
+                    ui.draw_text(surf, line, (x + 16, y0 + k * 19), 14, SOFT)
+        surf.set_clip(clip)
+        if total > view.h:          # barre de défilement
+            k = view.h / total
+            bar_h = max(30, view.h * k)
+            by = view.y + (view.h - bar_h) * (self.notes_scroll / max(1, total - view.h))
+            ui.rect(surf, (255, 255, 255, 40), (view.right + 4, view.y, 3, view.h), 0, 2)
+            ui.rect(surf, (255, 255, 255, 150), (view.right + 4, by, 3, bar_h), 0, 2)
+
+    def draw_controls(self, surf):
+        ui.veil(surf, (0, 0, 0), 200)
+        box = ui.botw_box(surf, (SCREEN_W // 2 - 300, 92, 600, 576), 255, FRAME, radius=4, fill=(12, 16, 20))
+        ui.draw_text(surf, "Commandes", (box.centerx, box.y + 16), 22, WHITE, "title", anchor="midtop")
+        ui.rect(surf, (110, 112, 108), (box.x + 24, box.y + 54, box.w - 48, 1))
         controls = [
             ("ZQSD / WASD / flèches", "Se déplacer"), ("Clic gauche (maintenu)", "Attaque de base"),
             ("1 2 3 4 · clic droit", "Sorts (clic droit = sort 1)"), ("Espace", "Roulade d'esquive"),
-            ("R · T · G", "Artefacts"), ("F", "Potion (à recharge)"), ("E", "Interagir"),
-            ("I · C · Échap", "Inventaire · Personnage · Système"), ("Tab", "Carte"), ("F11", "Plein écran"),
+            ("R · T · G", "Artefacts"), ("F", "Potion (à recharge)"), ("E", "Interagir / parler"),
+            ("I · C · N", "Inventaire · Personnage · Talents"), ("Tab", "Grande carte · page suivante (menu)"),
+            ("← →", "Changer de page du menu"),
+            ("Échap", "Menu Système / fermer"), ("F11", "Plein écran"),
         ]
-        y = box.y + 66
+        y = box.y + 68
         for i, (k, v) in enumerate(controls):
             if i % 2 == 0:
-                ui.rect(surf, (40, 60, 70, 70), (box.x + 16, y - 4, box.w - 32, 36), 0, 4)
-            ui.draw_text(surf, k, (box.x + 30, y + 14), 15, BOTW_YELLOW, "bold", anchor="midleft")
-            ui.draw_text(surf, v, (box.right - 30, y + 14), 15, SOFT, anchor="midright")
-            y += 39
+                ui.rect(surf, (40, 60, 70, 70), (box.x + 16, y - 4, box.w - 32, 34), 0, 4)
+            ui.draw_text(surf, k, (box.x + 34, y + 13), 15, BOTW_YELLOW, "bold", anchor="midleft")
+            ui.draw_text(surf, v, (box.right - 34, y + 13), 15, SOFT, anchor="midright")
+            y += 36
+        ui.draw_text(surf, "Échap ou clic : retour", (box.centerx, box.bottom - 16), 13, SOFT, anchor="midbottom")
 
     def draw_tooltips(self, surf):
         if self.page == PAGE_CHAR and self.hover_info:

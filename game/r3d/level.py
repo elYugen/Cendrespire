@@ -4,7 +4,7 @@ import random
 
 from ..dungeon import WALL, FLOOR, BARRIER
 from ..settings import TILE
-from . import camp
+from . import camp, objmodels
 from .meshes import MeshBuilder
 
 # Ambiances : couleurs du sol / des murs, torches, lumière
@@ -28,6 +28,9 @@ THEMES = {
     "camp": dict(floor=(86, 132, 62), alt=(118, 96, 64), wall=(122, 116, 106), top=(90, 140, 64), torch=(255, 160, 80),
                  sky=(0.36, 0.38, 0.5), ground=(0.16, 0.16, 0.14), sun=(0.42, 0.44, 0.58)),
 }
+# décor au sol remplacé par des modèles importés (famille de assets/models/models.json)
+MODEL_DECOR = {"herbe": "grass", "fleur": "flower", "buisson": "bush", "champignon": "mushroom", "souche": "stump",
+               "rocher": "rock"}
 FLOOR_THEMES = ["geoles", "ossuaire", "forges", "sanctuaire", "cryptes", "fosse", "ecarlates", "trone"]
 
 
@@ -155,6 +158,8 @@ def build(d, theme_name, rng=None, hub=False):
         elif kind == "chaine":
             for i in range(4):
                 mb.add("sphere", (cx + i * 0.07, 0.02, cz), (0.04, 0, 0), (0, 0.02, 0), (0, 0, 0.04), (0.35, 0.35, 0.38))
+        elif kind in MODEL_DECOR and objmodels.place(mb, MODEL_DECOR[kind], cx, 0.0, cz, rng):
+            pass    # décor importé (assets/models/models.json) ; sinon repli procédural ci-dessous
         elif kind == "herbe":
             for _ in range(rng.randint(3, 6)):
                 ox, oz = rng.uniform(-0.25, 0.25), rng.uniform(-0.25, 0.25)

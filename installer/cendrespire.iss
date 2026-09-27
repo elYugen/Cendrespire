@@ -4,7 +4,7 @@
 
 #define AppName "Cendrespire"
 #ifndef AppVersion
-  #define AppVersion "2.0"
+  #define AppVersion "2.1"
 #endif
 #define AppExe "Cendrespire.exe"
 
@@ -41,11 +41,17 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 [Files]
 Source: "..\dist\{#AppName}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
+[Dirs]
+; dossier de contenu personnalisé : un fichier JSON placé ici remplace celui du jeu (voir data\LISEZMOI.md)
+Name: "{userappdata}\{#AppName}\data"
+
 [Icons]
 Name: "{autoprograms}\{#AppName}"; Filename: "{app}\{#AppExe}"
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; Tasks: desktopicon
+Name: "{autoprograms}\{#AppName} - contenu personnalisé"; Filename: "{userappdata}\{#AppName}\data"
 
 [Run]
 Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent
 
-; Les sauvegardes (%APPDATA%\Cendrespire\saves) sont volontairement conservées à la désinstallation.
+; Les sauvegardes (%APPDATA%\Cendrespire\saves) et le contenu personnalisé (%APPDATA%\Cendrespire\data)
+; sont volontairement conservés à la désinstallation.

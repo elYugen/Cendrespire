@@ -254,8 +254,9 @@ class Zone(Effect):
 
 
 class Trap(Effect):
-    def __init__(self, x, y, mult, color):
+    def __init__(self, x, y, mult, color, radius=115, knock=60):
         self.x, self.y, self.mult, self.color = x, y, mult, color
+        self.radius, self.knock = radius, knock
         self.t = 0
 
     def update(self, dt, world):
@@ -264,7 +265,7 @@ class Trap(Effect):
             trig = self.t > 12 or any(not m.dead and m.targetable and math.hypot(m.x - self.x, m.y - self.y) < 50 + m.r
                                       for m in world.monsters)
             if trig:
-                world.effects.append(Blast(self.x, self.y, 115, 0, self.mult, self.color, knock=60))
+                world.effects.append(Blast(self.x, self.y, self.radius, 0, self.mult, self.color, knock=self.knock))
                 self.alive = False
 
     def render(self, fr):

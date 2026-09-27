@@ -1,0 +1,20 @@
+{
+  "version": "2.1",
+  "date": "2026-09-27",
+  "title": "Contenu modifiable et refonte du campement",
+  "sections": [
+    {"name": "Nouveautés", "notes": [
+      "Sorts, talents, classes, monstres, boss, anima, artefacts et enchantements sont désormais décrits dans des fichiers JSON (dossier data) : modifiables et extensibles sans toucher au code.",
+      "Début de la refonte graphique : arbres, buissons, rochers, souches, fleurs et champignons du campement remplacés par des modèles 3D (Nature Kit de Kenney).",
+      "Nouvel écran « Commandes » dans le menu Système.",
+      "Notes de mise à jour affichées dans le menu Système."
+    ]},
+    {"name": "Améliorations", "notes": [
+      "Les effets temporaires (Cri de guerre, Égide, Célérité...) sont affichés automatiquement sous les cœurs.",
+      "Un fichier de données invalide affiche un message clair (fichier, élément, champ) au lieu de fermer le jeu."
+    ]},
+    {"name": "Installeur Windows", "notes": [
+      "L'installeur embarque les dossiers data et assets/models ; les sauvegardes restent dans %APPDATA%\\Cendrespire."
+    ]}
+  ]
+}

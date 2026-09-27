@@ -1,0 +1,188 @@
+{
+  "_info": "Artefacts (Minecraft Dungeons). base = puissance « v » avant rareté ; dans les effets, \"v\" = valeur, \"v%\" = valeur / 100.",
+  "rarity_power": {
+    "commun": 1.0,
+    "magique": 1.15,
+    "rare": 1.3,
+    "legendaire": 1.55
+  },
+  "keys": ["R", "T", "G"],
+  "artifacts": {
+    "totem": {
+      "name": "Totem de régénération",
+      "cd": 24,
+      "color": [110, 230, 120],
+      "desc": "Plante un totem qui soigne de {v}% de vie par seconde dans sa zone pendant 6 s.",
+      "base": 3,
+      "icon": "totem",
+      "effects": [
+        {
+          "type": "zone",
+          "at": "self",
+          "kind": "heal",
+          "radius": 110,
+          "duration": 6.0,
+          "tick": 0.5,
+          "mult_abs": "v",
+          "sound": "potion"
+        }
+      ]
+    },
+    "foudre": {
+      "name": "Pierre d'orage",
+      "cd": 10,
+      "color": [150, 190, 255],
+      "desc": "La foudre frappe jusqu'à 6 ennemis proches ({v}% dégâts d'arme).",
+      "base": 220,
+      "icon": "bolt",
+      "effects": [
+        {
+          "type": "strikes",
+          "at": "self",
+          "search": 340,
+          "count": 6,
+          "stun": 0.3,
+          "mult_abs": "v%",
+          "sound": "explosion",
+          "fail_text": "Aucune cible"
+        }
+      ]
+    },
+    "corne": {
+      "name": "Corne du Tourment",
+      "cd": 14,
+      "color": [230, 180, 110],
+      "desc": "Repousse violemment les ennemis proches et les étourdit 1,5 s.",
+      "base": 0,
+      "icon": "shout",
+      "effects": [
+        {
+          "type": "nova",
+          "radius": 190,
+          "knock": 170,
+          "stun": 1.5,
+          "damage": false,
+          "ring_color": [240, 200, 130],
+          "sound": "roar",
+          "shake": 7
+        }
+      ]
+    },
+    "bottes": {
+      "name": "Bottes de célérité",
+      "cd": 16,
+      "color": [120, 220, 230],
+      "desc": "+{v}% de vitesse de déplacement pendant 5 s.",
+      "base": 45,
+      "icon": "boot",
+      "effects": [
+        {
+          "type": "buff",
+          "id": "bottes",
+          "duration": 5,
+          "value": "v"
+        },
+        {
+          "type": "fx",
+          "particles": 20,
+          "sound": "magic"
+        }
+      ]
+    },
+    "talisman": {
+      "name": "Talisman de fer",
+      "cd": 22,
+      "color": [200, 200, 210],
+      "desc": "Réduit les dégâts subis de {v}% pendant 5 s.",
+      "base": 35,
+      "icon": "shield",
+      "effects": [
+        {
+          "type": "buff",
+          "id": "talisman",
+          "duration": 5,
+          "value": "v"
+        },
+        {
+          "type": "fx",
+          "ring": [40, 10, 0.4],
+          "sound": "chest"
+        }
+      ]
+    },
+    "gel": {
+      "name": "Orbe de givre",
+      "cd": 16,
+      "color": [170, 230, 255],
+      "desc": "Gèle les ennemis proches pendant 3 s et leur inflige {v}% dégâts d'arme.",
+      "base": 120,
+      "icon": "snow",
+      "effects": [
+        {
+          "type": "nova",
+          "radius": 210,
+          "stun": 3.0,
+          "slow": 3.0,
+          "mult_abs": "v%",
+          "style": "frost",
+          "sound": "ice"
+        }
+      ]
+    },
+    "crane": {
+      "name": "Crâne infernal",
+      "cd": 12,
+      "color": [255, 120, 50],
+      "desc": "Libère une couronne de 10 boules de feu ({v}% dégâts d'arme chacune).",
+      "base": 90,
+      "icon": "skull",
+      "effects": [
+        {
+          "type": "projectile",
+          "radial": 10,
+          "speed": 420,
+          "radius": 8,
+          "life": 0.9,
+          "kind": "fire",
+          "explode": 55,
+          "mult_abs": "v%",
+          "color": [255, 120, 40],
+          "sound": "fire"
+        }
+      ]
+    },
+    "fiole": {
+      "name": "Fiole d'essence",
+      "cd": 25,
+      "color": [110, 150, 255],
+      "desc": "Rend instantanément {v}% de votre mana.",
+      "base": 55,
+      "icon": "drop",
+      "effects": [
+        {
+          "type": "restore_mana",
+          "pct": "v",
+          "sound": "potion"
+        }
+      ]
+    },
+    "lanterne": {
+      "name": "Lanterne des âmes",
+      "cd": 20,
+      "color": [160, 255, 220],
+      "desc": "Invoque un feu follet allié qui attaque pendant 10 s ({v}% dégâts d'arme).",
+      "base": 70,
+      "icon": "orb",
+      "effects": [
+        {
+          "type": "summon",
+          "minion": "wisp",
+          "count": 1,
+          "duration": 10,
+          "mult_abs": "v%",
+          "sound": "magic"
+        }
+      ]
+    }
+  }
+}

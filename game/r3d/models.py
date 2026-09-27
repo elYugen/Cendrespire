@@ -80,47 +80,10 @@ def limb(p, piv, f, s, t, r, hl, color, rs=None):
 
 
 # =========================================================================== spécifications
-PLAYER_SPECS = {
-    "barbare": dict(body=(128, 82, 52), skin=(224, 172, 128), legs=(86, 62, 44), arms="skin", boots=(64, 44, 30),
-                    helmet=(176, 178, 188), horns=(236, 226, 200), pauldrons=(150, 110, 70), belt=(66, 44, 28),
-                    beard=(160, 90, 42), weapon="axe", fur=(170, 140, 100)),
-    "sorcier": dict(body=(64, 72, 176), skin=(228, 188, 152), robe=True, arms="body", hat=(54, 60, 156),
-                    belt=(220, 184, 96), beard=(226, 226, 230), weapon="staff", orb=(200, 140, 255)),
-    "chasseur": dict(body=(72, 104, 60), skin=(222, 178, 136), legs=(94, 68, 46), arms="body", boots=(72, 50, 34),
-                     hood=(60, 88, 48), cape=(52, 76, 42), belt=(112, 78, 46), weapon="bow", quiver=(110, 76, 44)),
-    "paladin": dict(body=(190, 192, 204), skin=(226, 180, 140), legs=(150, 152, 164), arms="body",
-                    boots=(120, 110, 100), helmet=(206, 208, 218), pauldrons=(226, 196, 110), belt=(120, 84, 50),
-                    weapon="sword", blade=(255, 236, 170), shield=(40, 70, 150), shield_rim=(226, 196, 110),
-                    cape=(160, 40, 40)),
-    "necromancien": dict(body=(40, 44, 52), skin=(200, 196, 190), robe=True, arms="body", hood=(28, 30, 36),
-                         belt=(120, 200, 140), weapon="scythe", orb=(120, 255, 160)),
-    "assassin": dict(body=(46, 42, 60), skin=(214, 172, 136), legs=(40, 36, 50), arms="body", boots=(36, 32, 40),
-                     hood=(36, 32, 48), mask=(30, 28, 36), cape=(70, 40, 90), belt=(120, 90, 60), weapon="daggers"),
-}
+# apparence des monstres et des boss : champ « model » de data/monsters.json et data/bosses.json
+from ..data import MONSTERS as _MONSTERS, BOSSES as _BOSSES  # noqa: E402
 
-MONSTER_SPECS = {
-    "squelette": dict(body=(220, 214, 196), skin=(230, 226, 210), legs=(206, 200, 182), arms="skin", thin=True,
-                      skull=True, weapon="sword", eyes=(255, 80, 40), ribs=True),
-    "archer": dict(body=(204, 198, 178), skin=(224, 220, 202), legs=(190, 186, 166), arms="skin", thin=True,
-                   skull=True, weapon="bow", eyes=(255, 120, 40), hood=(74, 64, 54)),
-    "zombie": dict(body=(48, 150, 150), skin=(100, 152, 84), legs=(64, 64, 140), arms="skin", reach=True,
-                   eyes=(140, 255, 100), hunch=True),
-    "diablotin": dict(body=(200, 66, 42), skin=(214, 80, 48), legs=(156, 46, 30), arms="skin", horns=(60, 36, 30),
-                      tail=(176, 52, 32), weapon="claws", eyes=(255, 230, 70), small=True, wings=(120, 36, 30)),
-    "cultiste": dict(body=(100, 36, 124), skin=(176, 146, 136), robe=True, arms="body", hood=(70, 22, 86),
-                     weapon="staff", orb=(255, 90, 220), eyes=(255, 110, 255)),
-    "brute": dict(body=(146, 52, 40), skin=(166, 64, 46), legs=(96, 36, 28), arms="skin", horns=(80, 70, 60),
-                  weapon="cleaver", eyes=(255, 170, 40), bulky=True, belt=(64, 42, 30)),
-    "boucher": dict(body=(180, 112, 102), skin=(196, 128, 114), legs=(92, 58, 48), arms="skin", apron=(156, 28, 28),
-                    weapon="cleaver", eyes=(255, 50, 30), bulky=True, belt=(74, 42, 30), hunch=True),
-    "liche": dict(body=(48, 62, 104), skin=(228, 232, 222), robe=True, arms="body", skull=True, crown=(240, 200, 84),
-                  weapon="staff", orb=(120, 235, 255), eyes=(120, 235, 255), cape=(32, 42, 74)),
-    "golem": dict(body=(152, 146, 126), skin=(172, 164, 142), legs=(130, 124, 106), arms="skin", bulky=True,
-                  weapon=None, eyes=(255, 150, 40), rocky=True, cracks=(255, 120, 30)),
-    "seigneur": dict(body=(80, 30, 102), skin=(104, 42, 74), legs=(48, 20, 58), arms="body", horns=(44, 28, 28),
-                     weapon="sword", blade=(120, 255, 150), eyes=(120, 255, 150), bulky=True, wings=(56, 20, 56),
-                     pauldrons=(44, 40, 50), cape=(116, 22, 32)),
-}
+MONSTER_SPECS = {mid: dict(m["model"]) for mid, m in list(_MONSTERS.items()) + list(_BOSSES.items())}
 
 NPC_SPECS = {
     "marchand": dict(detailed=True, body=(124, 90, 56), skin=(216, 174, 134), legs=(82, 60, 42), arms="body",

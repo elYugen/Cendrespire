@@ -8,15 +8,9 @@ from .entities import Monster, Projectile
 from .fx import Telegraph, RingFX
 from .settings import TILE
 
-# (technique, intervalle phase 1 (None = inactive), intervalle phase 2)
-PATTERNS = {
-    "boucher": dict(melee=True, keep=0, abilities=[("charge", 7, 5), ("slam", None, 8)]),
-    "liche": dict(melee=False, keep=260, abilities=[("bolts", 1.6, 1.1), ("nova", 7, 5.5), ("summon", 12, 10),
-                                                    ("blink", 6, 4.5)]),
-    "golem": dict(melee=True, keep=0, abilities=[("boulders", 6, 4.5), ("waves", 11, 8)]),
-    "seigneur": dict(melee=True, keep=0, abilities=[("charge", 8, 6), ("nova", 9, 6), ("boulders", 7, 5),
-                                                    ("summon", None, 12)]),
-}
+# techniques de data/bosses.json : (technique, intervalle phase 1 (None = inactive), intervalle phase 2)
+PATTERNS = {bid: dict(melee=b.get("melee", True), keep=b.get("keep", 0), abilities=[tuple(a) for a in b["abilities"]])
+            for bid, b in BOSSES.items()}
 
 
 class Boss(Monster):

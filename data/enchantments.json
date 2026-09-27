@@ -1,0 +1,125 @@
+{
+  "_info": "Enchantements : vals = valeur aux niveaux I, II, III. kind : arme ou armure.",
+  "slots": {
+    "commun": 0,
+    "magique": 1,
+    "rare": 2,
+    "legendaire": 3
+  },
+  "enchantments": {
+    "tranchant": {
+      "name": "Tranchant",
+      "kind": "arme",
+      "vals": [10, 20, 30],
+      "desc": "+{v}% de dégâts."
+    },
+    "acuite": {
+      "name": "Acuité",
+      "kind": "arme",
+      "vals": [5, 10, 15],
+      "desc": "+{v}% de chances de coup critique."
+    },
+    "vivacite": {
+      "name": "Vivacité",
+      "kind": "arme",
+      "vals": [8, 16, 24],
+      "desc": "+{v}% de vitesse d'attaque."
+    },
+    "echo": {
+      "name": "Écho",
+      "kind": "arme",
+      "vals": [10, 18, 26],
+      "desc": "{v}% de chances que l'attaque frappe deux fois."
+    },
+    "chaine": {
+      "name": "Chaîne",
+      "kind": "arme",
+      "vals": [12, 20, 28],
+      "desc": "{v}% de chances d'enchaîner 2 ennemis proches (60%)."
+    },
+    "embrasement": {
+      "name": "Embrasement",
+      "kind": "arme",
+      "vals": [15, 25, 35],
+      "desc": "{v}% de chances d'enflammer la cible (brûlure sur 3 s)."
+    },
+    "tempete": {
+      "name": "Tempête",
+      "kind": "arme",
+      "vals": [8, 14, 20],
+      "desc": "{v}% de chances d'appeler la foudre sur la cible (150% en zone)."
+    },
+    "entrave": {
+      "name": "Entrave",
+      "kind": "arme",
+      "vals": [15, 25, 35],
+      "desc": "{v}% de chances de ralentir la cible."
+    },
+    "vampirisme": {
+      "name": "Vampirisme",
+      "kind": "arme",
+      "vals": [2, 4, 6],
+      "desc": "Tuer un ennemi rend {v}% de vie."
+    },
+    "celerite": {
+      "name": "Célérité",
+      "kind": "armure",
+      "vals": [5, 10, 15],
+      "desc": "+{v}% de vitesse de déplacement."
+    },
+    "rempart": {
+      "name": "Rempart",
+      "kind": "armure",
+      "vals": [4, 8, 12],
+      "desc": "-{v}% de dégâts subis."
+    },
+    "ame_soin": {
+      "name": "Âme bienfaitrice",
+      "kind": "armure",
+      "vals": [1, 2, 3],
+      "desc": "Tuer un ennemi rend {v}% de vie."
+    },
+    "recharge": {
+      "name": "Recharge",
+      "kind": "armure",
+      "vals": [5, 10, 15],
+      "desc": "-{v}% de temps de recharge."
+    },
+    "potion_vive": {
+      "name": "Potion vive",
+      "kind": "armure",
+      "vals": [12, 24, 36],
+      "desc": "-{v}% de temps de recharge de la potion."
+    },
+    "esquive": {
+      "name": "Esquive",
+      "kind": "armure",
+      "vals": [5, 9, 13],
+      "desc": "{v}% de chances d'éviter un coup."
+    },
+    "epines": {
+      "name": "Épines",
+      "kind": "armure",
+      "vals": [25, 50, 75],
+      "desc": "Renvoie {v}% des dégâts de mêlée à l'attaquant."
+    },
+    "riposte": {
+      "name": "Riposte ardente",
+      "kind": "armure",
+      "vals": [15, 25, 35],
+      "desc": "{v}% de chances de libérer une nova de feu quand vous êtes touché."
+    },
+    "vitalite": {
+      "name": "Vitalité",
+      "kind": "armure",
+      "vals": [6, 12, 18],
+      "desc": "+{v}% de vie maximum."
+    },
+    "agilite": {
+      "name": "Agilité",
+      "kind": "armure",
+      "vals": [12, 24, 36],
+      "desc": "-{v}% de recharge de la roulade."
+    }
+  }
+}

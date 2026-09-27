@@ -1,0 +1,173 @@
+{
+  "_info": "Monstres (ai : melee, ranged, caster, brute), multiplicateurs par étage et affixes d'élite.",
+  "scaling": {
+    "hp": [0.55, 0.08],
+    "dmg": [0.3, 0.03]
+  },
+  "monsters": {
+    "squelette": {
+      "name": "Squelette",
+      "hp": 34,
+      "dmg": [5, 8],
+      "speed": 100,
+      "radius": 14,
+      "ai": "melee",
+      "range": 26,
+      "cd": 1.2,
+      "windup": 0.4,
+      "xp": 12,
+      "floor": 1,
+      "model": {
+        "body": [220, 214, 196],
+        "skin": [230, 226, 210],
+        "legs": [206, 200, 182],
+        "arms": "skin",
+        "thin": true,
+        "skull": true,
+        "weapon": "sword",
+        "eyes": [255, 80, 40],
+        "ribs": true
+      }
+    },
+    "zombie": {
+      "name": "Goule putride",
+      "hp": 62,
+      "dmg": [8, 12],
+      "speed": 62,
+      "radius": 16,
+      "ai": "melee",
+      "range": 28,
+      "cd": 1.6,
+      "windup": 0.55,
+      "xp": 16,
+      "floor": 1,
+      "model": {
+        "body": [48, 150, 150],
+        "skin": [100, 152, 84],
+        "legs": [64, 64, 140],
+        "arms": "skin",
+        "reach": true,
+        "eyes": [140, 255, 100],
+        "hunch": true
+      }
+    },
+    "archer": {
+      "name": "Archer squelette",
+      "hp": 26,
+      "dmg": [5, 8],
+      "speed": 90,
+      "radius": 14,
+      "ai": "ranged",
+      "range": 330,
+      "cd": 1.9,
+      "windup": 0.45,
+      "xp": 14,
+      "floor": 1,
+      "proj_speed": 340,
+      "proj_color": [235, 220, 180],
+      "model": {
+        "body": [204, 198, 178],
+        "skin": [224, 220, 202],
+        "legs": [190, 186, 166],
+        "arms": "skin",
+        "thin": true,
+        "skull": true,
+        "weapon": "bow",
+        "eyes": [255, 120, 40],
+        "hood": [74, 64, 54]
+      }
+    },
+    "diablotin": {
+      "name": "Diablotin",
+      "hp": 24,
+      "dmg": [3, 6],
+      "speed": 165,
+      "radius": 12,
+      "ai": "melee",
+      "range": 22,
+      "cd": 0.8,
+      "windup": 0.25,
+      "xp": 10,
+      "floor": 2,
+      "model": {
+        "body": [200, 66, 42],
+        "skin": [214, 80, 48],
+        "legs": [156, 46, 30],
+        "arms": "skin",
+        "horns": [60, 36, 30],
+        "tail": [176, 52, 32],
+        "weapon": "claws",
+        "eyes": [255, 230, 70],
+        "small": true,
+        "wings": [120, 36, 30]
+      }
+    },
+    "cultiste": {
+      "name": "Cultiste des Cendres",
+      "hp": 42,
+      "dmg": [8, 12],
+      "speed": 85,
+      "radius": 14,
+      "ai": "caster",
+      "range": 360,
+      "cd": 2.8,
+      "windup": 0.7,
+      "xp": 20,
+      "floor": 3,
+      "model": {
+        "body": [100, 36, 124],
+        "skin": [176, 146, 136],
+        "robe": true,
+        "arms": "body",
+        "hood": [70, 22, 86],
+        "weapon": "staff",
+        "orb": [255, 90, 220],
+        "eyes": [255, 110, 255]
+      }
+    },
+    "brute": {
+      "name": "Brute démoniaque",
+      "hp": 140,
+      "dmg": [14, 20],
+      "speed": 78,
+      "radius": 21,
+      "ai": "brute",
+      "range": 40,
+      "cd": 2.2,
+      "windup": 0.8,
+      "xp": 36,
+      "floor": 4,
+      "model": {
+        "body": [146, 52, 40],
+        "skin": [166, 64, 46],
+        "legs": [96, 36, 28],
+        "arms": "skin",
+        "horns": [80, 70, 60],
+        "weapon": "cleaver",
+        "eyes": [255, 170, 40],
+        "bulky": true,
+        "belt": [64, 42, 30]
+      }
+    }
+  },
+  "elites": {
+    "Véloce": {
+      "speed": 1.45,
+      "cd": 0.8
+    },
+    "Vampirique": {
+      "leech": 0.6
+    },
+    "Robuste": {
+      "hp": 1.6
+    },
+    "Frénétique": {
+      "cd": 0.55
+    },
+    "Colossal": {
+      "hp": 1.3,
+      "radius": 1.2,
+      "dmg": 1.3
+    }
+  }
+}

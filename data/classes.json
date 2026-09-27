@@ -1,0 +1,381 @@
+{
+  "_info": "Classes jouables : attributs, attaque de base, sorts (ids de spells.json), armes, apparence 3D.",
+  "classes": {
+    "barbare": {
+      "name": "Barbare",
+      "title": "Fureur des Hautes-Terres",
+      "desc": "Un colosse des steppes gelées. Il excelle au corps à corps, encaisse les coups et fend les hordes. Chaque coup porté régénère sa fureur (mana).",
+      "color": [200, 90, 55],
+      "primary": "force",
+      "attrs": {
+        "force": 20,
+        "dex": 10,
+        "int": 6,
+        "vit": 16
+      },
+      "hp": 140,
+      "hp_lvl": 14,
+      "mana": 60,
+      "mana_lvl": 2,
+      "mana_regen": 3.0,
+      "speed": 205,
+      "attack": {
+        "kind": "melee",
+        "name": "Frappe brutale",
+        "mult": 1.0,
+        "range": 64,
+        "arc": 120,
+        "cd": 0.5,
+        "mana_gain": 3,
+        "color": [230, 200, 170],
+        "icon": "axe"
+      },
+      "spells": ["tourbillon", "cri_guerre", "bond", "seisme"],
+      "weapons": ["Hache de guerre", "Épée longue", "Masse d'armes", "Fléau"],
+      "legendary": ["Brise-Monde", "Hurlement du Chef de guerre", "Faucheuse des Steppes"],
+      "headgear_name": "Casque cornu",
+      "look_defaults": {
+        "skin": 2,
+        "build": 2,
+        "hair": 1,
+        "hair_col": 3,
+        "beard": 2,
+        "eyes": 0,
+        "marks": 0,
+        "main": 0,
+        "second": 1,
+        "headgear": 1
+      },
+      "model": {
+        "body": "main",
+        "legs": "second",
+        "arms": "skin",
+        "boots": [64, 44, 30],
+        "cuff": [170, 140, 100],
+        "fur": [170, 140, 100],
+        "pauldrons": [150, 110, 70],
+        "bracers": [96, 64, 38],
+        "strap": [70, 46, 28],
+        "belt": [66, 44, 28],
+        "weapon": "axe"
+      },
+      "headgear": {
+        "helmet": [176, 178, 188],
+        "horns": [236, 226, 200]
+      }
+    },
+    "sorcier": {
+      "name": "Sorcier",
+      "title": "Érudit de l'Arcane",
+      "desc": "Maître des éléments, il anéantit ses ennemis à distance. Fragile, mais sa puissance de feu est inégalée et il peut se téléporter hors de danger.",
+      "color": [130, 110, 240],
+      "primary": "int",
+      "attrs": {
+        "force": 6,
+        "dex": 10,
+        "int": 22,
+        "vit": 12
+      },
+      "hp": 100,
+      "hp_lvl": 10,
+      "mana": 110,
+      "mana_lvl": 5,
+      "mana_regen": 7.0,
+      "speed": 200,
+      "attack": {
+        "kind": "projectile",
+        "name": "Trait arcanique",
+        "mult": 0.9,
+        "speed": 640,
+        "cd": 0.42,
+        "color": [170, 120, 255],
+        "life": 0.9,
+        "radius": 6,
+        "icon": "orb"
+      },
+      "spells": ["boule_feu", "nova_givre", "teleport", "meteore"],
+      "weapons": ["Bâton", "Baguette", "Orbe", "Sceptre"],
+      "legendary": ["Bâton de l'Archimage", "Œil du Vide", "Sceptre des Mille Flammes"],
+      "headgear_name": "Chapeau de mage",
+      "look_defaults": {
+        "skin": 1,
+        "build": 1,
+        "hair": 2,
+        "hair_col": 5,
+        "beard": 2,
+        "eyes": 3,
+        "marks": 0,
+        "main": 2,
+        "second": 3,
+        "headgear": 1
+      },
+      "model": {
+        "body": "main",
+        "robe": true,
+        "arms": "body",
+        "trim": [220, 184, 96],
+        "collar": "second",
+        "sash": "second",
+        "boots": [60, 48, 40],
+        "orb": [200, 140, 255],
+        "weapon": "staff",
+        "belt": [220, 184, 96]
+      },
+      "headgear": {
+        "hat": "second"
+      }
+    },
+    "chasseur": {
+      "name": "Chasseur",
+      "title": "Traqueur des Ombres",
+      "desc": "Archer agile et mortel. Il garde ses distances, pose des pièges explosifs et crible ses proies d'une pluie de flèches.",
+      "color": [100, 175, 85],
+      "primary": "dex",
+      "attrs": {
+        "force": 9,
+        "dex": 22,
+        "int": 8,
+        "vit": 13
+      },
+      "hp": 115,
+      "hp_lvl": 12,
+      "mana": 80,
+      "mana_lvl": 3,
+      "mana_regen": 5.5,
+      "speed": 220,
+      "attack": {
+        "kind": "projectile",
+        "name": "Flèche",
+        "mult": 0.95,
+        "speed": 820,
+        "cd": 0.36,
+        "color": [235, 215, 165],
+        "life": 0.75,
+        "radius": 5,
+        "arrow": true,
+        "icon": "arrow"
+      },
+      "spells": ["tir_multiple", "piege", "fleche_perforante", "pluie_fleches"],
+      "weapons": ["Arc court", "Arc long", "Arbalète", "Arc composite"],
+      "legendary": ["Murmure-du-Vent", "Chant de la Traque", "Corde de l'Éclipse"],
+      "headgear_name": "Capuche",
+      "look_defaults": {
+        "skin": 2,
+        "build": 1,
+        "hair": 3,
+        "hair_col": 2,
+        "beard": 0,
+        "eyes": 1,
+        "marks": 0,
+        "main": 4,
+        "second": 5,
+        "headgear": 1
+      },
+      "model": {
+        "body": "main",
+        "legs": [94, 68, 46],
+        "arms": "body",
+        "boots": [72, 50, 34],
+        "cape": "second",
+        "quiver": [110, 76, 44],
+        "gloves": [84, 60, 40],
+        "strap": [96, 66, 40],
+        "bracers": [84, 60, 40],
+        "weapon": "bow",
+        "belt": [112, 78, 46]
+      },
+      "headgear": {
+        "hood": "second"
+      }
+    },
+    "paladin": {
+      "name": "Paladin",
+      "title": "Chevalier de l'Aube",
+      "desc": "Guerrier saint en armure, épée et bouclier au poing. Il charge l'ennemi, consacre le sol qui le soigne et fait tomber le jugement du ciel. Le plus résistant de tous.",
+      "color": [236, 196, 90],
+      "primary": "force",
+      "attrs": {
+        "force": 18,
+        "dex": 8,
+        "int": 12,
+        "vit": 18
+      },
+      "hp": 150,
+      "hp_lvl": 15,
+      "mana": 80,
+      "mana_lvl": 3,
+      "mana_regen": 4.5,
+      "speed": 198,
+      "attack": {
+        "kind": "melee",
+        "name": "Coup sacré",
+        "mult": 1.05,
+        "range": 58,
+        "arc": 110,
+        "cd": 0.55,
+        "mana_gain": 2,
+        "color": [255, 226, 140],
+        "icon": "sword"
+      },
+      "spells": ["charge_bouclier", "consecration", "egide", "jugement"],
+      "weapons": ["Épée bâtarde", "Marteau de guerre", "Masse bénie", "Lame de l'Aube"],
+      "legendary": ["Aube Éternelle", "Serment du Porte-Lumière", "Marteau du Jugement"],
+      "headgear_name": "Heaume",
+      "look_defaults": {
+        "skin": 1,
+        "build": 2,
+        "hair": 1,
+        "hair_col": 4,
+        "beard": 1,
+        "eyes": 0,
+        "marks": 0,
+        "main": 9,
+        "second": 7,
+        "headgear": 1
+      },
+      "model": {
+        "body": [190, 192, 204],
+        "legs": [150, 152, 164],
+        "arms": "body",
+        "boots": [120, 110, 100],
+        "tabard": "main",
+        "cape": "second",
+        "pauldrons": [226, 196, 110],
+        "shield": "second",
+        "shield_rim": [226, 196, 110],
+        "blade": [255, 236, 170],
+        "gloves": [170, 172, 184],
+        "bracers": [226, 196, 110],
+        "weapon": "sword",
+        "belt": [120, 84, 50]
+      },
+      "headgear": {
+        "helmet": [206, 208, 218]
+      }
+    },
+    "necromancien": {
+      "name": "Nécromancien",
+      "title": "Tisseur d'Os",
+      "desc": "Maître de la mort, il lève des squelettes pour combattre à sa place, maudit ses ennemis et moissonne leur âme pour se soigner. Fragile, mais jamais seul.",
+      "color": [120, 220, 150],
+      "primary": "int",
+      "attrs": {
+        "force": 7,
+        "dex": 9,
+        "int": 22,
+        "vit": 13
+      },
+      "hp": 105,
+      "hp_lvl": 11,
+      "mana": 120,
+      "mana_lvl": 5,
+      "mana_regen": 6.5,
+      "speed": 200,
+      "attack": {
+        "kind": "projectile",
+        "name": "Trait d'os",
+        "mult": 0.85,
+        "speed": 600,
+        "cd": 0.45,
+        "color": [170, 255, 190],
+        "life": 0.9,
+        "radius": 6,
+        "icon": "bone"
+      },
+      "spells": ["lance_os", "squelettes", "malediction", "moisson"],
+      "weapons": ["Faux", "Faucille d'os", "Sceptre d'os", "Faux funéraire"],
+      "legendary": ["Moissonneuse d'Âmes", "Faux du Dernier Souffle", "Sceptre du Roi-Liche"],
+      "headgear_name": "Capuche d'ombre",
+      "look_defaults": {
+        "skin": 6,
+        "build": 0,
+        "hair": 2,
+        "hair_col": 6,
+        "beard": 0,
+        "eyes": 6,
+        "marks": 3,
+        "main": 12,
+        "second": 11,
+        "headgear": 1
+      },
+      "model": {
+        "body": "main",
+        "robe": true,
+        "arms": "body",
+        "trim": "second",
+        "collar": "second",
+        "sash": [120, 200, 140],
+        "boots": [40, 36, 36],
+        "orb": [120, 255, 160],
+        "gloves": [60, 56, 56],
+        "weapon": "scythe",
+        "belt": [120, 200, 140]
+      },
+      "headgear": {
+        "hood": "main"
+      }
+    },
+    "assassin": {
+      "name": "Assassin",
+      "title": "Lame du Crépuscule",
+      "desc": "Rapide et insaisissable, il frappe avec deux dagues, surgit dans le dos de ses proies, empoisonne ses lames et danse au milieu des ennemis. Coups critiques dévastateurs.",
+      "color": [160, 120, 230],
+      "primary": "dex",
+      "attrs": {
+        "force": 10,
+        "dex": 22,
+        "int": 8,
+        "vit": 12
+      },
+      "hp": 110,
+      "hp_lvl": 11,
+      "mana": 70,
+      "mana_lvl": 3,
+      "mana_regen": 6.0,
+      "speed": 236,
+      "attack": {
+        "kind": "melee",
+        "name": "Estafilade",
+        "mult": 0.72,
+        "range": 50,
+        "arc": 95,
+        "cd": 0.3,
+        "mana_gain": 2,
+        "color": [210, 200, 255],
+        "icon": "dagger"
+      },
+      "spells": ["pas_ombre", "eventail", "venin", "danse_lames"],
+      "weapons": ["Dagues jumelles", "Kriss", "Lames de l'ombre", "Stylets"],
+      "legendary": ["Crocs du Crépuscule", "Murmure et Silence", "Lames de la Nuit sans Lune"],
+      "headgear_name": "Capuche et masque",
+      "look_defaults": {
+        "skin": 3,
+        "build": 0,
+        "hair": 3,
+        "hair_col": 0,
+        "beard": 0,
+        "eyes": 5,
+        "marks": 1,
+        "main": 12,
+        "second": 6,
+        "headgear": 1
+      },
+      "model": {
+        "body": "main",
+        "legs": [40, 36, 50],
+        "arms": "body",
+        "boots": [36, 32, 40],
+        "cape": "second",
+        "gloves": [40, 36, 44],
+        "strap": [100, 76, 50],
+        "bracers": [70, 60, 80],
+        "weapon": "daggers",
+        "belt": [120, 90, 60]
+      },
+      "headgear": {
+        "hood": "main",
+        "mask": [30, 28, 36]
+      }
+    }
+  }
+}

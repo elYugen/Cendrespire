@@ -5,6 +5,8 @@ Le drapeau 1.0 rend la pièce « effaçable » quand elle masque le héros (comm
 """
 import math
 
+from . import objmodels
+
 LANTERNS = [(15.1, 7.9), (19.9, 7.9), (11.0, 9.3), (24.0, 9.3), (13.6, 13.6), (19.9, 13.9)]
 FURNACE = (32.0, 10.6)
 WELL = (23.6, 13.7)
@@ -59,7 +61,11 @@ def leafy(mb, x, base, z, rng, scale=1.0):
 
 
 def tree(mb, x, base, z, rng, scale=1.0):
-    (pine if rng.random() < 0.72 else leafy)(mb, x, base, z, rng, scale)
+    """Arbre du décor : modèle importé (assets/models, familles pine / leafy) ou, à défaut, arbre procédural."""
+    is_pine = rng.random() < 0.72
+    if objmodels.place(mb, "pine" if is_pine else "leafy", x, base, z, rng, scale, 1.0):
+        return
+    (pine if is_pine else leafy)(mb, x, base, z, rng, scale)
 
 
 def forest(mb, d, rng, is_floor):

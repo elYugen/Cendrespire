@@ -11,7 +11,7 @@ import math
 import pygame
 
 from . import icons, ui
-from .data import SPELLS, ANIMA_POWERS, ARTIFACTS, ARTIFACT_KEYS, anima_desc, xp_needed
+from .data import SPELLS, BUFFS, ANIMA_POWERS, ARTIFACTS, ARTIFACT_KEYS, anima_desc, xp_needed
 from .items import ART_SLOTS
 from .settings import SCREEN_W, SCREEN_H, VIEW, TEXT, TEXT_DIM, GOLD_BRIGHT, WHITE, SHEIKAH, UI_LINE, RARITY_COLORS
 
@@ -242,10 +242,10 @@ def draw_effects(surf, world, x, y):
     p = world.player
     world.anima_rects = []
     items = []
-    for key, name, col in (("cri", "Cri de guerre", (255, 90, 60)), ("bottes", "Célérité", (120, 220, 230)),
-                           ("talisman", "Talisman de fer", (210, 214, 230))):
-        if key in p.buffs:
-            items.append(("buff", key, name, col, p.buffs[key]))
+    for key, left in p.buffs.items():
+        b = BUFFS.get(key)
+        if b and not b.get("hidden"):
+            items.append(("buff", key, b["name"], b.get("color", (220, 220, 220)), left))
     for pid, n in p.anima.items():
         items.append(("anima", pid, ANIMA_POWERS[pid]["name"], ANIMA_POWERS[pid]["color"], n))
     for i, (kind, key, name, col, val) in enumerate(items):

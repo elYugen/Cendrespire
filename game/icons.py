@@ -4,17 +4,11 @@ import math
 import pygame
 
 from . import ui
+from .data import CLASSES, SPELLS
 
-SPELL_GLYPH = {
-    "tourbillon": "whirl", "cri_guerre": "shout", "bond": "leap", "seisme": "quake",
-    "boule_feu": "flame", "nova_givre": "snow", "teleport": "blink", "meteore": "meteor",
-    "tir_multiple": "fan", "piege": "trap", "fleche_perforante": "arrow", "pluie_fleches": "rain",
-    "charge_bouclier": "shield", "consecration": "sun", "egide": "aegis", "jugement": "pillar",
-    "lance_os": "bone", "squelettes": "skull", "malediction": "curse", "moisson": "harvest",
-    "pas_ombre": "shadow", "eventail": "fan_daggers", "venin": "drop", "danse_lames": "blades",
-}
-ATTACK_GLYPH = {"barbare": "axe", "sorcier": "orb", "chasseur": "arrow", "paladin": "sword",
-                "necromancien": "bone", "assassin": "dagger"}
+# pictogrammes choisis dans data/spells.json (« icon ») et data/classes.json (attack.icon)
+SPELL_GLYPH = {sid: sp.get("icon", "star") for sid, sp in SPELLS.items()}
+ATTACK_GLYPH = {cid: c["attack"].get("icon", "sword") for cid, c in CLASSES.items()}
 
 
 def _star(surf, c, r, col, n=5, inner=0.45, rot=-math.pi / 2):

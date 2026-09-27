@@ -50,8 +50,7 @@ class HubScene(World):
         self._last_hit = 0.0
         self.save()
         self.show_banner("Le Campement", message or "Au pied de Cendrespire", WHITE, 5)
-        self.message("ZQSD/WASD : se déplacer · E : parler · I : inventaire · C : personnage · Échap : menu",
-                     (220, 215, 200), 12)
+        self.message("Échap : menu · les touches sont dans Système > Commandes", (220, 215, 200), 8)
 
     def hud_title(self):
         return "Le Campement", ""

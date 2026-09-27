@@ -1,6 +1,7 @@
 """Génération d'équipement : raretés, affixes, noms, valeurs."""
 import random
 
+from .content import CONTENT
 from .data import CLASSES, ARTIFACTS, ENCHANTS, ENCH_SLOTS, ench_value
 from .settings import RARITIES, RARITY_COLORS, RARITY_NAMES, TEXT, TEXT_DIM, GOLD, RED
 
@@ -12,9 +13,8 @@ SLOT_NAMES = {"arme": "Arme", "casque": "Casque", "torse": "Torse", "gants": "Ga
               "artefact1": "Artefact", "artefact2": "Artefact", "artefact3": "Artefact"}
 SLOT_DROP_WEIGHTS = {"arme": 18, "casque": 14, "torse": 14, "gants": 14, "bottes": 14, "amulette": 12, "anneau": 14,
                      "artefact": 12}
-ART_POWER = {"commun": 1.0, "magique": 1.15, "rare": 1.3, "legendaire": 1.55}
-ART_BASE = {"totem": 3, "foudre": 220, "corne": 0, "bottes": 45, "talisman": 35, "gel": 120, "crane": 90,
-            "fiole": 55, "lanterne": 70}
+ART_POWER = CONTENT["art_power"]
+ART_BASE = {aid: a["base"] for aid, a in ARTIFACTS.items()}
 
 BASES = {
     "casque": ["Heaume", "Casque à cornes", "Capuche", "Couronne de fer"],
@@ -60,12 +60,6 @@ RARE_A = ["Fléau", "Chant", "Murmure", "Ruine", "Éclat", "Serment", "Colère",
 RARE_B = ["du Crépuscule", "des Damnés", "de Sang", "du Néant", "des Cendres", "de l'Abîme", "du Tourment",
           "de Givre", "des Ossements", "de la Tour", "des Âmes", "du Bourreau"]
 LEGENDARY_NAMES = {
-    "barbare": ["Brise-Monde", "Hurlement du Chef de guerre", "Faucheuse des Steppes"],
-    "sorcier": ["Bâton de l'Archimage", "Œil du Vide", "Sceptre des Mille Flammes"],
-    "chasseur": ["Murmure-du-Vent", "Chant de la Traque", "Corde de l'Éclipse"],
-    "paladin": ["Aube Éternelle", "Serment du Porte-Lumière", "Marteau du Jugement"],
-    "necromancien": ["Moissonneuse d'Âmes", "Faux du Dernier Souffle", "Sceptre du Roi-Liche"],
-    "assassin": ["Crocs du Crépuscule", "Murmure et Silence", "Lames de la Nuit sans Lune"],
     "casque": ["Heaume du Tourment éternel", "Visage du Damné"],
     "torse": ["Cuirasse du Geôlier", "Linceul d'Ombreveuve"],
     "gants": ["Poignes de l'Abîme", "Mains du Bourreau"],
@@ -73,6 +67,7 @@ LEGENDARY_NAMES = {
     "amulette": ["Cœur de la Tour", "Larme du Dieu mort"],
     "anneau": ["Anneau du Geôlier", "Sceau de l'Oublié"],
 }
+LEGENDARY_NAMES.update({cid: c.get("legendary") or [c["name"]] for cid, c in CLASSES.items()})
 RARITY_POWER = {"commun": 1.0, "magique": 1.08, "rare": 1.18, "legendaire": 1.32}
 RARITY_VALUE = {"commun": 1, "magique": 3, "rare": 8, "legendaire": 25}
 AFFIX_COUNT = {"commun": (0, 0), "magique": (1, 2), "rare": (3, 4), "legendaire": (5, 5)}

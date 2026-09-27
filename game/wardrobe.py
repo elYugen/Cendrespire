@@ -24,11 +24,15 @@ class LookEditor:
         self.rows = [pygame.Rect(self.rect.x, self.rect.y + i * self.ROW_H, self.rect.w, self.ROW_H - 6)
                      for i in range(len(looks.OPTIONS))]
 
+    @property
+    def options(self):
+        return looks.options_for(self.cls_id)
+
     def arrows(self, rc):
         return pygame.Rect(rc.right - 250, rc.y, 34, rc.h), pygame.Rect(rc.right - 38, rc.y, 34, rc.h)
 
     def change(self, i, d):
-        key, _, values = looks.OPTIONS[i]
+        key, _, values = self.options[i]
         self.look[key] = (self.look[key] + d) % len(values)
         self.sel = i
         sfx.play("click")
@@ -38,10 +42,10 @@ class LookEditor:
         sfx.play("magic", 0.5)
 
     def row_at(self, pos):
-        return next((i for i, rc in enumerate(self.rows) if rc.collidepoint(pos)), None)
+        return next((i for i, rc in enumerate(self.rows[:len(self.options)]) if rc.collidepoint(pos)), None)
 
     def handle_event(self, e):
-        n = len(looks.OPTIONS)
+        n = len(self.options)
         if e.type == pygame.KEYDOWN:
             if e.key == pygame.K_UP or e.scancode == 26:
                 self.sel = (self.sel - 1) % n
@@ -70,7 +74,7 @@ class LookEditor:
 
     def draw(self, surf, t):
         mouse = ui.mouse_pos()
-        for i, (rc, (key, label, values)) in enumerate(zip(self.rows, looks.OPTIONS)):
+        for i, (rc, (key, label, values)) in enumerate(zip(self.rows, self.options)):
             hov = rc.collidepoint(mouse)
             if hov:
                 self.sel = i

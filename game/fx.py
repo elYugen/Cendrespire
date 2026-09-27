@@ -263,7 +263,7 @@ class Trap(Effect):
         self.t += dt
         if self.t > 0.5:
             trig = self.t > 12 or any(not m.dead and m.targetable and math.hypot(m.x - self.x, m.y - self.y) < 50 + m.r
-                                      for m in world.monsters)
+                                      for m in world.near_monsters(self.x, self.y, 60))
             if trig:
                 world.effects.append(Blast(self.x, self.y, self.radius, 0, self.mult, self.color, knock=self.knock))
                 self.alive = False

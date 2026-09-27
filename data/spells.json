@@ -6,9 +6,9 @@
       "level": 1,
       "mana": 18,
       "cd": 2.5,
-      "mult": 1.7,
+      "mult": 1.9,
       "color": [230, 130, 60],
-      "desc": "Tournoie sur vous-même et frappe tous les ennemis proches (170% dégâts d'arme).",
+      "desc": "Tournoie sur vous-même et frappe tous les ennemis proches (190% dégâts d'arme).",
       "icon": "whirl",
       "target": "aim",
       "effects": [
@@ -100,11 +100,11 @@
     "boule_feu": {
       "name": "Boule de feu",
       "level": 1,
-      "mana": 14,
-      "cd": 0.8,
-      "mult": 2.0,
+      "mana": 16,
+      "cd": 1.5,
+      "mult": 1.6,
       "color": [255, 120, 30],
-      "desc": "Projectile qui explose au contact (200% dégâts d'arme en zone).",
+      "desc": "Projectile qui explose au contact (160% dégâts d'arme en zone).",
       "icon": "flame",
       "target": "aim",
       "effects": [
@@ -114,7 +114,7 @@
           "radius": 9,
           "life": 1.1,
           "kind": "fire",
-          "explode": 75,
+          "explode": 60,
           "sound": "fire"
         }
       ]
@@ -124,9 +124,9 @@
       "level": 3,
       "mana": 28,
       "cd": 7,
-      "mult": 1.1,
+      "mult": 0.9,
       "color": [120, 200, 255],
-      "desc": "Onde glaciale : 110% de dégâts et ralentit fortement les ennemis.",
+      "desc": "Onde glaciale : 90% de dégâts et ralentit fortement les ennemis.",
       "icon": "snow",
       "target": "aim",
       "effects": [
@@ -171,9 +171,9 @@
       "level": 10,
       "mana": 45,
       "cd": 8,
-      "mult": 5.0,
+      "mult": 2.8,
       "color": [255, 90, 20],
-      "desc": "Invoque un météore dévastateur (500%) qui laisse le sol en feu.",
+      "desc": "Invoque un météore dévastateur (280%) qui laisse le sol en feu.",
       "icon": "meteor",
       "target": "ground",
       "range": 520,
@@ -293,9 +293,9 @@
       "level": 1,
       "mana": 16,
       "cd": 4,
-      "mult": 1.8,
+      "mult": 2.2,
       "color": [255, 220, 120],
-      "desc": "Fonce vers le curseur bouclier en avant, repousse et étourdit (180%).",
+      "desc": "Fonce vers le curseur bouclier en avant, repousse et étourdit (220%).",
       "icon": "shield",
       "target": "aim",
       "effects": [
@@ -372,9 +372,9 @@
       "level": 10,
       "mana": 40,
       "cd": 10,
-      "mult": 2.6,
+      "mult": 2.8,
       "color": [255, 230, 120],
-      "desc": "Des colonnes de lumière frappent jusqu'à 6 ennemis près du curseur (260%).",
+      "desc": "Des colonnes de lumière frappent jusqu'à 6 ennemis près du curseur (280%).",
       "icon": "pillar",
       "target": "ground",
       "effects": [
@@ -395,10 +395,10 @@
       "name": "Lance d'os",
       "level": 1,
       "mana": 14,
-      "cd": 1.0,
-      "mult": 2.2,
+      "cd": 1.4,
+      "mult": 1.5,
       "color": [230, 226, 200],
-      "desc": "Projette une lance d'os qui transperce tous les ennemis (220%).",
+      "desc": "Projette une lance d'os qui transperce tous les ennemis (150%).",
       "icon": "bone",
       "target": "aim",
       "effects": [
@@ -419,9 +419,9 @@
       "level": 3,
       "mana": 30,
       "cd": 12,
-      "mult": 0.5,
+      "mult": 0.35,
       "color": [140, 255, 170],
-      "desc": "Lève 2 squelettes guerriers pendant 15 s (4 au maximum, 50% par coup).",
+      "desc": "Lève 2 squelettes guerriers pendant 15 s (4 au maximum, 35% par coup).",
       "icon": "skull",
       "target": "aim",
       "effects": [
@@ -442,7 +442,7 @@
       "cd": 8,
       "mult": 0,
       "color": [170, 90, 230],
-      "desc": "Maudit les ennemis de la zone 6 s : ils subissent +30% de dégâts et sont ralentis.",
+      "desc": "Maudit les ennemis de la zone 6 s : ils subissent +25% de dégâts et sont ralentis.",
       "icon": "curse",
       "target": "ground",
       "effects": [
@@ -452,7 +452,7 @@
           "range": 420,
           "radius": 150,
           "duration": 6,
-          "amp": 30,
+          "amp": 25,
           "slow": 3.0,
           "sound": "ice"
         }

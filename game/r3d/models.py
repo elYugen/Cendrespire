@@ -89,22 +89,35 @@ NPC_SPECS = {
     "marchand": dict(detailed=True, body=(124, 90, 56), skin=(216, 174, 134), legs=(82, 60, 42), arms="body",
                      hood=(156, 114, 64), belt=(206, 176, 84), hair_style="Court", hair=(130, 118, 104),
                      beard_style="Longue", beard=(150, 140, 128), eye_col=(104, 66, 38), weapon=None,
-                     pack=(112, 82, 50), boots=(70, 50, 34), build=1.05),
+                     pack=(112, 82, 50), boots=(70, 50, 34), build=1.05,
+                     rig={"model": "farmer", "palette": {}}),
     "forgeronne": dict(detailed=True, body=(98, 78, 66), skin=(228, 182, 144), legs=(66, 50, 40), arms="skin",
                        apron=(74, 48, 32), hair_style="Tresses", hair=(206, 96, 44), eye_col=(70, 160, 80),
                        weapon="hammer", build=1.18, boots=(56, 40, 30), bracers=(70, 46, 30), gloves=(80, 56, 36),
-                       belt=(60, 40, 26)),
+                       belt=(60, 40, 26),
+                       rig={"model": "adventurer_b", "palette": {"Green": (98, 78, 66), "LightGreen": (122, 98, 82),
+                                                                 "White": (74, 48, 32), "Hair_Brown": (206, 96, 44),
+                                                                 "Brown": (206, 96, 44)}}),
     "couturiere": dict(detailed=True, body=(112, 44, 110), skin=(178, 124, 84), legs=(54, 40, 60), arms="body",
                        hair_style="Queue de cheval", hair=(38, 32, 30), eye_col=(214, 150, 40), weapon=None,
                        sash=(226, 194, 120), collar=(226, 194, 120), boots=(60, 44, 36), marks="Tatouage runique",
-                       build=0.9),
+                       build=0.9,
+                       rig={"model": "hooded", "palette": {"Black": (112, 44, 110), "LightBrown": (226, 194, 120),
+                                                           "DarkBrown": (90, 36, 88), "Skin": (178, 124, 84)}}),
 }
 
 
 # =========================================================================== humanoïde
 def humanoid(fr, x, y, z0, facing, phase, spec, sc=1.0, flash=False, tint_col=None, swing=0.0, moving=True,
-             glow_eyes=True):
-    """Personnage (héros, PNJ, monstre) : dessiné avec contour cartoon et ombrage en paliers."""
+             glow_eyes=True, anim=None, anim_t=None):
+    """Personnage (héros, PNJ, monstre) : dessiné avec contour cartoon et ombrage en paliers.
+    Les héros et PNJ qui ont un modèle animé (spec « rig ») jouent l'animation anim à l'instant anim_t."""
+    if spec.get("rig"):
+        from . import rig
+        state = anim or ("run" if moving else ("work" if swing < -0.3 and spec.get("weapon") == "hammer" else "idle"))
+        t = anim_t if anim_t is not None else rig.CLOCK[0]
+        if rig.draw(fr, x, y, z0, facing, spec, state, t, sc, flash, tint_col):
+            return
     prev = getattr(fr, "outline", False)
     fr.outline = True
     try:
@@ -181,6 +194,19 @@ def _humanoid(fr, x, y, z0, facing, phase, spec, sc, flash, tint_col, swing, mov
             root = add(base, mul(f, -5 * sc), mul(s, side * 4 * sc), (0, 0, 30 * sc))
             tipv = norm(add(mul(s, side), (0, 0, 0.5 + flap), mul(f, -0.3)))
             p.rod(root, add(root, mul(tipv, 20 * sc)), 5 * sc, spec["wings"], f, mesh="cone")
+    if spec.get("legs8"):          # pattes d'araignée (Arachné)
+        for side in (-1, 1):
+            for i in range(4):
+                a = (i - 1.5) * 0.5
+                root = add(base, mul(f, (1.5 - i) * 3 * sc), mul(s, side * 5 * sc), (0, 0, 16 * sc))
+                d = norm(add(mul(s, side), mul(f, a * 1.4)))
+                kick = math.sin(phase * 2 + i + side) * 2 * sc if moving else 0.0
+                knee = add(root, mul(d, 12 * sc), (0, 0, 9 * sc + kick))
+                foot = add(root, mul(d, 22 * sc), (0, 0, -15 * sc))
+                p.rod(root, knee, 1.5 * sc, spec["legs8"], f)
+                p.rod(knee, foot, 1.2 * sc, spec["legs8"], f, mesh="cone")
+    if spec.get("aura") and not flash:
+        fr.glow(x, y, 26 * sc, 34 * sc, spec["aura"], 0.35)
     if spec.get("tail"):
         p.rod(add(base, mul(f, -4 * sc), (0, 0, 13 * sc)), add(base, mul(f, -13 * sc), (0, 0, 8 * sc)), 1.4 * sc,
               spec["tail"], s, mesh="cone")

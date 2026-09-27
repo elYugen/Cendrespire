@@ -5,8 +5,8 @@ import random
 from . import sfx
 from .bosses import Boss
 from .data import MONSTERS, ELITE_AFFIXES, floor_name, floor_boss
-from .dungeon import Dungeon
-from .entities import Monster, Chest, Portal, Loot
+from .dungeon import Dungeon, FLOOR, WALL
+from .entities import Monster, Chest, Portal, Loot, SecretWall, AnimaShrine, SpikeTrap
 from .fx import RingFX
 from .items import generate_item
 from .panels import DeathPanel
@@ -21,9 +21,15 @@ class TowerScene(World):
     def __init__(self, game, player, floor):
         self.floor = floor
         rng = random.Random()
-        d = Dungeon(64, 46)
-        d.generate(rng, n_rooms=10 + min(4, floor // 2))
+        # étages vastes : de nombreuses salles, des cachettes derrière des murs fissurés et des pièges
+        d = Dungeon(170, 120)
+        d.generate(rng, n_rooms=56 + min(10, floor))
+        # les murs fissurés sont dessinés à part (ils se brisent) : le décor fixe les traite comme du sol
+        for _room, (tx, ty), _kind in d.secrets:
+            d.tiles[ty][tx] = FLOOR
         super().__init__(game, player, d, level.floor_theme(floor), rng)
+        for _room, (tx, ty), _kind in d.secrets:
+            d.tiles[ty][tx] = WALL
         player.reset_run()
         sx, sy = d.start_room.center_px
         player.x, player.y = sx, sy
@@ -55,7 +61,7 @@ class TowerScene(World):
         pool = [mid for mid, m in MONSTERS.items() if m["floor"] <= f]
         rooms = [r for r in d.rooms if r is not d.start_room]
         for room in rooms:
-            n = rng.randint(3, 5) + min(3, f // 3) + (1 if room.w * room.h > 90 else 0)
+            n = rng.randint(2, 4) + min(3, f // 3) + (1 if room.w * room.h > 110 else 0)
             main = rng.choice(pool)
             elite_i = rng.randrange(n) if rng.random() < 0.28 + min(0.25, f * 0.03) else -1
             for i in range(n):
@@ -64,10 +70,22 @@ class TowerScene(World):
                 elite = rng.choice(list(ELITE_AFFIXES)) if i == elite_i else None
                 self.monsters.append(Monster(mid, x, y, f, elite))
         self.total = len(self.monsters)
-        self.seal_needed = max(1, int(self.total * 0.6))
-        for room in rng.sample(rooms, min(2, len(rooms))):
+        self.seal_needed = max(1, min(90, int(self.total * 0.35)))
+        for room in rng.sample(rooms, min(5, len(rooms))):
             x, y = self.random_point(room, 24)
             self.interactables.append(Chest(x, y))
+        # salles cachées : coffre richement garni ou autel d'anima, derrière un mur fissuré
+        for room, (tx, ty), kind in d.secrets:
+            self.interactables.append(SecretWall((tx + 0.5) * TILE, (ty + 0.5) * TILE, (tx, ty)))
+            cx, cy = room.center_px
+            if kind == "coffre":
+                c = Chest(cx, cy)
+                c.rich = True
+                self.interactables.append(c)
+            else:
+                self.interactables.append(AnimaShrine(cx, cy))
+        dmg = 9 * (1 + 0.28 * (f - 1))
+        self.traps = [SpikeTrap((tx + 0.5) * TILE, (ty + 0.5) * TILE, dmg, rng.uniform(0, 3.8)) for tx, ty in d.traps]
         bx, by = d.boss_room.center_px
         self.boss = Boss(floor_boss(f), bx, by, f, d.boss_room)
         self.monsters.append(self.boss)
@@ -101,6 +119,9 @@ class TowerScene(World):
 
     def update_extra(self, dt):
         p = self.player
+        for trap in self.traps:
+            if abs(trap.x - p.x) < 600 and abs(trap.y - p.y) < 600:
+                trap.update(dt, self)
         room = self.dungeon.boss_room
         if self.barrier_active and not self.boss_started and self.kills >= self.seal_needed:
             self.set_barrier(False)
@@ -161,6 +182,13 @@ class TowerScene(World):
         f = self.floor
         p = self.player
         sfx.play("chest")
+        if getattr(chest, "rich", False):       # coffre d'une salle cachée
+            self.message("Trésor caché !", GOLD_BRIGHT, 4)
+            for _ in range(4):
+                self.loot.append(Loot(chest.x, chest.y, "gold", amount=self.gold_amount(random.randint(14, 26))))
+            self.loot.append(Loot(chest.x, chest.y, "item", generate_item(f, cls_id=p.cls_id, tier=2)))
+            if random.random() < 0.35:
+                self.loot.append(Loot(chest.x, chest.y, "item", generate_item(f, rarity="legendaire", cls_id=p.cls_id)))
         for _ in range(3):
             self.loot.append(Loot(chest.x, chest.y, "gold", amount=self.gold_amount(random.randint(6, 14))))
         for _ in range(random.randint(1, 2)):
@@ -184,6 +212,10 @@ class TowerScene(World):
 
     # ------------------------------------------------------------------ rendu
     def render_extra(self, fr):
+        p = self.player
+        for trap in self.traps:
+            if abs(trap.x - p.x) < 900 and abs(trap.y - p.y) < 900:
+                trap.render(fr, self.time)
         t = self.time
         p = self.player
         room = self.dungeon.boss_room

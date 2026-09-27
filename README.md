@@ -51,11 +51,14 @@ Côté joueur :
 
 | Touche | Action |
 |---|---|
-| ZQSD / WASD / flèches | Se déplacer (touches physiques : AZERTY et QWERTY fonctionnent) |
-| Clic gauche (maintenu) | Attaque de base vers le curseur |
+| Clic gauche au sol | Se déplacer (maintenu : le héros suit le curseur ; recherche de chemin autour des murs) |
+| Clic gauche sur un ennemi | L'attaquer (le héros s'approche si besoin) |
+| Clic gauche sur un PNJ / un mur fissuré | Interagir |
+| Maj + clic gauche | Attaquer sur place |
+| ZQSD / WASD / flèches | Se déplacer au clavier (AZERTY et QWERTY) |
 | 1 2 3 4 · clic droit | Sorts de classe (le clic droit lance le sort 1) |
 | Espace | Roulade d'esquive (invulnérable) |
-| R · T · G | Artefacts |
+| R · T · G | Artefacts (un seul exemplaire de chaque artefact) |
 | F | Potion de soins (illimitée, avec temps de recharge) |
 | E | Interagir |
 | I · C · N · Échap | Menu : pages Inventaire · Personnage · Talents · Système (met le jeu en pause) |
@@ -70,8 +73,8 @@ Classes, sorts, talents, effets temporaires, artefacts, monstres, boss, anima, e
 ## Boucle de jeu
 
 1. **Campement** : une clairière au pied de la tour, avec feu de camp, chemins, lanternes et lucioles. On y trouve le marchand (équipement et artefacts), la forgeronne (améliorations jusqu'à +5), la couturière (changer d'apparence) et le portail de la Tour.
-2. **Étage** : un donjon 3D généré aléatoirement. Chaque étage a son ambiance : Geôles, Ossuaire, Forges avec lave, Sanctuaire, Cryptes de givre…
-3. **Sceau du gardien** : il se brise quand 60% des créatures de l'étage sont tuées. L'arène se referme alors sur le gardien.
+2. **Étage** : un vaste donjon 3D généré aléatoirement (56 à 66 salles). Chaque étage a son ambiance : Geôles, Ossuaire, Forges avec lave, Sanctuaire, Cryptes de givre… On y trouve des plaques à pointes et des salles cachées derrière des murs fissurés (trésor ou autel d'anima).
+3. **Sceau du gardien** : il se brise quand 35 % des créatures de l'étage (90 au plus) sont tuées. L'arène se referme alors sur le gardien. Chacun des 8 étages a son gardien : le Boucher, Arachné, la Liche, la Sentinelle Radieuse, le Golem, les Jumeaux d'Ombre, la Mère des Cendres et le Seigneur.
 4. **Victoire** : l'étage suivant est débloqué, le gardien laisse du butin (objet légendaire garanti à la première victoire) et un portail ramène au campement.
 5. **Mort** : on revient au campement en perdant la moitié de l'or ramassé pendant l'ascension. L'équipement et l'expérience sont conservés.
 
@@ -107,6 +110,7 @@ Classes, sorts, talents, effets temporaires, artefacts, monstres, boss, anima, e
   - particules ;
   - murs qui s'effacent quand ils masquent le héros ;
   - personnages : contour cartoon (coque inversée, épaisseur constante à l'écran), ombrage en paliers et liseré de lumière ;
+  - héros et PNJ animés : personnages glTF de [Quaternius](https://quaternius.com) (domaine public), animés sur la carte graphique (squelette de 62 os). Couleurs issues de la personnalisation, équipement de classe fixé aux os (main, tête, bassin) ;
   - modèles importés (.obj/.mtl) de Kenney (CC0) :
     - [Nature Kit](https://kenney.nl/assets/nature-kit) : arbres, buissons, rochers, fleurs ;
     - [Fantasy Town Kit](https://kenney.nl/assets/fantasy-town-kit) : maisons du hameau, étal, charrette, lanternes, clôtures ;
@@ -152,6 +156,9 @@ game/ui.py, gfx.py   boîte à outils d'interface (nette en Retina)
 assets/              illustration du menu principal, polices, modèles 3D (assets/models)
 game/r3d/            moteur 3D : renderer, shaders, caméra, maillages, modèles, niveaux, décor du campement
 game/r3d/objmodels.py  chargeur OBJ/MTL et bibliothèque de modèles importés
+game/r3d/skinned.py  chargeur glTF (.glb) : squelette, animations, poses
+game/r3d/rig.py      héros et PNJ animés : choix de l'animation, équipement fixé aux os
+game/nav.py          déplacement au clic : recherche de chemin A*
 installer/           construction de l'installeur (build.py, script NSIS, icône, vérification du contenu)
 build_installer.sh   construction depuis macOS / Linux (build_installer.ps1 : depuis Windows)
 ```

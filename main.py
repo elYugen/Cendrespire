@@ -155,8 +155,11 @@ class Game:
         fr = Frame()
         res = scene.render3d(fr)
         if res:
-            cam, env = res
+            cam, env = res[0], res[1]
             self.renderer.render(fr, cam, env, self.target)
+            if len(res) > 2:         # portrait du héros par-dessus le jeu (menus inventaire / personnage)
+                pf, pcam, penv, veil = res[2]
+                self.renderer.render(pf, pcam, penv, self.target, overlay=veil)
         else:
             self.renderer.clear(self.target)
         self.ui_surf.fill((0, 0, 0, 0))
@@ -169,6 +172,8 @@ class Game:
         self.renderer.present(self.screen, self.screen_size, vp, self.target_tex, self.ui_surf)
 
     def step(self, dt, events=()):
+        from game.r3d import rig
+        rig.CLOCK[0] += dt           # horloge des animations des personnages (menus, PNJ)
         for e in events:
             if e.type == pygame.QUIT:
                 if hasattr(self.scene, "save"):

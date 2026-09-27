@@ -1,0 +1,9 @@
+Personnages animés : « Ultimate Animated Character Pack » par Quaternius (quaternius.com).
+Licence : domaine public (CC0 1.0) — https://creativecommons.org/publicdomain/zero/1.0/
+Fichiers récupérés via poly.pizza (licence « Public Domain ») :
+  knight.glb        Knight               https://poly.pizza/m/I1gTjmuK2m
+  adventurer_a.glb  Adventurer           https://poly.pizza/m/5EGWBMpuXq
+  adventurer_b.glb  Adventurer           https://poly.pizza/m/ZwF0K7WBmu
+  hooded.glb        Hooded Adventurer    https://poly.pizza/m/y9KWOVG21R
+  farmer.glb        Farmer               https://poly.pizza/m/7pn3R6hPvE
+Crédit facultatif : merci à Quaternius.

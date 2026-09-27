@@ -10,7 +10,8 @@ ART_SLOTS = ["artefact1", "artefact2", "artefact3"]
 EQUIP_SLOTS = SLOTS + ART_SLOTS
 SLOT_NAMES = {"arme": "Arme", "casque": "Casque", "torse": "Torse", "gants": "Gants",
               "bottes": "Bottes", "amulette": "Amulette", "anneau": "Anneau", "artefact": "Artefact",
-              "artefact1": "Artefact", "artefact2": "Artefact", "artefact3": "Artefact"}
+              "artefact1": "Artefact", "artefact2": "Artefact", "artefact3": "Artefact",
+              "artefact4": "Artefact"}
 SLOT_DROP_WEIGHTS = {"arme": 18, "casque": 14, "torse": 14, "gants": 14, "bottes": 14, "amulette": 12, "anneau": 14,
                      "artefact": 12}
 ART_POWER = CONTENT["art_power"]

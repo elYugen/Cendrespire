@@ -98,6 +98,17 @@ Chaque classe a 3 branches de 4 talents. Le talent du palier *n* demande `tier_c
 
 `icon` accepte un pictogramme ou `spell:<id du sort>`.
 
+## Personnages animés (`rig`)
+
+Chaque classe peut utiliser un personnage animé (fichier `.glb` de `assets/models/characters`) :
+
+```json
+"rig": {"model": "knight", "colors": {"Skin": "skin", "Hair_White": "hair", "Blue": "main", "Beige": "second", "Gold": "hide"},
+        "skip": ["hood"]}
+```
+
+`colors` associe un matériau du modèle à `skin` (teint), `hair` (cheveux), `main` / `second` (couleurs de tenue choisies par le joueur), éventuellement assombries (`main:0.7`), ou `hide` pour le masquer. `skip` retire des pièces d'équipement que le modèle possède déjà (capuche…). Sans `rig`, ou si le fichier manque, le héros procédural est utilisé.
+
 ## Ajouter une classe
 
 Ajoutez une entrée dans `classes.json` (copier une classe existante est le plus simple), avec ses 4 sorts dans `spells.json` et son arbre dans `talents.json` sous le même identifiant. Dans `model`, `"main"` et `"second"` désignent les deux couleurs de tenue choisies par le joueur. Les pièces possibles sont : `robe`, `cape`, `hood`, `hat`, `helmet`, `horns`, `mask`, `pauldrons`, `tabard`, `shield`, `quiver`, `orb`, `fur`, `gloves`, `bracers`, `belt`, etc. `weapon` vaut `axe`, `staff`, `bow`, `sword`, `scythe` ou `daggers`. Le champ `headgear` liste les pièces affichées quand le couvre-chef est visible.
@@ -106,7 +117,21 @@ Ajoutez une entrée dans `classes.json` (copier une classe existante est le plus
 
 `monsters.json` : `hp`, `dmg` `[min, max]`, `speed`, `radius`, `ai` (`melee`, `ranged`, `caster`, `brute`), `range`, `cd`, `windup` (temps d'avertissement avant l'attaque), `xp`, `floor` (premier étage où le monstre apparaît), `model` (apparence).
 
-`bosses.json` : `abilities` liste des `[technique, intervalle en phase 1 (null = inactive), intervalle en phase 2]`. Les techniques possibles sont : `charge`, `slam`, `bolts`, `nova`, `summon`, `blink`, `boulders`, `waves`. `order` fixe l'ordre des boss d'un étage à l'autre.
+`bosses.json` : `abilities` liste des `[technique, intervalle en phase 1 (null = inactive), intervalle en phase 2]`. Techniques possibles :
+
+| Technique | Effet |
+|---|---|
+| `charge`, `slam`, `bolts`, `nova`, `blink`, `boulders`, `waves` | charge, frappe au sol, projectiles, onde, téléportation, rochers, ondes de choc |
+| `summon` | invoque `summon_monster` (`summon_count` : [phase 1, phase 2]) |
+| `leap` | bond sur la position annoncée du joueur |
+| `webs` | toiles au sol qui ralentissent fortement le joueur |
+| `beam` | rayon qui balaie l'arène en tournant autour du boss |
+| `shield` | invulnérable tant que ses pylônes de cristal tiennent (une fois par phase) |
+| `firestorm` | pluie de feu annoncée sur toute l'arène |
+| `vortex` | aspire le joueur puis explose autour du boss |
+| `clones` | illusions du boss qui tirent à distance |
+
+`fx_color` colore les effets du boss. `order` fixe l'ordre des boss d'un étage à l'autre (un par étage, puis en boucle).
 
 ## Notes de mise à jour
 

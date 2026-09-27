@@ -1,5 +1,5 @@
 {
-  "_info": "Classes jouables : attributs, attaque de base, sorts (ids de spells.json), armes, apparence 3D.",
+  "_info": "Classes jouables : attributs, attaque de base, sorts (ids de spells.json), armes, apparence 3D. rig : personnage animé (model = fichier de assets/models/characters ; colors = {matériau: skin | hair | main | second | main:0.7 (plus sombre) | hide}).",
   "classes": {
     "barbare": {
       "name": "Barbare",
@@ -22,10 +22,10 @@
       "attack": {
         "kind": "melee",
         "name": "Frappe brutale",
-        "mult": 1.0,
+        "mult": 1.12,
         "range": 64,
         "arc": 120,
-        "cd": 0.5,
+        "cd": 0.62,
         "mana_gain": 3,
         "color": [230, 200, 170],
         "icon": "axe"
@@ -62,6 +62,18 @@
       "headgear": {
         "helmet": [176, 178, 188],
         "horns": [236, 226, 200]
+      },
+      "rig": {
+        "model": "adventurer_b",
+        "colors": {
+          "Skin": "skin",
+          "Hair_Brown": "hair",
+          "Brown": "hair",
+          "Green": "main",
+          "LightGreen": "main:1.25",
+          "White": "second",
+          "Brown2": "second:0.7"
+        }
       }
     },
     "sorcier": {
@@ -87,7 +99,7 @@
         "name": "Trait arcanique",
         "mult": 0.9,
         "speed": 640,
-        "cd": 0.42,
+        "cd": 0.55,
         "color": [170, 120, 255],
         "life": 0.9,
         "radius": 6,
@@ -123,6 +135,18 @@
       },
       "headgear": {
         "hat": "second"
+      },
+      "rig": {
+        "model": "adventurer_b",
+        "colors": {
+          "Skin": "skin",
+          "Hair_Brown": "hair",
+          "Brown": "hair",
+          "Green": "main",
+          "LightGreen": "main:1.25",
+          "White": "second",
+          "Brown2": "second:0.7"
+        }
       }
     },
     "chasseur": {
@@ -148,7 +172,7 @@
         "name": "Flèche",
         "mult": 0.95,
         "speed": 820,
-        "cd": 0.36,
+        "cd": 0.5,
         "color": [235, 215, 165],
         "life": 0.75,
         "radius": 5,
@@ -186,6 +210,18 @@
       },
       "headgear": {
         "hood": "second"
+      },
+      "rig": {
+        "model": "adventurer_a",
+        "colors": {
+          "Skin": "skin",
+          "Hair": "hair",
+          "Eyebrows": "hair",
+          "Green": "main",
+          "LightGreen": "main:1.25",
+          "Brown": "second",
+          "Brown2": "second:0.75"
+        }
       }
     },
     "paladin": {
@@ -209,10 +245,10 @@
       "attack": {
         "kind": "melee",
         "name": "Coup sacré",
-        "mult": 1.05,
+        "mult": 1.4,
         "range": 58,
         "arc": 110,
-        "cd": 0.55,
+        "cd": 0.66,
         "mana_gain": 2,
         "color": [255, 226, 140],
         "icon": "sword"
@@ -251,6 +287,16 @@
       },
       "headgear": {
         "helmet": [206, 208, 218]
+      },
+      "rig": {
+        "model": "knight",
+        "colors": {
+          "Skin": "skin",
+          "Hair_White": "hair",
+          "Blue": "main",
+          "Beige": "second",
+          "Gold": "hide"
+        }
       }
     },
     "necromancien": {
@@ -276,7 +322,7 @@
         "name": "Trait d'os",
         "mult": 0.85,
         "speed": 600,
-        "cd": 0.45,
+        "cd": 0.58,
         "color": [170, 255, 190],
         "life": 0.9,
         "radius": 6,
@@ -313,6 +359,17 @@
       },
       "headgear": {
         "hood": "main"
+      },
+      "rig": {
+        "model": "hooded",
+        "colors": {
+          "Skin": "skin",
+          "Black": "main",
+          "LightBrown": "second",
+          "DarkBrown": "second:0.6",
+          "Brown": "hair"
+        },
+        "skip": ["hood"]
       }
     },
     "assassin": {
@@ -336,10 +393,10 @@
       "attack": {
         "kind": "melee",
         "name": "Estafilade",
-        "mult": 0.72,
+        "mult": 0.68,
         "range": 50,
         "arc": 95,
-        "cd": 0.3,
+        "cd": 0.42,
         "mana_gain": 2,
         "color": [210, 200, 255],
         "icon": "dagger"
@@ -375,6 +432,17 @@
       "headgear": {
         "hood": "main",
         "mask": [30, 28, 36]
+      },
+      "rig": {
+        "model": "hooded",
+        "colors": {
+          "Skin": "skin",
+          "Black": "main",
+          "LightBrown": "second",
+          "DarkBrown": "second:0.6",
+          "Brown": "hair"
+        },
+        "skip": ["hood"]
       }
     }
   }

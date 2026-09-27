@@ -34,6 +34,7 @@ class Player:
         eq = data.get("equipment", {})
         self.equipment = {s: eq.get(s) for s in EQUIP_SLOTS}
         self.inventory = list(data.get("inventory", []))
+        self._unique_artifacts()
         for it in self.all_items():
             it.setdefault("ench", [])
         self.kills = data.get("kills", 0)
@@ -53,6 +54,11 @@ class Player:
         self.art_cds = {}
         self.art_total = {}
         self.atk_cd = 0.0
+        self.clock = 0.0          # horloge des animations
+        self.anim_state, self.anim_start, self.anim_len, self.anim_speed = None, 0.0, 0.0, 1.0
+        self.snare = 0.0          # entravé (toile) : fortement ralenti
+        self.atk_total = 0.5
+        self.attack_lock = 0.0
         self.invuln = 0.0
         self.flash = 0.0
         self.swing = 0.0
@@ -186,6 +192,17 @@ class Player:
         self.hp = min(self.hp, s["max_hp"])
         self.mana = min(self.mana, s["max_mana"])
 
+    def _unique_artifacts(self):
+        """Sauvegardes anciennes : un artefact en double retourne dans le sac."""
+        seen = set()
+        for s in ART_SLOTS:
+            it = self.equipment.get(s)
+            if it and it["art"] in seen:
+                self.inventory.append(it)
+                self.equipment[s] = None
+            elif it:
+                seen.add(it["art"])
+
     def ench(self, eid):
         return self.stats["ench"].get(eid, 0)
 
@@ -218,7 +235,7 @@ class Player:
         self.hp = min(self.stats["max_hp"], self.hp + amount)
 
     def speed(self):
-        return self.stats["speed"] * (1 + self.buff_sum("move_pct") / 100)
+        return self.stats["speed"] * (1 + self.buff_sum("move_pct") / 100) * (0.45 if self.snare > 0 else 1.0)
 
     def buff_sum(self, key):
         """Somme d'une statistique sur les effets temporaires actifs (data/buffs.json ; "v" = valeur transmise)."""
@@ -238,6 +255,8 @@ class Player:
         dmg = amount * (1 - self.damage_reduction())
         self.hp -= dmg
         self.flash = 0.12
+        if not (self.anim_state and self.clock - self.anim_start < self.anim_len):
+            self.play("hit", 0.35)
         world.add_text(self.x, self.y, 50, f"-{int(dmg)}", (255, 90, 70), 18)
         world.shake_screen(2 + min(8, dmg / self.stats["max_hp"] * 40))
         world.particles.emit(self.x, self.y, (150, 12, 12), n=6, speed=90, life=0.5, size=3, glow=False,
@@ -288,6 +307,25 @@ class Player:
         world.effects.append(RingFX(self.x, self.y, 10, 60, 0.4, (110, 240, 120), 3))
         sfx.play("potion")
 
+    # ------------------------------------------------------------------ animations (héros animés)
+    def play(self, state, length=None):
+        """Joue une animation ponctuelle (attaque, sort, roulade, coup reçu, mort), accélérée pour tenir en length s."""
+        from .r3d import rig
+        d = rig.anim_duration(self.spec, state)
+        self.anim_state, self.anim_start = state, self.clock
+        self.anim_len = length or d
+        self.anim_speed = d / self.anim_len if length else 1.0
+
+    def current_anim(self):
+        el = self.clock - self.anim_start
+        if self.dead:
+            return "death", el * self.anim_speed if self.anim_state == "death" else 5.0
+        if self.anim_state and el < self.anim_len:
+            return self.anim_state, el * self.anim_speed
+        if self.moving or self.dash:
+            return "run", self.clock * self.speed() / 205
+        return ("idle_melee" if self.cls["attack"]["kind"] == "melee" else "idle"), self.clock
+
     def start_roll(self, world, dx, dy):
         if self.roll_cd > 0 or self.leap or self.dash or self.dead:
             return
@@ -296,6 +334,7 @@ class Player:
         self.invuln = ROLL_DUR + 0.08
         self.roll_cd = self.roll_total
         self.facing = math.atan2(dy, dx)
+        self.play("roll", ROLL_DUR + 0.12)
         world.particles.emit(self.x, self.y, (150, 136, 110), n=10, speed=70, life=0.45, size=3, glow=False, up=60)
         sfx.play("swing", 0.5)
 
@@ -314,6 +353,9 @@ class Player:
             if self.buffs[k] <= 0:
                 del self.buffs[k]
         self.atk_cd = max(0.0, self.atk_cd - dt)
+        self.attack_lock = max(0.0, self.attack_lock - dt)
+        self.clock += dt
+        self.snare = max(0.0, self.snare - dt)
         self.invuln = max(0.0, self.invuln - dt)
         self.flash = max(0.0, self.flash - dt)
         self.potion_cd = max(0.0, self.potion_cd - dt)
@@ -330,10 +372,14 @@ class Player:
         if self.dash and self.dash.get("roll"):
             k = self.dash["t"] / self.dash["dur"]
             sc = 1 - 0.3 * math.sin(math.pi * k)
-        if self.invuln > 0 and not (self.leap or self.dash) and int(self.invuln * 20) % 2:
+        if self.invuln > 0 and not (self.leap or self.dash) and int(self.invuln * 20) % 2 and not self.dead:
             return
+        anim, anim_t = self.current_anim()
+        if self.spec.get("rig"):
+            sc = 1.0          # la roulade est jouée par l'animation
         models.humanoid(fr, self.x, self.y, lift, self.facing, self.walk, self.spec, sc=sc,
-                        flash=self.flash > 0, swing=self.swing, moving=self.moving or bool(self.dash))
+                        flash=self.flash > 0, swing=self.swing, moving=self.moving or bool(self.dash),
+                        anim=anim, anim_t=anim_t)
         for bid in self.buffs:
             b = BUFFS.get(bid, {})
             vis, col = b.get("visual"), b.get("color", (255, 255, 255))
@@ -561,7 +607,7 @@ class Monster:
         if self.burn > 0:
             tint = tuple(min(255, c + 40) for c in self.burn_col)
         rise = min(1.0, self.spawn_t / 0.35) if self.minion else 1.0
-        z = -40 * sc * (1 - rise)
+        z = -40 * sc * (1 - rise) + self.lift()
         models.humanoid(fr, self.x, self.y, z, self.facing, self.phase, models.MONSTER_SPECS[self.spec_id], sc=sc,
                         flash=self.flash > 0, tint_col=tint, moving=self.moving)
         if self.curse > 0:
@@ -574,6 +620,10 @@ class Monster:
         if self.state == "windup" and self.d["ai"] == "melee":
             fr.decal(self.x, self.y, self.reach_draw(), self.reach_draw(), (255, 60, 40), 0.35, kind=3,
                      rot=self.atk_angle, p1=1.0, inner=0.2)
+
+    def lift(self):
+        """Hauteur au-dessus du sol (bond d'un boss)."""
+        return 0.0
 
     def reach_draw(self):
         return self.d["range"] + self.r + 14
@@ -612,7 +662,7 @@ class Projectile:
                 self.end(world)
                 return
             if self.owner == "player":
-                for m in world.monsters:
+                for m in world.near_monsters(self.x, self.y, self.radius + 6):
                     if m.dead or not m.targetable or id(m) in self.hit:
                         continue
                     rr = m.r + self.radius + 6
@@ -788,7 +838,7 @@ class NPC(Interactable):
     def render(self, fr, t):
         swing = -1.4 * max(0.0, math.sin(t * 2.6)) if self.work else 0.0
         models.humanoid(fr, self.x, self.y, 0, self.facing + (0.0 if self.work else 0.1 * math.sin(t * 0.7)), t * 2,
-                        self.spec, sc=1.05, moving=False, swing=swing)
+                        self.spec, sc=1.05, moving=False, swing=swing, anim="work" if self.work else None)
 
 
 class Campfire(Interactable):
@@ -814,3 +864,100 @@ class Prop(Interactable):
 
     def render(self, fr, t):
         self.fn(fr, self.x, self.y, *self.args)
+
+
+# =========================================================================== secrets et pièges des étages
+class SecretWall(Interactable):
+    """Mur fissuré : le briser ouvre le passage vers une salle cachée."""
+    prompt = "Briser le mur fissuré"
+    radius = 80
+
+    def __init__(self, x, y, tile):
+        super().__init__(x, y)
+        self.tile = tile
+        self.broken = False
+
+    def can_interact(self, world):
+        return not self.broken
+
+    def interact(self, world):
+        from .dungeon import FLOOR
+        self.broken = True
+        tx, ty = self.tile
+        world.tiles[ty][tx] = FLOOR
+        world.flow_src = None
+        world.minimap.refresh([(tx, ty)])
+        world.shake_screen(7)
+        sfx.play("explosion", 0.7)
+        world.particles.emit(self.x, self.y, (150, 140, 128), n=40, speed=200, life=0.9, size=5, glow=False,
+                             gravity=600, up=240, z=30)
+        world.message("Un passage secret s'ouvre !", (255, 226, 140), 4)
+        world.interactables.remove(self)
+
+    def render(self, fr, t):
+        stone, dark = (112, 104, 96), (40, 34, 30)
+        fr.box(self.x, self.y, 0, 20, 20, 36, stone)
+        for i, (a, h) in enumerate(((0.4, 10), (-0.5, 20), (0.8, 28))):      # fissures
+            fr.part("cube", (self.x - 20.5, self.y + 4 * a, h), (0.6, 0, 0), (1.2, 0, 7), (0, 0.8, 3 * a), dark)
+            fr.part("cube", (self.x + 4 * a, self.y + 20.5, h), (1.2, 0, 7), (0, 0.6, 0), (3 * a, 0, 0.8), dark)
+        k = 0.5 + 0.5 * math.sin(t * 2.5)
+        fr.glow(self.x, self.y, 30, 22, (255, 220, 140), 0.18 + 0.12 * k)
+
+
+class AnimaShrine(Interactable):
+    """Autel d'anima caché : offre un choix de pouvoir d'anima, une seule fois."""
+    prompt = "Prier à l'autel d'anima"
+    radius = 80
+
+    def __init__(self, x, y):
+        super().__init__(x, y)
+        self.used = False
+
+    def can_interact(self, world):
+        return not self.used
+
+    def interact(self, world):
+        self.used = True
+        world.open_anima_choice()
+
+    def render(self, fr, t):
+        fr.box(self.x, self.y, 0, 16, 16, 8, (84, 80, 92), mesh="cylinder")
+        fr.box(self.x, self.y, 8, 10, 10, 10, (104, 100, 112), mesh="cylinder")
+        if not self.used:
+            z = 30 + 3 * math.sin(t * 2)
+            fr.part("sphere", (self.x, self.y, z), (7, 0, 0), (0, 0, 7), (0, 7, 0), (140, 220, 255), 1.0)
+            fr.glow(self.x, self.y, z, 46, (120, 200, 255), 0.9)
+            fr.light(self.x, self.y, z, 220, (120, 200, 255), 1.2)
+
+
+class SpikeTrap:
+    """Plaque à pointes : repos, avertissement (rougeoiement), puis les pointes jaillissent."""
+    IDLE, WARN, UP = 2.6, 0.7, 0.55
+
+    def __init__(self, x, y, dmg, phase):
+        self.x, self.y, self.dmg = x, y, dmg
+        self.t = phase
+        self.hit = False
+
+    def update(self, dt, world):
+        cyc = self.IDLE + self.WARN + self.UP
+        self.t = (self.t + dt) % cyc
+        up = self.t >= self.IDLE + self.WARN
+        p = world.player
+        if not up:
+            self.hit = False
+        elif not self.hit and abs(p.x - self.x) < 20 + p.r * 0.5 and abs(p.y - self.y) < 20 + p.r * 0.5:
+            self.hit = True
+            p.take_damage(world, self.dmg)
+
+    def render(self, fr, t):
+        fr.box(self.x, self.y, 0, 18, 18, 0.8, (70, 64, 60))
+        warn = self.IDLE <= self.t < self.IDLE + self.WARN
+        up = self.t >= self.IDLE + self.WARN
+        if warn:
+            fr.decal(self.x, self.y, 20, 20, (255, 70, 40), 0.25 + 0.3 * math.sin(t * 20) ** 2, kind=4)
+        h = 14 if up else 1.5
+        for ox in (-10, 0, 10):
+            for oy in (-10, 0, 10):
+                fr.part("cone", (self.x + ox, self.y + oy, h / 2), (2.2, 0, 0), (0, 0, h / 2), (0, 2.2, 0),
+                        (190, 186, 180))

@@ -1,23 +1,24 @@
 {
  "name": "Sakou",
  "cls": "barbare",
- "level": 10,
- "xp": 1494,
+ "level": 14,
+ "xp": 1565,
  "alloc": {
-  "force": 21,
+  "force": 23,
   "dex": 1,
   "int": 0,
-  "vit": 23
+  "vit": 41
  },
  "points": 0,
- "gold": 1455,
- "max_floor": 6,
+ "gold": 3351,
+ "max_floor": 7,
  "cleared": [
   1,
   2,
   3,
   4,
-  5
+  5,
+  6
  ],
  "equipment": {
   "arme": {
@@ -48,7 +49,7 @@
       "acuite"
      ],
      "id": "tranchant",
-     "lvl": 1
+     "lvl": 3
     },
     {
      "choices": [
@@ -65,8 +66,8 @@
       "vampirisme",
       "entrave"
      ],
-     "id": null,
-     "lvl": 0
+     "id": "vampirisme",
+     "lvl": 1
     }
    ]
   },
@@ -75,7 +76,7 @@
    "slot": "casque",
    "rarity": "legendaire",
    "ilvl": 4,
-   "upgrade": 0,
+   "upgrade": 5,
    "affixes": {
     "cdr": 4,
     "vit": 8,
@@ -93,8 +94,8 @@
       "ame_soin",
       "epines"
      ],
-     "id": null,
-     "lvl": 0
+     "id": "riposte",
+     "lvl": 1
     },
     {
      "choices": [
@@ -117,26 +118,38 @@
    ]
   },
   "torse": {
-   "uid": 135173060396373,
+   "uid": 44651911081627,
    "slot": "torse",
-   "rarity": "magique",
-   "ilvl": 1,
-   "upgrade": 3,
+   "rarity": "rare",
+   "ilvl": 7,
+   "upgrade": 4,
    "affixes": {
-    "force": 4
+    "force": 12,
+    "mana_regen": 3,
+    "int": 13,
+    "mana": 26
    },
-   "base": "Cuirasse",
-   "armor": 7,
-   "name": "Cuirasse de l'Ours",
+   "base": "Cotte de mailles",
+   "armor": 39,
+   "name": "Linceul des Cendres",
    "ench": [
     {
      "choices": [
-      "rempart",
+      "celerite",
       "recharge",
-      "ame_soin"
+      "riposte"
      ],
-     "id": "recharge",
+     "id": "riposte",
      "lvl": 1
+    },
+    {
+     "choices": [
+      "recharge",
+      "riposte",
+      "rempart"
+     ],
+     "id": null,
+     "lvl": 0
     }
    ]
   },
@@ -145,7 +158,7 @@
    "slot": "gants",
    "rarity": "magique",
    "ilvl": 2,
-   "upgrade": 0,
+   "upgrade": 2,
    "affixes": {
     "armure": 9,
     "mana": 10
@@ -201,47 +214,89 @@
    ]
   },
   "amulette": {
-   "uid": 178159368756929,
+   "uid": 176559294063983,
    "slot": "amulette",
-   "rarity": "magique",
-   "ilvl": 1,
-   "upgrade": 1,
+   "rarity": "legendaire",
+   "ilvl": 6,
+   "upgrade": 0,
    "affixes": {
-    "int": 3
+    "cdr": 4,
+    "force": 11,
+    "mana": 21,
+    "dex": 13,
+    "armure": 18
    },
    "base": "Amulette",
-   "name": "Amulette du Sage",
-   "ench": []
-  },
-  "anneau": {
-   "uid": 252355785962147,
-   "slot": "anneau",
-   "rarity": "rare",
-   "ilvl": 4,
-   "upgrade": 3,
-   "affixes": {
-    "dmg_pct": 6,
-    "gold_find": 14,
-    "vie": 42,
-    "force": 7
-   },
-   "base": "Bague",
-   "name": "Murmure des Âmes",
+   "name": "Cœur de la Tour",
    "ench": [
     {
      "choices": [
+      "celerite",
       "agilite",
-      "riposte",
-      "ame_soin"
+      "esquive"
      ],
      "id": null,
      "lvl": 0
     },
     {
      "choices": [
-      "epines",
-      "rempart",
+      "celerite",
+      "agilite",
+      "recharge"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "esquive",
+      "recharge",
       "agilite"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  "anneau": {
+   "uid": 134411557691770,
+   "slot": "anneau",
+   "rarity": "legendaire",
+   "ilvl": 6,
+   "upgrade": 0,
+   "affixes": {
+    "cdr": 4,
+    "mana": 32,
+    "crit": 3,
+    "dex": 14,
+    "force": 11
+   },
+   "base": "Bague",
+   "name": "Anneau du Geôlier",
+   "ench": [
+    {
+     "choices": [
+      "recharge",
+      "riposte",
+      "celerite"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "recharge",
+      "ame_soin",
+      "rempart"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "vitalite",
+      "agilite",
+      "ame_soin"
      ],
      "id": null,
      "lvl": 0
@@ -273,20 +328,6 @@
    "ench": []
   },
   "artefact3": {
-   "uid": 153297071498013,
-   "slot": "artefact",
-   "art": "lanterne",
-   "rarity": "legendaire",
-   "ilvl": 3,
-   "upgrade": 1,
-   "affixes": {},
-   "base": "Artefact",
-   "name": "Lanterne des âmes",
-   "ench": []
-  }
- },
- "inventory": [
-  {
    "uid": 51947688945232,
    "slot": "artefact",
    "art": "foudre",
@@ -297,261 +338,39 @@
    "base": "Artefact",
    "name": "Pierre d'orage",
    "ench": []
-  },
+  }
+ },
+ "inventory": [
   {
-   "uid": 71006788815633,
-   "slot": "bottes",
-   "rarity": "rare",
-   "ilvl": 1,
-   "upgrade": 2,
-   "affixes": {
-    "force": 3,
-    "gold_find": 7,
-    "armure": 5,
-    "dex": 3
-   },
-   "base": "Grèves",
-   "armor": 5,
-   "name": "Marque du Néant",
-   "ench": [
-    {
-     "choices": [
-      "recharge",
-      "potion_vive",
-      "vitalite"
-     ],
-     "id": null,
-     "lvl": 0
-    },
-    {
-     "choices": [
-      "agilite",
-      "vitalite",
-      "potion_vive"
-     ],
-     "id": "potion_vive",
-     "lvl": 1
-    }
-   ]
-  },
-  {
-   "uid": 101508374401801,
-   "slot": "anneau",
-   "rarity": "rare",
-   "ilvl": 3,
-   "upgrade": 4,
-   "affixes": {
-    "lifesteal": 1,
-    "mana_regen": 1,
-    "crit": 2,
-    "dex": 7
-   },
-   "base": "Anneau",
-   "name": "Colère des Damnés",
-   "ench": [
-    {
-     "choices": [
-      "potion_vive",
-      "celerite",
-      "esquive"
-     ],
-     "id": null,
-     "lvl": 0
-    },
-    {
-     "choices": [
-      "celerite",
-      "esquive",
-      "potion_vive"
-     ],
-     "id": null,
-     "lvl": 0
-    }
-   ]
-  },
-  {
-   "uid": 59811751317632,
-   "slot": "artefact",
-   "art": "crane",
-   "rarity": "commun",
-   "ilvl": 5,
-   "upgrade": 0,
-   "affixes": {},
-   "base": "Artefact",
-   "name": "Crâne infernal",
-   "ench": []
-  },
-  {
-   "uid": 74298727863132,
-   "slot": "casque",
-   "rarity": "rare",
-   "ilvl": 5,
-   "upgrade": 0,
-   "affixes": {
-    "armure": 11,
-    "gold_find": 14,
-    "force": 9
-   },
-   "base": "Heaume",
-   "armor": 19,
-   "name": "Serment des Ossements",
-   "ench": [
-    {
-     "choices": [
-      "epines",
-      "ame_soin",
-      "rempart"
-     ],
-     "id": null,
-     "lvl": 0
-    },
-    {
-     "choices": [
-      "potion_vive",
-      "vitalite",
-      "rempart"
-     ],
-     "id": null,
-     "lvl": 0
-    }
-   ]
-  },
-  {
-   "uid": 137808079532865,
-   "slot": "torse",
-   "rarity": "commun",
-   "ilvl": 5,
-   "upgrade": 0,
-   "affixes": {},
-   "base": "Cuirasse",
-   "armor": 25,
-   "name": "Cuirasse",
-   "ench": []
-  },
-  {
-   "uid": 258660451960419,
-   "slot": "amulette",
-   "rarity": "magique",
-   "ilvl": 5,
-   "upgrade": 0,
-   "affixes": {
-    "force": 9
-   },
-   "base": "Amulette",
-   "name": "Amulette de l'Ours",
-   "ench": [
-    {
-     "choices": [
-      "epines",
-      "recharge",
-      "vitalite"
-     ],
-     "id": null,
-     "lvl": 0
-    }
-   ]
-  },
-  {
-   "uid": 222043624375957,
-   "slot": "torse",
-   "rarity": "commun",
-   "ilvl": 5,
-   "upgrade": 0,
-   "affixes": {},
-   "base": "Robe runique",
-   "armor": 25,
-   "name": "Robe runique",
-   "ench": []
-  },
-  {
-   "uid": 211415053497577,
+   "uid": 189705477450779,
    "slot": "amulette",
    "rarity": "commun",
-   "ilvl": 5,
+   "ilvl": 7,
    "upgrade": 0,
    "affixes": {
-    "force": 6
+    "dmg_pct": 9
    },
    "base": "Talisman",
    "name": "Talisman",
    "ench": []
   },
   {
-   "uid": 13429885715000,
-   "slot": "casque",
+   "uid": 96697769194011,
+   "slot": "anneau",
    "rarity": "magique",
-   "ilvl": 5,
+   "ilvl": 7,
    "upgrade": 0,
    "affixes": {
-    "armure": 17
+    "armure": 22,
+    "vie": 67
    },
-   "base": "Casque à cornes",
-   "armor": 14,
-   "name": "Casque à cornes du Rempart",
+   "base": "Anneau",
+   "name": "Anneau du Rempart",
    "ench": [
     {
      "choices": [
-      "ame_soin",
-      "recharge",
-      "potion_vive"
-     ],
-     "id": null,
-     "lvl": 0
-    }
-   ]
-  },
-  {
-   "uid": 117122824614588,
-   "slot": "amulette",
-   "rarity": "magique",
-   "ilvl": 5,
-   "upgrade": 0,
-   "affixes": {
-    "cdr": 4
-   },
-   "base": "Pendentif",
-   "name": "Pendentif de l'Instant",
-   "ench": [
-    {
-     "choices": [
-      "agilite",
-      "celerite",
-      "vitalite"
-     ],
-     "id": null,
-     "lvl": 0
-    }
-   ]
-  },
-  {
-   "uid": 236388541404249,
-   "slot": "bottes",
-   "rarity": "rare",
-   "ilvl": 5,
-   "upgrade": 0,
-   "affixes": {
-    "dex": 9,
-    "armure": 17,
-    "crit": 3,
-    "gold_find": 15
-   },
-   "base": "Bottes",
-   "armor": 12,
-   "name": "Éclat de Givre",
-   "ench": [
-    {
-     "choices": [
-      "ame_soin",
-      "celerite",
-      "riposte"
-     ],
-     "id": null,
-     "lvl": 0
-    },
-    {
-     "choices": [
-      "ame_soin",
-      "celerite",
+      "riposte",
+      "rempart",
       "agilite"
      ],
      "id": null,
@@ -560,28 +379,66 @@
    ]
   },
   {
-   "uid": 161060487085029,
+   "uid": 209830385228293,
    "slot": "arme",
+   "rarity": "commun",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {},
+   "wclass": "barbare",
+   "base": "Épée longue",
+   "dmg": [
+    23,
+    35
+   ],
+   "name": "Épée longue",
+   "ench": []
+  },
+  {
+   "uid": 73846863431578,
+   "slot": "casque",
+   "rarity": "commun",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {},
+   "base": "Couronne de fer",
+   "armor": 21,
+   "name": "Couronne de fer",
+   "ench": []
+  },
+  {
+   "uid": 26081412709974,
+   "slot": "arme",
+   "rarity": "commun",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {},
+   "wclass": "barbare",
+   "base": "Masse d'armes",
+   "dmg": [
+    23,
+    34
+   ],
+   "name": "Masse d'armes",
+   "ench": []
+  },
+  {
+   "uid": 63659090465636,
+   "slot": "amulette",
    "rarity": "magique",
-   "ilvl": 5,
+   "ilvl": 7,
    "upgrade": 0,
    "affixes": {
-    "cdr": 4,
-    "dmg_pct": 7
+    "lifesteal": 1
    },
-   "wclass": "barbare",
-   "base": "Hache de guerre",
-   "dmg": [
-    22,
-    39
-   ],
-   "name": "Hache de guerre de l'Instant",
+   "base": "Amulette",
+   "name": "Amulette du Vampire",
    "ench": [
     {
      "choices": [
-      "entrave",
-      "vampirisme",
-      "vivacite"
+      "rempart",
+      "agilite",
+      "epines"
      ],
      "id": null,
      "lvl": 0
@@ -589,46 +446,429 @@
    ]
   },
   {
-   "uid": 240524670340772,
-   "slot": "torse",
-   "rarity": "commun",
-   "ilvl": 5,
-   "upgrade": 0,
-   "affixes": {},
-   "base": "Cotte de mailles",
-   "armor": 24,
-   "name": "Cotte de mailles",
-   "ench": []
-  },
-  {
-   "uid": 77441846040500,
+   "uid": 67346414854079,
    "slot": "artefact",
-   "art": "bottes",
-   "rarity": "legendaire",
-   "ilvl": 5,
+   "art": "gel",
+   "rarity": "rare",
+   "ilvl": 7,
    "upgrade": 0,
    "affixes": {},
    "base": "Artefact",
-   "name": "Bottes de célérité",
+   "name": "Orbe de givre",
    "ench": []
   },
   {
-   "uid": 247642014406362,
-   "slot": "torse",
+   "uid": 159009844526519,
+   "slot": "arme",
    "rarity": "magique",
-   "ilvl": 5,
+   "ilvl": 7,
    "upgrade": 0,
    "affixes": {
-    "mana": 19
+    "gold_find": 21,
+    "vit": 11
    },
-   "base": "Tunique de cuir",
-   "armor": 23,
-   "name": "Tunique de cuir d'Arcane",
+   "wclass": "barbare",
+   "base": "Épée longue",
+   "dmg": [
+    27,
+    49
+   ],
+   "name": "Épée longue de Fortune",
    "ench": [
     {
      "choices": [
+      "tranchant",
+      "entrave",
+      "acuite"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 145899298356067,
+   "slot": "amulette",
+   "rarity": "rare",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {
+    "dex": 9,
+    "mana": 23,
+    "dmg_pct": 6,
+    "atk_speed": 5
+   },
+   "base": "Talisman",
+   "name": "Colère des Âmes",
+   "ench": [
+    {
+     "choices": [
+      "celerite",
       "epines",
-      "potion_vive",
+      "agilite"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "ame_soin",
+      "epines",
+      "recharge"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 131112166875281,
+   "slot": "arme",
+   "rarity": "magique",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {
+    "lifesteal": 1
+   },
+   "wclass": "barbare",
+   "base": "Hache de guerre",
+   "dmg": [
+    27,
+    40
+   ],
+   "name": "Hache de guerre du Vampire",
+   "ench": [
+    {
+     "choices": [
+      "vivacite",
+      "tempete",
+      "entrave"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 108873388860243,
+   "slot": "anneau",
+   "rarity": "commun",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {
+    "gold_find": 17
+   },
+   "base": "Chevalière",
+   "name": "Chevalière",
+   "ench": []
+  },
+  {
+   "uid": 253321931079655,
+   "slot": "arme",
+   "rarity": "rare",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {
+    "dex": 10,
+    "vie": 50,
+    "dmg_pct": 10,
+    "gold_find": 14
+   },
+   "wclass": "chasseur",
+   "base": "Arc court",
+   "dmg": [
+    33,
+    57
+   ],
+   "name": "Linceul de Givre",
+   "ench": [
+    {
+     "choices": [
+      "vivacite",
+      "chaine",
+      "tranchant"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "embrasement",
+      "tempete",
+      "entrave"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 8175101519767,
+   "slot": "bottes",
+   "rarity": "commun",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {},
+   "base": "Bottes",
+   "armor": 15,
+   "name": "Bottes",
+   "ench": []
+  },
+  {
+   "uid": 268795051097943,
+   "slot": "gants",
+   "rarity": "rare",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {
+    "int": 10,
+    "dex": 12,
+    "lifesteal": 1
+   },
+   "base": "Gants de cuir",
+   "armor": 16,
+   "name": "Linceul de l'Abîme",
+   "ench": [
+    {
+     "choices": [
+      "recharge",
+      "celerite",
+      "riposte"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "recharge",
+      "agilite",
+      "ame_soin"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 147243137857318,
+   "slot": "artefact",
+   "art": "totem",
+   "rarity": "commun",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {},
+   "base": "Artefact",
+   "name": "Totem de régénération",
+   "ench": []
+  },
+  {
+   "uid": 269519758310802,
+   "slot": "anneau",
+   "rarity": "rare",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {
+    "lifesteal": 1,
+    "vit": 11,
+    "atk_speed": 5,
+    "armure": 22
+   },
+   "base": "Bague",
+   "name": "Fléau de Sang",
+   "ench": [
+    {
+     "choices": [
+      "ame_soin",
+      "esquive",
+      "rempart"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "rempart",
+      "riposte",
+      "ame_soin"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 24055718024919,
+   "slot": "artefact",
+   "art": "corne",
+   "rarity": "commun",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {},
+   "base": "Artefact",
+   "name": "Corne du Tourment",
+   "ench": []
+  },
+  {
+   "uid": 258055384501796,
+   "slot": "torse",
+   "rarity": "rare",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {
+    "mana_regen": 3,
+    "int": 12,
+    "vie": 59,
+    "gold_find": 19
+   },
+   "base": "Robe runique",
+   "armor": 34,
+   "name": "Chant du Bourreau",
+   "ench": [
+    {
+     "choices": [
+      "agilite",
+      "epines",
+      "riposte"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "riposte",
+      "ame_soin",
+      "agilite"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 30801505396371,
+   "slot": "artefact",
+   "art": "totem",
+   "rarity": "magique",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {},
+   "base": "Artefact",
+   "name": "Totem de régénération",
+   "ench": []
+  },
+  {
+   "uid": 90769100869680,
+   "slot": "gants",
+   "rarity": "legendaire",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {
+    "dmg_pct": 8,
+    "mana_regen": 3,
+    "crit": 5,
+    "vie": 82,
+    "armure": 18
+   },
+   "base": "Mitaines cloutées",
+   "armor": 18,
+   "name": "Mains du Bourreau",
+   "ench": [
+    {
+     "choices": [
+      "ame_soin",
+      "epines",
+      "celerite"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "vitalite",
+      "riposte",
+      "recharge"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "rempart",
+      "recharge",
+      "epines"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 58562724735458,
+   "slot": "arme",
+   "rarity": "rare",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {
+    "gold_find": 19,
+    "cdr": 5,
+    "atk_speed": 5
+   },
+   "wclass": "barbare",
+   "base": "Fléau",
+   "dmg": [
+    25,
+    42
+   ],
+   "name": "Ombre du Néant",
+   "ench": [
+    {
+     "choices": [
+      "echo",
+      "entrave",
+      "acuite"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "tranchant",
+      "vivacite",
+      "tempete"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 186444028583962,
+   "slot": "amulette",
+   "rarity": "rare",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {
+    "mana": 25,
+    "vit": 10,
+    "dex": 12,
+    "gold_find": 22
+   },
+   "base": "Talisman",
+   "name": "Ombre de la Tour",
+   "ench": [
+    {
+     "choices": [
+      "ame_soin",
+      "recharge",
+      "agilite"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "riposte",
+      "vitalite",
       "rempart"
      ],
      "id": null,
@@ -637,49 +877,138 @@
    ]
   },
   {
-   "uid": 56925287032340,
-   "slot": "artefact",
-   "art": "lanterne",
-   "rarity": "rare",
-   "ilvl": 5,
-   "upgrade": 0,
-   "affixes": {},
-   "base": "Artefact",
-   "name": "Lanterne des âmes",
-   "ench": []
-  },
-  {
-   "uid": 6088270115171,
-   "slot": "arme",
-   "rarity": "commun",
-   "ilvl": 5,
-   "upgrade": 0,
-   "affixes": {},
-   "wclass": "barbare",
-   "base": "Hache de guerre",
-   "dmg": [
-    17,
-    29
-   ],
-   "name": "Hache de guerre",
-   "ench": []
-  },
-  {
-   "uid": 238491215868705,
-   "slot": "amulette",
+   "uid": 56157581227206,
+   "slot": "casque",
    "rarity": "magique",
-   "ilvl": 5,
+   "ilvl": 7,
    "upgrade": 0,
    "affixes": {
-    "mana_regen": 2,
-    "dmg_pct": 7
+    "cdr": 4
    },
-   "base": "Amulette",
-   "name": "Amulette de Clarté",
+   "base": "Couronne de fer",
+   "armor": 19,
+   "name": "Couronne de fer de l'Instant",
    "ench": [
     {
      "choices": [
       "riposte",
+      "recharge",
+      "ame_soin"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 155198979578736,
+   "slot": "arme",
+   "rarity": "rare",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {
+    "mana": 21,
+    "gold_find": 16,
+    "vie": 56
+   },
+   "wclass": "barbare",
+   "base": "Masse d'armes",
+   "dmg": [
+    29,
+    44
+   ],
+   "name": "Linceul du Tourment",
+   "ench": [
+    {
+     "choices": [
+      "echo",
+      "entrave",
+      "chaine"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "acuite",
+      "vampirisme",
+      "embrasement"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 178880941414540,
+   "slot": "bottes",
+   "rarity": "magique",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {
+    "mana": 22,
+    "int": 9
+   },
+   "base": "Grèves",
+   "armor": 15,
+   "name": "Grèves d'Arcane",
+   "ench": [
+    {
+     "choices": [
+      "epines",
+      "ame_soin",
+      "riposte"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 150107027147117,
+   "slot": "arme",
+   "rarity": "magique",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {
+    "vit": 8,
+    "lifesteal": 1
+   },
+   "wclass": "barbare",
+   "base": "Épée longue",
+   "dmg": [
+    28,
+    47
+   ],
+   "name": "Épée longue du Colosse",
+   "ench": [
+    {
+     "choices": [
+      "embrasement",
+      "vivacite",
+      "echo"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 5976627750892,
+   "slot": "casque",
+   "rarity": "magique",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {
+    "crit": 4
+   },
+   "base": "Capuche",
+   "armor": 22,
+   "name": "Capuche de Précision",
+   "ench": [
+    {
+     "choices": [
+      "esquive",
       "ame_soin",
       "epines"
      ],
@@ -689,42 +1018,215 @@
    ]
   },
   {
-   "uid": 85706637515187,
-   "slot": "anneau",
-   "rarity": "legendaire",
-   "ilvl": 5,
+   "uid": 87438993194574,
+   "slot": "arme",
+   "rarity": "magique",
+   "ilvl": 7,
    "upgrade": 0,
    "affixes": {
+    "mana": 26
+   },
+   "wclass": "barbare",
+   "base": "Épée longue",
+   "dmg": [
+    27,
+    48
+   ],
+   "name": "Épée longue d'Arcane",
+   "ench": [
+    {
+     "choices": [
+      "echo",
+      "embrasement",
+      "tempete"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 112832632030813,
+   "slot": "bottes",
+   "rarity": "commun",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {},
+   "base": "Grèves",
+   "armor": 13,
+   "name": "Grèves",
+   "ench": []
+  },
+  {
+   "uid": 29975547157248,
+   "slot": "anneau",
+   "rarity": "rare",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {
+    "armure": 25,
+    "int": 7,
     "cdr": 4,
-    "force": 8,
-    "mana_regen": 3,
-    "mana": 19,
-    "armure": 16
+    "mana": 20
    },
    "base": "Bague",
-   "name": "Anneau du Geôlier",
+   "name": "Ombre de Givre",
+   "ench": [
+    {
+     "choices": [
+      "epines",
+      "vitalite",
+      "rempart"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "recharge",
+      "potion_vive",
+      "rempart"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 180930412776045,
+   "slot": "arme",
+   "rarity": "rare",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {
+    "armure": 23,
+    "dmg_pct": 6,
+    "vit": 9
+   },
+   "wclass": "barbare",
+   "base": "Épée longue",
+   "dmg": [
+    30,
+    51
+   ],
+   "name": "Cri de Sang",
+   "ench": [
+    {
+     "choices": [
+      "embrasement",
+      "acuite",
+      "chaine"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "tempete",
+      "tranchant",
+      "chaine"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 227389187936702,
+   "slot": "arme",
+   "rarity": "magique",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {
+    "lifesteal": 2
+   },
+   "wclass": "barbare",
+   "base": "Fléau",
+   "dmg": [
+    28,
+    43
+   ],
+   "name": "Fléau du Vampire",
+   "ench": [
+    {
+     "choices": [
+      "vampirisme",
+      "tranchant",
+      "vivacite"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 39119798209362,
+   "slot": "arme",
+   "rarity": "rare",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {
+    "atk_speed": 6,
+    "int": 11,
+    "vie": 55,
+    "lifesteal": 2
+   },
+   "wclass": "barbare",
+   "base": "Masse d'armes",
+   "dmg": [
+    28,
+    50
+   ],
+   "name": "Linceul de Givre",
+   "ench": [
+    {
+     "choices": [
+      "vivacite",
+      "acuite",
+      "entrave"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "acuite",
+      "vampirisme",
+      "tempete"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 42425124356773,
+   "slot": "gants",
+   "rarity": "rare",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {
+    "int": 12,
+    "dmg_pct": 8,
+    "armure": 17,
+    "mana_regen": 3
+   },
+   "base": "Gants de cuir",
+   "armor": 13,
+   "name": "Colère des Âmes",
    "ench": [
     {
      "choices": [
       "rempart",
-      "riposte",
-      "agilite"
+      "epines",
+      "recharge"
      ],
      "id": null,
      "lvl": 0
     },
     {
      "choices": [
-      "agilite",
-      "vitalite",
-      "riposte"
-     ],
-     "id": null,
-     "lvl": 0
-    },
-    {
-     "choices": [
-      "riposte",
+      "esquive",
       "potion_vive",
       "ame_soin"
      ],
@@ -734,110 +1236,139 @@
    ]
   },
   {
-   "uid": 117431872013132,
+   "uid": 119922743086680,
    "slot": "bottes",
-   "rarity": "legendaire",
-   "ilvl": 5,
-   "upgrade": 0,
-   "affixes": {
-    "dmg_pct": 6,
-    "mana_regen": 3,
-    "int": 12,
-    "armure": 22,
-    "move_speed": 6
-   },
-   "base": "Bottes",
-   "armor": 17,
-   "name": "Pas du Spectre",
-   "ench": [
-    {
-     "choices": [
-      "epines",
-      "vitalite",
-      "riposte"
-     ],
-     "id": null,
-     "lvl": 0
-    },
-    {
-     "choices": [
-      "recharge",
-      "potion_vive",
-      "riposte"
-     ],
-     "id": null,
-     "lvl": 0
-    },
-    {
-     "choices": [
-      "potion_vive",
-      "vitalite",
-      "epines"
-     ],
-     "id": null,
-     "lvl": 0
-    }
-   ]
-  },
-  {
-   "uid": 198150791220276,
-   "slot": "artefact",
-   "art": "fiole",
-   "rarity": "magique",
-   "ilvl": 5,
+   "rarity": "commun",
+   "ilvl": 7,
    "upgrade": 0,
    "affixes": {},
-   "base": "Artefact",
-   "name": "Fiole d'essence",
+   "base": "Bottes",
+   "armor": 18,
+   "name": "Bottes",
    "ench": []
   },
   {
-   "uid": 47122811931605,
-   "slot": "amulette",
-   "rarity": "legendaire",
-   "ilvl": 5,
+   "uid": 271701687931034,
+   "slot": "casque",
+   "rarity": "magique",
+   "ilvl": 7,
    "upgrade": 0,
    "affixes": {
-    "cdr": 4,
-    "mana_regen": 2,
-    "int": 10,
-    "dex": 12,
-    "dmg_pct": 9
+    "armure": 16,
+    "cdr": 4
    },
-   "base": "Talisman",
-   "name": "Larme du Dieu mort",
+   "base": "Capuche",
+   "armor": 19,
+   "name": "Capuche du Rempart",
    "ench": [
     {
      "choices": [
-      "celerite",
-      "rempart",
-      "riposte"
-     ],
-     "id": null,
-     "lvl": 0
-    },
-    {
-     "choices": [
       "esquive",
-      "potion_vive",
-      "rempart"
-     ],
-     "id": null,
-     "lvl": 0
-    },
-    {
-     "choices": [
-      "rempart",
-      "epines",
-      "agilite"
+      "ame_soin",
+      "celerite"
      ],
      "id": null,
      "lvl": 0
     }
    ]
+  },
+  {
+   "uid": 50880037263913,
+   "slot": "casque",
+   "rarity": "magique",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {
+    "crit": 3
+   },
+   "base": "Couronne de fer",
+   "armor": 19,
+   "name": "Couronne de fer de Précision",
+   "ench": [
+    {
+     "choices": [
+      "riposte",
+      "epines",
+      "vitalite"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 47955672659737,
+   "slot": "gants",
+   "rarity": "magique",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {
+    "armure": 21,
+    "vit": 7
+   },
+   "base": "Gantelets",
+   "armor": 12,
+   "name": "Gantelets du Rempart",
+   "ench": [
+    {
+     "choices": [
+      "esquive",
+      "recharge",
+      "riposte"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 237204256880237,
+   "slot": "torse",
+   "rarity": "rare",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {
+    "force": 12,
+    "mana_regen": 2,
+    "mana": 22
+   },
+   "base": "Tunique de cuir",
+   "armor": 32,
+   "name": "Ruine de Sang",
+   "ench": [
+    {
+     "choices": [
+      "rempart",
+      "epines",
+      "ame_soin"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "celerite",
+      "potion_vive",
+      "riposte"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 178885642821112,
+   "slot": "artefact",
+   "art": "gel",
+   "rarity": "magique",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {},
+   "base": "Artefact",
+   "name": "Orbe de givre"
   }
  ],
- "kills": 351,
+ "kills": 633,
  "deaths": 2,
  "created_at": 1790432904.3347578,
  "look": {
@@ -854,8 +1385,8 @@
  },
  "talents": {
   "ba_force": 3,
-  "ba_peau": 1,
+  "ba_peau": 3,
   "ba_tourb": 1
  },
- "saved_at": 1790497835.750384
+ "saved_at": 1790512485.727117
 }

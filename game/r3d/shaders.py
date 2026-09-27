@@ -71,6 +71,7 @@ float shadow_at() {
 }
 
 void main() {
+    if (v_col.r < -0.5) discard;       // matériau masqué d'un personnage animé
     // murs coupés quand ils masquent le héros (comme dans Minecraft Dungeons)
     if (v_flag > 0.5 && u_cut > 0.0 && v_wpos.y > 0.08) {
         vec3 toP = u_player - u_cam;
@@ -283,6 +284,20 @@ void main() {
 }
 """
 
+# voile plein écran (assombrit l'image 3D avant d'y dessiner le portrait du héros)
+DIM_VS = """
+#version 330
+in vec2 in_uv;
+void main() { gl_Position = vec4(in_uv, 0.0, 1.0); }
+"""
+
+DIM_FS = """
+#version 330
+uniform vec4 u_col;
+out vec4 f_col;
+void main() { f_col = u_col; }
+"""
+
 UI_VS = """
 #version 330
 uniform float u_flip;
@@ -343,7 +358,77 @@ OUTLINE_FS = """
 in vec3 v_col;
 out vec4 f_col;
 void main() {
+    if (v_col.r < -0.5) discard;
     f_col = vec4(v_col * 0.16 + vec3(0.015, 0.012, 0.02), 1.0);
 }
 """
 
+
+# Personnages animés (glTF) : déformation par le squelette sur la carte graphique, même éclairage que le reste.
+SKIN_HEAD = """
+#version 330
+uniform mat4 u_vp;
+uniform mat4 u_model;
+uniform mat4 u_joints[64];
+in vec3 in_pos;
+in vec3 in_norm;
+in float in_mat;
+in vec4 in_joints;
+in vec4 in_weights;
+mat4 skin_matrix() {
+    return in_weights.x * u_joints[int(in_joints.x)] + in_weights.y * u_joints[int(in_joints.y)]
+         + in_weights.z * u_joints[int(in_joints.z)] + in_weights.w * u_joints[int(in_joints.w)];
+}
+"""
+
+SKIN_VS = SKIN_HEAD + """
+uniform mat4 u_light_vp;
+uniform vec3 u_pal[16];
+uniform vec4 u_tint;
+uniform float u_emis;
+out vec3 v_wpos;
+out vec3 v_norm;
+out vec3 v_col;
+out vec4 v_lpos;
+out float v_emis;
+out float v_flag;
+void main() {
+    mat4 M = u_model * skin_matrix();
+    vec4 wp = M * vec4(in_pos, 1.0);
+    v_wpos = wp.xyz;
+    v_norm = normalize(mat3(M) * in_norm);
+    v_col = mix(u_pal[int(in_mat + 0.5)], u_tint.rgb, u_tint.a);
+    v_emis = u_emis;
+    v_flag = 0.0;
+    v_lpos = u_light_vp * wp;
+    gl_Position = u_vp * wp;
+}
+"""
+
+SKIN_DEPTH_VS = SKIN_HEAD + """
+uniform mat4 u_light_vp;
+void main() {
+    gl_Position = u_light_vp * (u_model * skin_matrix() * vec4(in_pos, 1.0));
+}
+"""
+
+SKIN_OUTLINE_VS = SKIN_HEAD + """
+uniform vec2 u_px;
+uniform vec3 u_cam;
+uniform vec3 u_pal[16];
+out vec3 v_col;
+void main() {
+    mat4 M = u_model * skin_matrix();
+    vec3 wp = (M * vec4(in_pos, 1.0)).xyz;
+    vec3 n = normalize(mat3(M) * in_norm);
+    wp += normalize(wp - u_cam) * 0.03;
+    vec4 c = u_vp * vec4(wp, 1.0);
+    vec4 cn = u_vp * vec4(wp + n * 0.05, 1.0);
+    vec2 d = cn.xy / cn.w - c.xy / c.w;
+    float l = length(d);
+    d = l > 1e-6 ? d / l : vec2(0.0);
+    c.xy += d * u_px * c.w;
+    v_col = u_pal[int(in_mat + 0.5)];
+    gl_Position = c;
+}
+"""

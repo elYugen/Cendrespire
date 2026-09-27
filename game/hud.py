@@ -170,7 +170,6 @@ def draw_skill(surf, rect, color, sid, key, cd_frac, cd_left, locked, lacking, l
 
 def draw_slots(surf, world):
     p = world.player
-    world.skill_rects = []
     size, gap = 52, 10
     right = SCREEN_W - 22
     y0 = 20
@@ -181,7 +180,7 @@ def draw_slots(surf, world):
         rc = pygame.Rect(x0 + i * (size + gap), y0, size, size)
         if kind == "attack":
             draw_skill(surf, rc, atk.get("color", p.cls["color"]), None, "LMB",
-                       p.atk_cd / max(0.01, atk["cd"]), 0, False, False, attack_cls=p.cls_id)
+                       p.atk_cd / max(0.01, p.atk_total), 0, False, False, attack_cls=p.cls_id)
         else:
             sp = SPELLS[sid]
             tot = p.cd_total.get(sid, 1) or 1
@@ -192,7 +191,7 @@ def draw_slots(surf, world):
     # rangée 2 : artefacts, potion, roulade
     s2, g2 = 44, 12
     y1 = y0 + size + 18
-    row = [("art", slot) for slot in ART_SLOTS] + [("potion", None), ("roll", None)]
+    row = [("roll", None)]
     x1 = right - len(row) * s2 - (len(row) - 1) * g2
     for i, (kind, key) in enumerate(row):
         rc = pygame.Rect(x1 + i * (s2 + g2), y1, s2, s2)
@@ -259,29 +258,65 @@ def draw_effects(surf, world, x, y):
 
 
 # --------------------------------------------------------------------------- HUD principal
+def _potion_glyph(surf, c, k=1.0):
+    fx, fy = c[0], c[1] + 3 * k
+    ui.circle(surf, (210, 34, 46), (fx, fy + 3 * k), 11 * k)
+    ui.rect(surf, (210, 34, 46), (fx - 4 * k, fy - 11 * k, 8 * k, 8 * k))
+    ui.rect(surf, (230, 220, 200), (fx - 5 * k, fy - 14 * k, 10 * k, 4 * k))
+    ui.circle(surf, (255, 170, 170), (fx - 4 * k, fy), 3 * k)
+
+
+def draw_artifacts(surf, world, x, y):
+    """Façon Breath of the Wild : les 3 artefacts et la potion en croix sous les cœurs, la touche à côté."""
+    p = world.player
+    R, gap = 19, 44
+    cx, cy = x + gap + R, y + gap + R - 4
+    # (emplacement, décalage dans la croix, côté de la touche)
+    layout = [(ART_SLOTS[0], (0, -1), "right"), (ART_SLOTS[1], (-1, 0), "below"), (ART_SLOTS[2], (1, 0), "below"),
+              ("potion", (0, 1), "right")]
+    ui.circle(surf, (0, 0, 0, 60), (cx, cy), 9)
+    for i, (slot, (ox, oy), side) in enumerate(layout):
+        c = (cx + ox * gap, cy + oy * gap)
+        box = pygame.Rect(c[0] - R, c[1] - R, 2 * R, 2 * R)
+        if slot == "potion":
+            key = "F"
+            ui.circle(surf, (0, 0, 0, 150), c, R)
+            _potion_glyph(surf, c, 0.8)
+            cd, tot = p.potion_cd, max(0.01, p.potion_total)
+            ring = (210, 34, 46)
+        else:
+            key = ARTIFACT_KEYS[ART_SLOTS.index(slot)]
+            it = p.equipment.get(slot)
+            if it:
+                ui.circle(surf, (0, 0, 0, 150), c, R)
+                ui.draw_artifact_icon(surf, it["art"], box, ARTIFACTS[it["art"]]["color"])
+                cd, tot = p.art_cds.get(slot, 0), (p.art_total.get(slot, 1) or 1)
+                ring = RARITY_COLORS[it["rarity"]]
+            else:
+                ui.circle(surf, (0, 0, 0, 90), c, R)
+                ui.circle(surf, (150, 150, 146, 120), c, R, 1)
+                cd, tot, ring = 0, 1, None
+        if cd > 0:
+            s = VIEW.s
+            _ring(surf, c[0] * s, c[1] * s, R * s, (R - 3) * s, 1 - cd / tot, (240, 240, 235))
+            ui.circle(surf, (0, 0, 0, 120), c, R - 3)
+            ui.draw_text(surf, f"{cd:.0f}", c, 13, WHITE, "bold", anchor="center")
+        elif ring:
+            ui.circle(surf, ring, c, R, 2)
+        kp = (c[0] + R + 10, c[1]) if side == "right" else (c[0], c[1] + R + 7)
+        ui.key_badge(surf, key, kp, 10)
+        world.skill_rects.append((box, ("art", slot) if slot != "potion" else ("potion", None)))
+    return cy + gap + R + 12
+
+
 def draw_hud(surf, world):
     p = world.player
     y = draw_hearts(surf, world, 22, 20)
-    need = xp_needed(p.level)
-    ui.draw_text(surf, f"Niv. {p.level}", (22, y + 3), 15, WHITE, "bold")
-    bar = pygame.Rect(78, y + 11, 170, 5)
-    ui.rect(surf, (0, 0, 0, 200), bar.inflate(2, 2), 0, 3)
-    ui.rect(surf, (236, 200, 90), (bar.x, bar.y, max(1, bar.w * min(1, p.xp / need)), bar.h), 0, 3)
-    y += 26
-    hints = []
-    if p.points:
-        hints.append((f"+{p.points} points de caractéristique", (140, 235, 140), "C"))
-    if p.ench_points > 0:
-        hints.append((f"+{p.ench_points} point(s) d'enchantement", (200, 150, 255), "I"))
-    if p.talent_points > 0:
-        hints.append((f"+{p.talent_points} point(s) de talent", (255, 214, 110), "N"))
-    for txt, col, *key in hints:
-        ui.draw_text(surf, txt + f"  [{key[0] if key else 'C'}]", (22, y), 13, col, "bold")
-        y += 19
+    world.skill_rects = []
+    y = draw_artifacts(surf, world, 22, y + 16)
     draw_effects(surf, world, 18, y + 2)
     draw_slots(surf, world)
     draw_minimap(surf, world)
-    draw_gauges(surf, world)
     draw_top(surf, world)
     draw_notifs(surf, world)
     draw_messages(surf, world)
@@ -359,6 +394,10 @@ def _arrow(surf, x, y, ang, size):
     pygame.draw.polygon(surf, (70, 50, 0), [(a * s, b * s) for a, b in pts], max(1, int(s)))
 
 
+def _in_disc(box, x, y):
+    return (x - box.centerx) ** 2 + (y - box.centery) ** 2 <= (box.w / 2 - 4) ** 2
+
+
 def _markers(surf, world, cx, cy, scale, clip):
     """Repères en coordonnées de conception ; scale = unités de conception par unité monde."""
     p = world.player
@@ -371,7 +410,7 @@ def _markers(surf, world, cx, cy, scale, clip):
         if m.dead or (int(m.x // 40), int(m.y // 40)) not in seen:
             continue
         x, y = pos(m.x, m.y)
-        if not clip.collidepoint(x, y):
+        if not _in_disc(clip, x, y):
             continue
         if m.boss:
             ui.circle(surf, (255, 70, 70), (x, y), 6)
@@ -383,7 +422,7 @@ def _markers(surf, world, cx, cy, scale, clip):
         if name not in ("Portal", "Chest", "NPC") or (int(o.x // 40), int(o.y // 40)) not in seen:
             continue
         x, y = pos(o.x, o.y)
-        if not clip.collidepoint(x, y):
+        if not _in_disc(clip, x, y):
             continue
         if name == "Portal":
             pts = [(x, y - 7), (x + 6, y), (x, y + 7), (x - 6, y)]
@@ -397,7 +436,7 @@ def _markers(surf, world, cx, cy, scale, clip):
     for l in world.loot:
         if l.kind == "anima":
             x, y = pos(l.x, l.y)
-            if clip.collidepoint(x, y):
+            if _in_disc(clip, x, y):
                 ui.circle(surf, (130, 200, 255), (x, y), 3.5)
 
 
@@ -418,14 +457,14 @@ def draw_minimap(surf, world):
     disc = pygame.Surface(pb.size, pygame.SRCALPHA)
     disc.fill((10, 20, 26, 190))
     disc.blit(rot, (pb.w / 2 - rot.get_width() / 2, pb.h / 2 - rot.get_height() / 2))
-    disc.blit(_round_mask(pb.w, pb.h, int(18 * s)), (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
+    disc.blit(_round_mask(pb.w, pb.h, pb.w // 2), (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
     surf.blit(disc, pb)
     old = surf.get_clip()
     surf.set_clip(pb)
     _markers(surf, world, box.centerx, box.centery, zoom * mm.S / 40, box)
     surf.set_clip(old)
-    ui.rect(surf, (0, 0, 0), box.inflate(6, 6), 3, 21)
-    ui.rect(surf, UI_LINE, box, 2, 18)
+    ui.circle(surf, (0, 0, 0), box.center, box.w / 2 + 3, 3)
+    ui.circle(surf, UI_LINE, box.center, box.w / 2, 2)
     _arrow(surf, box.centerx, box.centery, math.atan2(*reversed(_rot(math.cos(p.facing), math.sin(p.facing)))), 9)
     n = (box.centerx, box.y - 2)
     ui.circle(surf, (16, 18, 20), n, 10)

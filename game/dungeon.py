@@ -40,6 +40,8 @@ class Dungeon:
         self.barrier_tiles = []
         self.torches = []
         self.decor = []
+        self.secrets = []      # salles cachées : (salle, case du mur fissuré (x, y), contenu "coffre" | "anima")
+        self.traps = []        # cases piégées (x, y)
 
     def carve_rect(self, r):
         for y in range(r.y, r.y + r.h):
@@ -91,13 +93,13 @@ class Dungeon:
 
     def generate(self, rng, n_rooms=10):
         W, H = self.w, self.h
-        bw, bh = 15, 13
+        bw, bh = 21, 17
         boss = Room(rng.randint(3, W - bw - 3), rng.randint(3, H - bh - 3), bw, bh)
         rooms = []
         tries = 0
-        while len(rooms) < n_rooms and tries < 3000:
+        while len(rooms) < n_rooms and tries < 12000:
             tries += 1
-            w, h = rng.randint(7, 12), rng.randint(6, 10)
+            w, h = rng.randint(8, 14), rng.randint(7, 11)
             r = Room(rng.randint(2, W - w - 2), rng.randint(2, H - h - 2), w, h)
             if r.intersects(boss, 5) or any(r.intersects(o, 2) for o in rooms):
                 continue
@@ -117,8 +119,9 @@ class Dungeon:
                 self.carve_path(a.center, b.center)
             connected.append(b)
             remaining.remove(b)
-        for _ in range(2):
-            a, b = rng.sample(rooms, 2)
+        for _ in range(8):             # boucles entre salles voisines
+            a = rng.choice(rooms)
+            b = rng.choice(sorted((r for r in rooms if r is not a), key=lambda r: math.dist(r.center, a.center))[:4])
             self.carve_path(a.center, b.center, forbid)
         # une seule entrée vers la salle du gardien
         near = min(rooms, key=lambda r: math.dist(r.center, bc))
@@ -136,7 +139,67 @@ class Dungeon:
         for px, py in ((3, 3), (boss.w - 4, 3), (3, boss.h - 4), (boss.w - 4, boss.h - 4)):
             self.tiles[boss.y + py][boss.x + px] = WALL
         self.rooms, self.start_room, self.boss_room = rooms, start, boss
+        self._secret_rooms(rng, rooms, start, boss)
+        self._traps(rng, rooms, start, boss)
         self._decorate(rng)
+
+    def _secret_rooms(self, rng, rooms, start, boss):
+        """Petites salles murées, reliées à une salle par un couloir fermé d'un mur fissuré (à briser)."""
+        want = 3 + len(rooms) // 8
+        for room in rng.sample(rooms, len(rooms)):
+            if len(self.secrets) >= want:
+                break
+            if room is start:
+                continue
+            for _ in range(8):
+                w, h = rng.randint(5, 7), rng.randint(5, 6)
+                side = rng.choice("NSEW")
+                gap = rng.randint(2, 4)
+                if side == "N":
+                    r = Room(room.x + rng.randint(0, max(0, room.w - w)), room.y - gap - h, w, h)
+                elif side == "S":
+                    r = Room(room.x + rng.randint(0, max(0, room.w - w)), room.y + room.h + gap, w, h)
+                elif side == "W":
+                    r = Room(room.x - gap - w, room.y + rng.randint(0, max(0, room.h - h)), w, h)
+                else:
+                    r = Room(room.x + room.w + gap, room.y + rng.randint(0, max(0, room.h - h)), w, h)
+                if r.x < 2 or r.y < 2 or r.x + r.w > self.w - 2 or r.y + r.h > self.h - 2 or r.intersects(boss, 4):
+                    continue
+                area = [(x, y) for y in range(r.y - 1, r.y + r.h + 1) for x in range(r.x - 1, r.x + r.w + 1)]
+                if any(self.tiles[y][x] != WALL for x, y in area):
+                    continue
+                # couloir entre la salle et la cachette (1 case de large), fermé côté salle par le mur fissuré
+                if side in "NS":
+                    cx = max(r.x, room.x) + (min(r.x + r.w, room.x + room.w) - max(r.x, room.x)) // 2
+                    ys = range(r.y + r.h, room.y) if side == "N" else range(room.y + room.h, r.y)
+                    cells = [(cx, y) for y in ys]
+                    door = cells[-1] if side == "N" else cells[0]
+                else:
+                    cy = max(r.y, room.y) + (min(r.y + r.h, room.y + room.h) - max(r.y, room.y)) // 2
+                    xs = range(r.x + r.w, room.x) if side == "W" else range(room.x + room.w, r.x)
+                    cells = [(x, cy) for x in xs]
+                    door = cells[-1] if side == "W" else cells[0]
+                if any(self.tiles[y][x] != WALL for x, y in cells):
+                    continue
+                self.carve_rect(r)
+                for x, y in cells:
+                    if (x, y) != door:
+                        self.tiles[y][x] = FLOOR
+                self.secrets.append((r, door, "anima" if len(self.secrets) % 2 else "coffre"))
+                break
+
+    def _traps(self, rng, rooms, start, boss):
+        """Plaques à pointes dans les salles et les couloirs (jamais dans la salle de départ ni l'arène)."""
+        n = 18 + len(rooms)
+        tries = 0
+        while len(self.traps) < n and tries < n * 40:
+            tries += 1
+            x, y = rng.randrange(2, self.w - 2), rng.randrange(2, self.h - 2)
+            if self.tiles[y][x] != FLOOR or start.contains(x, y, -2) or boss.contains(x, y, -3):
+                continue
+            if any(abs(x - tx) + abs(y - ty) < 3 for tx, ty in self.traps):
+                continue
+            self.traps.append((x, y))
 
     def _decorate(self, rng):
         last = {}

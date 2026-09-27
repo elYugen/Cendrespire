@@ -1,0 +1,43 @@
+{
+  "version": "2.3",
+  "date": "2026-09-27",
+  "title": "Héros animés, étages immenses et nouveaux gardiens",
+  "sections": [
+    {"name": "Commandes façon Diablo", "notes": [
+      "Clic gauche au sol pour se déplacer (maintenu : le héros suit le curseur), avec recherche de chemin autour des murs.",
+      "Clic gauche sur un ennemi pour l'attaquer (le héros s'en approche), sur un PNJ ou un mur fissuré pour interagir.",
+      "Maj + clic : attaquer sur place. Le clavier (ZQSD / WASD) reste disponible.",
+      "Le héros regarde là où il marche et ne se tourne vers le curseur que pour attaquer ou lancer un sort.",
+      "Attaque de base : recharge minimale et courte immobilisation pendant le coup, impossible de mitrailler le clic."
+    ]},
+    {"name": "Personnages", "notes": [
+      "Héros et PNJ animés (personnages de Quaternius, domaine public) : repos, course, attaque, sort, roulade, coup reçu, mort.",
+      "Teint, cheveux, tenues et carrure restent personnalisables ; armes, boucliers, chapeaux et casques de classe sont portés en main et sur la tête."
+    ]},
+    {"name": "Étages", "notes": [
+      "Étages plus de trois fois plus grands : 56 à 66 salles.",
+      "Salles cachées derrière des murs fissurés : trésors (objets rares, parfois légendaires) ou autels d'anima.",
+      "Plaques à pointes : elles rougeoient avant de jaillir."
+    ]},
+    {"name": "Nouveaux gardiens", "notes": [
+      "Arachné la Tisseuse : toiles qui ralentissent, bond, araignées.",
+      "La Sentinelle Radieuse : rayon tournant, bouclier alimenté par des pylônes à détruire.",
+      "Les Jumeaux d'Ombre : illusions qui tirent, charges et bonds.",
+      "La Mère des Cendres : pluie de feu sur l'arène, vortex qui aspire vers elle.",
+      "Chaque étage (1 à 8) a désormais son propre gardien."
+    ]},
+    {"name": "Interface", "notes": [
+      "Artefacts (R, T, G) et potion (F) disposés en croix sous les cœurs, façon Breath of the Wild.",
+      "Un seul exemplaire de chaque artefact peut être équipé.",
+      "Minicarte ronde ; la jauge du sceau et l'indicateur de bruit sont retirés."
+    ]},
+    {"name": "Équilibrage", "notes": [
+      "Sorcier : Boule de feu 160 % (recharge 1,5 s), Météore 280 %, Nova de givre 90 %.",
+      "Nécromancien : Lance d'os 150 % (recharge 1,4 s), squelettes 35 %, malédiction +25 %.",
+      "Barbare, paladin : attaques renforcées ; assassin légèrement réduit."
+    ]},
+    {"name": "Performances", "notes": [
+      "Grille spatiale pour les collisions des projectiles et des zones : les étages très peuplés restent fluides."
+    ]}
+  ]
+}

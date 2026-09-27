@@ -19,7 +19,8 @@ EFFECT_TYPES = {"projectile", "nova", "blast", "line", "zone", "buff", "heal", "
 ZONE_KINDS = {"fire", "arrows", "holy", "heal"}
 MINIONS = {"skeleton", "wisp"}
 AI_TYPES = {"melee", "ranged", "caster", "brute"}
-BOSS_ABILITIES = {"charge", "slam", "bolts", "nova", "summon", "blink", "boulders", "waves"}
+BOSS_ABILITIES = {"charge", "slam", "bolts", "nova", "summon", "blink", "boulders", "waves", "leap", "webs", "beam",
+                  "shield", "firestorm", "vortex", "clones"}
 
 
 class ContentError(Exception):

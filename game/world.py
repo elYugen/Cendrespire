@@ -5,7 +5,7 @@ from collections import deque
 
 import pygame
 
-from . import artifacts, hud, save, sfx, spells, ui
+from . import artifacts, hud, nav, save, sfx, spells, ui
 from .data import ANIMA_POWERS, ANIMA_TIERS, BAG_SIZE, SPELLS
 from .dungeon import WALL, BARRIER, Minimap
 from .entities import Loot
@@ -88,6 +88,14 @@ class World(Scene):
         self.shop_stock = []
         self.wheel_alpha = 0.0
         self.gold_shown = 0.0
+        # déplacement au clic : cible (move / attack / interact), chemin, survol du curseur
+        self.nav = None
+        self.path = []
+        self.repath_t = 0.0
+        self.stuck_t = 0.0
+        self.hover = None
+        self.hover_obj = None
+        self.click_fx = None
 
     # ------------------------------------------------------------------ utilitaires
     def solid(self, tx, ty):
@@ -154,7 +162,7 @@ class World(Scene):
         return self.cam.ray_ground(*self.mouse_px(), height=0)
 
     def is_moving(self):
-        return any(s in self.keys for s in SC_UP + SC_DOWN + SC_LEFT + SC_RIGHT)
+        return any(s in self.keys for s in SC_UP + SC_DOWN + SC_LEFT + SC_RIGHT) or bool(self.nav and self.path)
 
     def schedule(self, delay, fn):
         self.scheduled.append([delay, fn])
@@ -280,9 +288,33 @@ class World(Scene):
                 self.player_hit(o, mult * 0.6, proc=False)
         return dmg
 
+    # ------------------------------------------------------------------ grille spatiale (étages très peuplés)
+    GRID = 120
+
+    def build_grid(self):
+        g = {}
+        G = self.GRID
+        for m in self.monsters:
+            if not m.dead:
+                g.setdefault((int(m.x // G), int(m.y // G)), []).append(m)
+        self._grid = g
+
+    def near_monsters(self, x, y, r):
+        """Monstres (vivants ou non) des cases de la grille qui touchent le cercle (x, y, r)."""
+        g = getattr(self, "_grid", None)
+        if g is None:
+            return self.monsters
+        G = self.GRID
+        r += 40                     # rayon maximal d'un monstre
+        out = []
+        for cx in range(int((x - r) // G), int((x + r) // G) + 1):
+            for cy in range(int((y - r) // G), int((y + r) // G) + 1):
+                out.extend(g.get((cx, cy), ()))
+        return out
+
     def damage_circle(self, x, y, r, mult, knock=0, stun=0.0, slow=0.0):
         n = 0
-        for m in list(self.monsters):
+        for m in list(self.near_monsters(x, y, r)):
             if m.dead or not m.targetable:
                 continue
             if (m.x - x) ** 2 + (m.y - y) ** 2 <= (r + m.r) ** 2:
@@ -292,6 +324,10 @@ class World(Scene):
 
     def damage_monster(self, m, dmg, crit, knock=0, ang=None, stun=0.0, slow=0.0, quiet=False):
         if m.dead:
+            return
+        if getattr(m, "shielded", False):
+            if not quiet:
+                self.add_text(m.x, m.y, m.height() + 8, "Protégé", (255, 226, 140), 15)
             return
         if m.curse > 0:
             dmg *= 1 + getattr(m, "curse_amp", 0.3)
@@ -343,6 +379,8 @@ class World(Scene):
         if heal:
             p.heal(p.stats["max_hp"] * heal / 100)
         if m.boss:
+            if hasattr(m, "on_death"):
+                m.on_death(self)
             self.on_boss_killed(m)
         elif not m.minion:
             self.drop_monster_loot(m)
@@ -416,6 +454,7 @@ class World(Scene):
             self.effects.append(Blast(p.x, p.y, 180, 0, 2.0, (160, 255, 200), knock=120))
             return
         p.hp = 0
+        p.play("death", 1.2)
         p.dead = True
         p.deaths += 1
         self.death_penalty()
@@ -436,7 +475,9 @@ class World(Scene):
     def equip(self, item, from_idx=None):
         p = self.player
         if item["slot"] == "artefact":
-            target = next((s for s in ART_SLOTS if not p.equipment[s]), ART_SLOTS[0])
+            # un artefact déjà équipé du même type est remplacé (jamais deux exemplaires du même artefact)
+            same = next((s for s in ART_SLOTS if p.equipment[s] and p.equipment[s]["art"] == item["art"]), None)
+            target = same or next((s for s in ART_SLOTS if not p.equipment[s]), ART_SLOTS[0])
         else:
             if not p.can_equip(item):
                 self.message("Cette arme n'est pas utilisable par votre classe.", RED)
@@ -471,6 +512,11 @@ class World(Scene):
         if old is item:
             return
         src = next((s for s in ART_SLOTS if p.equipment[s] is item), None)
+        dup = next((s for s in ART_SLOTS if s not in (slot, src) and p.equipment[s]
+                    and p.equipment[s]["art"] == item["art"]), None)
+        if dup:
+            self.message("Cet artefact est déjà équipé : un seul exemplaire de chaque artefact.", RED)
+            return
         if src:
             p.equipment[src] = old
         else:
@@ -657,6 +703,8 @@ class World(Scene):
             if self.ui_contains(e.pos):
                 self.click_block = True
                 return
+            if e.button == 1 and not (pygame.key.get_mods() & pygame.KMOD_SHIFT):
+                self.click_target()
             if e.button == 3:
                 spells.cast(self, p.spells[0])
 
@@ -674,6 +722,10 @@ class World(Scene):
     # ------------------------------------------------------------------ mise à jour
     def update(self, dt):
         self.time += dt
+        if self.click_fx:
+            self.click_fx[2] += dt
+            if self.click_fx[2] > 0.45:
+                self.click_fx = None
         if self.banner:
             self.banner[3] += dt
             if self.banner[3] > self.banner[4]:
@@ -696,6 +748,7 @@ class World(Scene):
                 m.update(dt, self)
         self.separate()
         self.monsters = [m for m in self.monsters if not m.dead]
+        self.build_grid()
         for a in self.allies:
             a.update(dt, self)
         self.allies = [a for a in self.allies if a.alive]
@@ -781,17 +834,178 @@ class World(Scene):
         k = self.keys
         mx = (1 if any(s in k for s in SC_RIGHT) else 0) - (1 if any(s in k for s in SC_LEFT) else 0)
         my = (1 if any(s in k for s in SC_DOWN) else 0) - (1 if any(s in k for s in SC_UP) else 0)
+        held = pygame.mouse.get_pressed()[0] and not self.click_block and not self.ui_contains(ui.mouse_pos())
+        shift = pygame.key.get_mods() & pygame.KMOD_SHIFT
+        self.update_hover()
+        if p.attack_lock > 0:            # le coup part : le héros reste planté un court instant
+            return
         if mx or my:
+            self.nav, self.path = None, []
             dx, dy = self.cam.screen_to_world_dir(mx, my)
-            spd = p.speed()
-            self.move_circle(p, dx * spd * dt, dy * spd * dt)
-            p.move_dir = (dx, dy)
-            p.walk += dt * 10.5
-            p.moving = True
-        ax, ay = self.aim_point()
-        p.facing = math.atan2(ay - p.y, ax - p.x)
-        if pygame.mouse.get_pressed()[0] and not self.click_block and not self.ui_contains(ui.mouse_pos()):
-            spells.basic_attack(self)
+            self.step_player(dx, dy, dt)
+            if held:
+                self.attack_toward(*self.aim_point())
+            return
+        if held and shift:                # Maj + clic : attaque sur place, vers le curseur
+            self.nav, self.path = None, []
+            self.attack_toward(*self.aim_point())
+            return
+        if held:
+            self.hold_update(dt)
+        self.follow_nav(dt, held)
+
+    # ------------------------------------------------------------------ déplacement au clic (façon Diablo)
+    def turn_to(self, ang, dt, speed=16.0):
+        p = self.player
+        d = (ang - p.facing + math.pi) % math.tau - math.pi
+        p.facing += max(-speed * dt, min(speed * dt, d))
+
+    def step_player(self, dx, dy, dt):
+        p = self.player
+        spd = p.speed()
+        ox, oy = p.x, p.y
+        self.move_circle(p, dx * spd * dt, dy * spd * dt)
+        p.move_dir = (dx, dy)
+        p.walk += dt * 10.5
+        p.moving = True
+        self.turn_to(math.atan2(dy, dx), dt)
+        return math.hypot(p.x - ox, p.y - oy)
+
+    def attack_toward(self, tx, ty):
+        p = self.player
+        p.facing = math.atan2(ty - p.y, tx - p.x)
+        spells.basic_attack(self, (tx, ty))
+
+    def monster_at_cursor(self):
+        mx, my = self.mouse_px()
+        best, bd = None, None
+        for m in self.monsters:
+            if m.dead or not m.targetable:
+                continue
+            sp = self.cam.project(m.x, m.y, 20)
+            if not sp:
+                continue
+            rad = (m.r + 14) * self.cam.pixel_scale(m.x, m.y, 20)
+            d = math.hypot(sp[0] - mx, sp[1] - my)
+            if d < rad and (bd is None or d < bd):
+                best, bd = m, d
+        return best
+
+    def object_at_cursor(self):
+        mx, my = self.mouse_px()
+        best, bd = None, None
+        for o in self.interactables:
+            if not o.radius or not o.can_interact(self):
+                continue
+            sp = self.cam.project(o.x, o.y, 22)
+            if not sp:
+                continue
+            d = math.hypot(sp[0] - mx, sp[1] - my)
+            if d < 34 * self.cam.pixel_scale(o.x, o.y, 22) and (bd is None or d < bd):
+                best, bd = o, d
+        return best
+
+    def update_hover(self):
+        if self.ui_contains(ui.mouse_pos()):
+            self.hover = self.hover_obj = None
+            return
+        self.hover = self.monster_at_cursor()
+        self.hover_obj = None if self.hover else self.object_at_cursor()
+
+    def click_target(self):
+        """Clic gauche : attaquer le monstre survolé, parler au PNJ survolé, sinon marcher jusqu'au point cliqué."""
+        self.update_hover()
+        self.path, self.repath_t, self.stuck_t = [], 0.0, 0.0
+        if self.hover:
+            self.nav = {"kind": "attack", "obj": self.hover, "once": True}
+        elif self.hover_obj:
+            self.nav = {"kind": "interact", "obj": self.hover_obj, "x": self.hover_obj.x, "y": self.hover_obj.y}
+        else:
+            gx, gy = self.ground_point()
+            self.nav = {"kind": "move", "x": gx, "y": gy}
+            self.click_fx = [gx, gy, 0.0]
+
+    def hold_update(self, dt):
+        """Bouton maintenu : le héros suit le curseur, ou continue d'attaquer sa cible."""
+        n = self.nav
+        if n and n["kind"] == "attack":
+            n["once"] = False
+            return
+        if n and n["kind"] == "interact":
+            return
+        if self.hover and (not n or n["kind"] == "move"):
+            self.nav = {"kind": "attack", "obj": self.hover, "once": False}
+            self.path = []
+            return
+        gx, gy = self.ground_point()
+        if not n or math.hypot(n["x"] - gx, n["y"] - gy) > 20:
+            self.nav = {"kind": "move", "x": gx, "y": gy}
+            if self.repath_t <= 0:
+                self.path = []
+
+    def attack_reach(self, m):
+        a = self.player.cls["attack"]
+        if a["kind"] == "melee":
+            return a["range"] + m.r - 4
+        return min(380.0, a["speed"] * a.get("life", 1.0) * 0.8)
+
+    def follow_nav(self, dt, held):
+        p = self.player
+        n = self.nav
+        if not n:
+            return
+        self.repath_t -= dt
+        if n["kind"] == "attack":
+            m = n["obj"]
+            if m.dead or not m.targetable:
+                self.nav, self.path = None, []
+                return
+            d = math.hypot(m.x - p.x, m.y - p.y)
+            if d <= self.attack_reach(m) and (p.cls["attack"]["kind"] == "melee" or self.los(p.x, p.y, m.x, m.y)):
+                self.path = []
+                self.turn_to(math.atan2(m.y - p.y, m.x - p.x), dt, 30)
+                if p.atk_cd <= 0:
+                    self.attack_toward(m.x, m.y)
+                    if n.get("once") and not held:
+                        self.nav = None
+                return
+            dest = (m.x, m.y)
+        elif n["kind"] == "interact":
+            o = n["obj"]
+            if math.hypot(o.x - p.x, o.y - p.y) <= o.radius * 0.85:
+                self.nav, self.path = None, []
+                p.facing = math.atan2(o.y - p.y, o.x - p.x)
+                o.interact(self)
+                return
+            dest = (o.x, o.y)
+        else:
+            dest = (n["x"], n["y"])
+            if math.hypot(dest[0] - p.x, dest[1] - p.y) < 6:
+                self.nav, self.path = None, []
+                return
+        if not self.path or self.repath_t <= 0:
+            self.path = nav.find_path(self, p.x, p.y, dest[0], dest[1], p.r)
+            self.repath_t = 0.25 if n["kind"] == "attack" else 0.6
+            if not self.path:
+                self.nav = None
+                return
+        wx, wy = self.path[0]
+        dx, dy = wx - p.x, wy - p.y
+        d = math.hypot(dx, dy)
+        if d < 5:
+            self.path.pop(0)
+            if not self.path and n["kind"] == "move":
+                self.nav = None
+            return
+        step = min(d, p.speed() * dt)
+        moved = self.step_player(dx / d, dy / d, dt * step / max(1e-6, p.speed() * dt))
+        # bloqué (un monstre ou un coin gêne) : on recalcule le chemin
+        self.stuck_t = self.stuck_t + dt if moved < step * 0.25 else 0.0
+        if self.stuck_t > 0.35:
+            self.stuck_t = 0.0
+            self.repath_t = 0.0
+            if n["kind"] == "move" and math.hypot(dest[0] - p.x, dest[1] - p.y) < 40:
+                self.nav, self.path = None, []
 
     def separate(self):
         ms = [m for m in self.monsters if not m.dead and (m.aggro or m.boss)]
@@ -887,7 +1101,15 @@ class World(Scene):
         if hasattr(self.modal, "portrait_spot"):
             spot = self.modal.portrait_spot()
             if spot:
-                return self.render_portrait(fr, self.modal, spot)
+                # le jeu reste visible derrière le menu ; le héros est dessiné par-dessus, dans une seconde passe
+                from .r3d.renderer import Frame
+                pf = Frame()
+                pcam, penv = self.render_portrait(pf, self.modal, spot)
+                cam, env = self.render_world(fr)
+                return cam, env, (pf, pcam, penv, (0.0, 0.0, 0.0, 0.55))
+        return self.render_world(fr)
+
+    def render_world(self, fr):
         p = self.player
         t = self.time
         cam = self.cam
@@ -897,8 +1119,8 @@ class World(Scene):
         cam.shake_off = (random.uniform(-sh, sh), random.uniform(-sh, sh))
         env = self.env
         env.player = (p.x, p.y, 0)
-        if not p.dead:
-            p.render(fr, t)
+        p.render(fr, t)
+        self.render_cursor_marks(fr)
         for m in self.monsters:
             if abs(m.x - p.x) < 1100 and abs(m.y - p.y) < 1100:
                 m.render(fr, t)
@@ -945,6 +1167,23 @@ class World(Scene):
         pass
 
     # ------------------------------------------------------------------ interface
+    def render_cursor_marks(self, fr):
+        """Cercle sous le monstre ou le PNJ survolé, cible en cours, point cliqué (déplacement au clic)."""
+        if self.hover:
+            m = self.hover
+            fr.decal(m.x, m.y, m.r + 12, m.r + 12, (255, 70, 50), 0.75, kind=1, inner=0.78)
+        elif self.hover_obj:
+            o = self.hover_obj
+            fr.decal(o.x, o.y, 30, 30, (255, 214, 120), 0.7, kind=1, inner=0.8)
+        n = self.nav
+        if n and n["kind"] == "attack" and n["obj"] is not self.hover and not n["obj"].dead:
+            m = n["obj"]
+            fr.decal(m.x, m.y, m.r + 10, m.r + 10, (255, 90, 60), 0.45, kind=1, inner=0.85)
+        if self.click_fx:
+            x, y, k = self.click_fx
+            a = max(0.0, 1 - k / 0.45)
+            fr.decal(x, y, 8 + 18 * a, 8 + 18 * a, (240, 230, 190), 0.8 * a, kind=1, inner=0.7)
+
     def project(self, x, y, z=0.0):
         pt = self.cam.project(x, y, z)
         if not pt:

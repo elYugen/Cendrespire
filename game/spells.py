@@ -21,13 +21,20 @@ from .fx import Blast, RingFX, SwingFX, Zone, Trap, Lightning
 
 
 # =========================================================================== attaque de base
-def basic_attack(world):
+MIN_ATTACK_CD = 0.32      # plancher de recharge : impossible de « mitrailler » l'attaque de base
+
+
+def basic_attack(world, target=None):
     p = world.player
     a = p.cls["attack"]
     if p.atk_cd > 0 or p.leap or p.dash:
         return
-    p.atk_cd = a["cd"] / (1 + (p.stats["atk_speed"] + p.buff_sum("atk_speed")) / 100)
-    ax, ay = world.aim_point()
+    cd = max(MIN_ATTACK_CD, a["cd"] / (1 + (p.stats["atk_speed"] + p.buff_sum("atk_speed")) / 100))
+    p.atk_cd = p.atk_total = cd
+    p.attack_lock = min(0.22, cd * 0.45)      # le héros s'arrête le temps de porter le coup
+    kind = "attack_melee" if a["kind"] == "melee" else ("attack_ranged" if a.get("arrow") else "attack_cast")
+    p.play(kind, min(0.55, cd * 0.95))
+    ax, ay = target if target else world.aim_point()
     ang = math.atan2(ay - p.y, ax - p.x)
     p.facing = ang
     mult = a["mult"] * (1 + p.t("basic_pct") / 100)
@@ -84,11 +91,16 @@ def cast(world, sid):
     tx, ty = world.ground_point() if sp.get("target") == "ground" else world.aim_point()
     if sp.get("range"):
         tx, ty = clamp_target(p, tx, ty, sp["range"])
+    facing = p.facing
+    p.facing = math.atan2(ty - p.y, tx - p.x)
     # talents : +% dégâts du sort (et de tous les sorts), -% recharge du sort
     mult = sp["mult"] * (1 + (p.t("spell_pct") + p.t("sd:" + sid)) / 100)
     ctx = Ctx(world, tx, ty, mult, sp["color"], spell=sid)
     if run(sp["effects"], ctx) is False:
+        p.facing = facing
         return
+    p.attack_lock = max(p.attack_lock, 0.14)
+    p.play("cast", 0.45)
     if random.random() * 100 < p.t("free_cast"):
         world.add_text(p.x, p.y, 70, "Surcharge !", (190, 150, 255), 15)
     else:

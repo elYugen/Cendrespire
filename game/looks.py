@@ -37,6 +37,31 @@ _BASE_LOOK = dict(skin=1, build=1, hair=1, hair_col=1, beard=0, eyes=0, marks=0,
 DEFAULTS = {cid: dict(_BASE_LOOK, **c.get("look_defaults", {})) for cid, c in CLASSES.items()}
 
 
+# les héros animés (modèles importés) n'utilisent que ces options ; coiffure, barbe, yeux et marques
+# appartiennent au modèle
+RIG_OPTIONS = ("skin", "build", "hair_col", "main", "second", "headgear")
+
+
+def options_for(cls_id):
+    if CLASSES.get(cls_id, {}).get("rig"):
+        return [o for o in OPTIONS if o[0] in RIG_OPTIONS]
+    return OPTIONS
+
+
+def _rig_palette(colors, skin, hair, main, second):
+    base = {"skin": skin, "hair": hair, "main": main, "second": second}
+    pal = {}
+    for mat, token in colors.items():
+        if token == "hide":
+            pal[mat] = "hide"
+            continue
+        name, _, k = token.partition(":")
+        c = base.get(name, (200, 200, 200))
+        k = float(k) if k else 1.0
+        pal[mat] = tuple(max(0, min(255, int(v * k))) for v in c)
+    return pal
+
+
 def default_look(cls_id):
     return dict(DEFAULTS[cls_id])
 
@@ -96,6 +121,12 @@ def hero_spec(cls_id, look):
     if look["headgear"]:
         for k, v in cl.get("headgear", {}).items():
             spec[k] = _resolve(v, main, second, spec["skin"])
+    r = cl.get("rig")
+    if r:
+        spec["rig"] = {"model": r["model"], "palette": _rig_palette(r.get("colors", {}), spec["skin"], hair, main,
+                                                                    second)}
+        for k in r.get("skip", []):
+            spec.pop(k, None)
     return spec
 
 

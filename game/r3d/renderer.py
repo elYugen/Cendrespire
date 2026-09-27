@@ -11,6 +11,7 @@ from . import shaders as S
 from .camera import U, look_at, ortho
 from .meshes import PRIMITIVES, quad2d
 
+OUTLINES = False           # contour noir des personnages (désactivé : rendu plus doux)
 INST_FMT = "3f 3f 3f 3f 4f/i"
 INST_ATTRS = ("i_ax", "i_ay", "i_az", "i_pos", "i_col")
 IDENTITY = np.array([1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0], dtype="f4")
@@ -31,6 +32,11 @@ class Frame:
         self.solids = []
         self.lights = []
         self.outline = False       # vrai pendant le dessin d'un personnage : contour cartoon et ombrage en paliers
+        self.skinned = []          # personnages animés : (modèle, matrice, articulations, palette, teinte, émission)
+
+    def skin(self, model, matrix, joints, palette, tint=(0.0, 0.0, 0.0, 0.0), emis=0.0):
+        """Personnage animé (glTF) : matrice de placement en coordonnées 3D du moteur."""
+        self.skinned.append((model, matrix, joints, palette, tint, emis))
 
     @staticmethod
     def _v(v):
@@ -99,6 +105,15 @@ class Renderer:
         self.p_sky = ctx.program(vertex_shader=S.SKY_VS, fragment_shader=S.SKY_FS)
         self.p_ui = ctx.program(vertex_shader=S.UI_VS, fragment_shader=S.UI_FS)
         self.p_outline = ctx.program(vertex_shader=S.OUTLINE_VS, fragment_shader=S.OUTLINE_FS)
+        try:
+            self.p_skin = ctx.program(vertex_shader=S.SKIN_VS, fragment_shader=S.LIT_FS)
+            self.p_skin_depth = ctx.program(vertex_shader=S.SKIN_DEPTH_VS, fragment_shader=S.DEPTH_FS)
+            self.p_skin_outline = ctx.program(vertex_shader=S.SKIN_OUTLINE_VS, fragment_shader=S.OUTLINE_FS)
+        except Exception as e:          # carte graphique trop limitée : héros procéduraux
+            from . import skinned
+            skinned.ENABLED = False
+            print(f"[personnages] animation sur carte graphique indisponible ({e}) : modèles procéduraux")
+        self.skin_gpu = {}
 
         self.meshes = {}
         for name, fn in PRIMITIVES.items():
@@ -127,6 +142,8 @@ class Renderer:
                                                        (self.part_buf, "3f 1f 4f/i", "i_p", "i_s", "i_col")])
         self.vao_sky = ctx.vertex_array(self.p_sky, [(q, "2f", "in_uv")])
         self.vao_ui = ctx.vertex_array(self.p_ui, [(q, "2f", "in_uv")])
+        self.p_dim = ctx.program(vertex_shader=S.DIM_VS, fragment_shader=S.DIM_FS)
+        self.vao_dim = ctx.vertex_array(self.p_dim, [(q, "2f", "in_uv")])
         self.shadow_tex = ctx.depth_texture((2048, 2048))
         self.shadow_tex.compare_func = "<="
         self.shadow_tex.filter = (moderngl.LINEAR, moderngl.LINEAR)
@@ -140,6 +157,47 @@ class Renderer:
         if depth:
             return self.ctx.vertex_array(prog, [(vbo, "3f 12x 16x", "in_pos"), (ibuf, "3f 3f 3f 3f 16x/i", *INST_ATTRS[:4])])
         return self.ctx.vertex_array(prog, [(vbo, "3f 3f 4f", "in_pos", "in_norm", "in_col"), (ibuf, INST_FMT, *INST_ATTRS)])
+
+    def _skin_gpu(self, model):
+        """Envoie une fois pour toutes les sommets d'un modèle animé à la carte graphique."""
+        key = id(model)
+        if key not in self.skin_gpu:
+            vbo = self.ctx.buffer(model.vertices.tobytes())
+            fmt = ("3f 3f 1f 4f 4f", "in_pos", "in_norm", "in_mat", "in_joints", "in_weights")
+            self.skin_gpu[key] = {
+                "lit": self.ctx.vertex_array(self.p_skin, [(vbo, *fmt)]),
+                "depth": self.ctx.vertex_array(self.p_skin_depth,
+                                               [(vbo, "3f 12x 4x 4f 4f", "in_pos", "in_joints", "in_weights")]),
+                "outline": self.ctx.vertex_array(self.p_skin_outline, [(vbo, *fmt)]),
+                "vbo": vbo,
+            }
+        return self.skin_gpu[key]
+
+    @staticmethod
+    def _joints_bytes(joints):
+        buf = np.zeros((64, 4, 4), dtype="f4")
+        buf[:len(joints)] = joints.transpose(0, 2, 1)
+        return buf.tobytes()
+
+    def _draw_skinned(self, frame, pass_name, **uniforms):
+        prog = {"lit": self.p_skin, "depth": self.p_skin_depth, "outline": self.p_skin_outline}[pass_name]
+        for name, val in uniforms.items():
+            if name in prog:
+                if isinstance(val, bytes):
+                    prog[name].write(val)
+                else:
+                    prog[name].value = val
+        for model, matrix, joints, palette, tint, emis in frame.skinned:
+            g = self._skin_gpu(model)
+            prog["u_model"].write(np.ascontiguousarray(matrix.T, dtype="f4").tobytes())
+            prog["u_joints"].write(self._joints_bytes(joints))
+            if "u_pal" in prog:
+                prog["u_pal"].write(np.ascontiguousarray(palette, dtype="f4").tobytes())
+            if "u_tint" in prog:
+                prog["u_tint"].value = tuple(tint)
+            if "u_emis" in prog:
+                prog["u_emis"].value = emis
+            g[pass_name].render()
 
     # ------------------------------------------------------------------ ressources
     def set_static(self, arr):
@@ -184,7 +242,9 @@ class Renderer:
         buf.write(b)
 
     # ------------------------------------------------------------------ image
-    def render(self, frame, cam, env, screen):
+    def render(self, frame, cam, env, screen, overlay=None):
+        """overlay : (couleur de voile rgba) — l'image précédente est gardée, assombrie, et la scène est dessinée
+        par-dessus (portrait du héros devant le jeu, dans les menus)."""
         ctx = self.ctx
         self.ensure_size(screen.size)
         cam.set_size(*screen.size)
@@ -217,14 +277,28 @@ class Renderer:
             for name, n in counts.items():
                 if n:
                     self.meshes[name]["depth"].render(instances=n)
+            if frame.skinned:
+                self._draw_skinned(frame, "depth", u_light_vp=lvp_bytes)
 
         # passe principale (anticrénelage 4x)
         fbo = self.msaa[0]
         fbo.use()
         ctx.viewport = (0, 0, *screen.size)
-        fbo.clear(*env.clear, 1.0, depth=1.0)
+        if overlay:
+            ctx.disable(moderngl.DEPTH_TEST)
+            ctx.enable(moderngl.BLEND)
+            ctx.blend_func = moderngl.SRC_ALPHA, moderngl.ONE_MINUS_SRC_ALPHA
+            self.p_dim["u_col"].value = tuple(overlay)
+            self.vao_dim.render()
+            fbo.color_mask = (False, False, False, False)
+            fbo.use()                      # le masque de couleur ne s'applique qu'à l'activation
+            fbo.clear(depth=1.0)
+            fbo.color_mask = (True, True, True, True)
+            fbo.use()
+        else:
+            fbo.clear(*env.clear, 1.0, depth=1.0)
         vp_bytes = cam.vp.T.astype("f4").tobytes()
-        if env.sky:
+        if env.sky and not overlay:
             top, mid, bottom, sun, sun_col = env.sky
             ctx.disable(moderngl.DEPTH_TEST)
             self._set(self.p_sky, "u_top", top)
@@ -273,15 +347,32 @@ class Renderer:
             for name, n in counts.items():
                 if n and self.meshes[name]["toon"] == toon:
                     self.meshes[name]["lit"].render(instances=n)
+        if frame.skinned:
+            ps = self.p_skin
+            for name in ("u_sun_dir", "u_sun_col", "u_sky", "u_ground", "u_shadow_on", "u_cam", "u_player", "u_cut",
+                         "u_fog_col", "u_fog_center", "u_fog", "u_nl"):
+                if name in p and name in ps:
+                    ps[name].value = p[name].value
+            if "u_lpos" in ps:
+                ps["u_lpos"].write(lp.tobytes())
+                ps["u_lcol"].write(lc.tobytes())
+            if "u_shadow" in ps:
+                ps["u_shadow"].value = 0
+            self._set(ps, "u_toon", 1.0)
+            self._draw_skinned(frame, "lit", u_vp=vp_bytes, u_light_vp=lvp_bytes)
         # contours des personnages (épaisseur ~2 px à 720p, proportionnelle à la définition)
-        po = self.p_outline
-        po["u_vp"].write(vp_bytes)
-        self._set(po, "u_cam", tuple(float(v) for v in cam.eye))
-        w_px = max(1.5, screen.size[1] / 720 * 2.0)
-        self._set(po, "u_px", (2 * w_px / screen.size[0], 2 * w_px / screen.size[1]))
-        for name, n in counts.items():
-            if n and self.meshes[name]["toon"]:
-                self.meshes[name]["outline"].render(instances=n)
+        po = self.p_outline if OUTLINES else None
+        if po:
+            po["u_vp"].write(vp_bytes)
+            self._set(po, "u_cam", tuple(float(v) for v in cam.eye))
+            w_px = max(1.5, screen.size[1] / 720 * 2.0)
+            self._set(po, "u_px", (2 * w_px / screen.size[0], 2 * w_px / screen.size[1]))
+            for name, n in counts.items():
+                if n and self.meshes[name]["toon"]:
+                    self.meshes[name]["outline"].render(instances=n)
+        if po and frame.skinned:
+            self._draw_skinned(frame, "outline", u_vp=vp_bytes, u_px=po["u_px"].value if "u_px" in po else (0, 0),
+                               u_cam=tuple(float(v) for v in cam.eye))
 
         # décalques au sol
         if frame.decals:

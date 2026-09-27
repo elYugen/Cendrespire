@@ -7,7 +7,7 @@ import math
 import pygame
 
 from . import updates, sfx, ui
-from .data import (ATTRS, ATTR_NAMES, ATTR_DESC, SPELLS, ANIMA_POWERS, ANIMA_TIERS, BAG_SIZE, ARTIFACTS, ENCHANTS,
+from .data import (ARTIFACT_KEYS, ATTRS, ATTR_NAMES, ATTR_DESC, SPELLS, ANIMA_POWERS, ANIMA_TIERS, BAG_SIZE, ARTIFACTS, ENCHANTS,
                    CLASSES, xp_needed, floor_name, floor_boss, BOSSES, anima_desc, ench_value)
 from .items import (SLOT_NAMES, AFFIX_DEF, ART_SLOTS, buy_price, upgrade_cost, MAX_UPGRADE, item_lines, item_stats,
                     item_value, art_desc)
@@ -288,7 +288,7 @@ class MenuScreen(Panel):
         opts = []
         if kind == "bag":
             if art:
-                opts += [(f"Équiper · touche {'RTG'[i]}", lambda s=s: w.assign_artifact(it, s))
+                opts += [(f"Équiper · touche {ARTIFACT_KEYS[i]}", lambda s=s: w.assign_artifact(it, s))
                          for i, s in enumerate(ART_SLOTS)]
             elif w.player.can_equip(it):
                 opts.append(("Équiper", lambda: w.bag_right_click(key)))
@@ -296,7 +296,7 @@ class MenuScreen(Panel):
         else:
             opts.append(("Retirer", lambda: w.unequip(key)))
             if art:
-                opts += [(f"Déplacer · touche {'RTG'[i]}", lambda s=s: w.assign_artifact(it, s))
+                opts += [(f"Déplacer · touche {ARTIFACT_KEYS[i]}", lambda s=s: w.assign_artifact(it, s))
                          for i, s in enumerate(ART_SLOTS) if s != key]
         opts.append(("Annuler", None))
         return opts
@@ -641,7 +641,7 @@ class MenuScreen(Panel):
         if it.get("ench") and any(e["id"] for e in it["ench"]):
             ui.circle(surf, ENCH_COL, (rc.right - 9, rc.y + 9), 4)
         if equipped and it["slot"] == "artefact":
-            ui.key_badge(surf, "RTG"[ART_SLOTS.index(key)], (rc.right - 12, rc.bottom - 12), 11, SHEIKAH)
+            ui.key_badge(surf, ARTIFACT_KEYS[ART_SLOTS.index(key)], (rc.right - 12, rc.bottom - 12), 11, SHEIKAH)
         if not p.can_equip(it):
             ui.line(surf, DOWN, (rc.x + 8, rc.bottom - 8), (rc.right - 8, rc.y + 8), 2)
 
@@ -1174,13 +1174,15 @@ class MenuScreen(Panel):
 
     def draw_controls(self, surf):
         ui.veil(surf, (0, 0, 0), 200)
-        box = ui.botw_box(surf, (SCREEN_W // 2 - 300, 92, 600, 576), 255, FRAME, radius=4, fill=(12, 16, 20))
+        box = ui.botw_box(surf, (SCREEN_W // 2 - 330, 92, 660, 576), 255, FRAME, radius=4, fill=(12, 16, 20))
         ui.draw_text(surf, "Commandes", (box.centerx, box.y + 16), 22, WHITE, "title", anchor="midtop")
         ui.rect(surf, (110, 112, 108), (box.x + 24, box.y + 54, box.w - 48, 1))
         controls = [
-            ("ZQSD / WASD / flèches", "Se déplacer"), ("Clic gauche (maintenu)", "Attaque de base"),
+            ("Clic gauche au sol", "Se déplacer (maintenu : suivre le curseur)"),
+            ("Clic gauche sur un ennemi", "Attaquer (s'approche au besoin)"), ("Maj + clic gauche", "Attaquer sur place"),
+            ("ZQSD / WASD / flèches", "Se déplacer au clavier"),
             ("1 2 3 4 · clic droit", "Sorts (clic droit = sort 1)"), ("Espace", "Roulade d'esquive"),
-            ("R · T · G", "Artefacts"), ("F", "Potion (à recharge)"), ("E", "Interagir / parler"),
+            ("R · T · G", "Artefacts"), ("F", "Potion (à recharge)"), ("E · clic", "Interagir / parler / briser un mur fissuré"),
             ("I · C · N", "Inventaire · Personnage · Talents"), ("Tab", "Grande carte · page suivante (menu)"),
             ("← →", "Changer de page du menu"),
             ("Échap", "Menu Système / fermer"), ("F11", "Plein écran"),
@@ -1188,10 +1190,10 @@ class MenuScreen(Panel):
         y = box.y + 68
         for i, (k, v) in enumerate(controls):
             if i % 2 == 0:
-                ui.rect(surf, (40, 60, 70, 70), (box.x + 16, y - 4, box.w - 32, 34), 0, 4)
-            ui.draw_text(surf, k, (box.x + 34, y + 13), 15, BOTW_YELLOW, "bold", anchor="midleft")
-            ui.draw_text(surf, v, (box.right - 34, y + 13), 15, SOFT, anchor="midright")
-            y += 36
+                ui.rect(surf, (40, 60, 70, 70), (box.x + 16, y - 3, box.w - 32, 29), 0, 4)
+            ui.draw_text(surf, k, (box.x + 30, y + 11), 14, BOTW_YELLOW, "bold", anchor="midleft")
+            ui.draw_text(surf, v, (box.right - 30, y + 11), 14, SOFT, anchor="midright")
+            y += 31
         ui.draw_text(surf, "Échap ou clic : retour", (box.centerx, box.bottom - 16), 13, SOFT, anchor="midbottom")
 
     def draw_tooltips(self, surf):

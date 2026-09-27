@@ -44,6 +44,7 @@ for _bid, _b in BOSSES.items():
     _b.setdefault("windup", 0.55)
     _b.setdefault("xp", 300)
 BOSS_ORDER = CONTENT["boss_order"]
+BOSS_SPECIAL = CONTENT["boss_special"]
 FLOOR_NAMES = CONTENT["floors"]
 ARTIFACTS = CONTENT["artifacts"]
 ARTIFACT_KEYS = CONTENT["art_keys"]
@@ -66,7 +67,14 @@ def floor_name(f):
     return FLOOR_NAMES[(f - 1) % len(FLOOR_NAMES)]
 
 
+def boss_floor(f):
+    """Étage spécial : arène du boss « special » (Deathstrake), tous les « every » étages."""
+    return bool(BOSS_SPECIAL) and f % BOSS_SPECIAL.get("every", 10) == 0
+
+
 def floor_boss(f):
+    if boss_floor(f):
+        return BOSS_SPECIAL["boss"]
     return BOSS_ORDER[(f - 1) % len(BOSS_ORDER)]
 
 

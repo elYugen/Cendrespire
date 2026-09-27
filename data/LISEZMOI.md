@@ -22,6 +22,7 @@ Pas besoin de toucher au dossier d'installation. Il suffit de copier un fichier 
 | `anima.json` | Pouvoirs d'anima et paliers de rareté |
 | `enchantments.json` | Enchantements par type d'objet |
 | `floors.json` | Noms des étages |
+| `quests.json` | Quêtes données par les habitants de Cendreval |
 | `updates/*.json` | Notes de mise à jour (un fichier par version, affichées dans le menu Système) |
 
 Les couleurs s'écrivent `[rouge, vert, bleu]`, chaque valeur allant de 0 à 255.
@@ -132,6 +133,56 @@ Ajoutez une entrée dans `classes.json` (copier une classe existante est le plus
 | `clones` | illusions du boss qui tirent à distance |
 
 `fx_color` colore les effets du boss. `order` fixe l'ordre des boss d'un étage à l'autre (un par étage, puis en boucle).
+
+### Étage BOSS : Deathstrake, esprit de la tour
+
+`special` (dans `bosses.json`) : `{"boss": "deathstrake", "every": 10}` — tous les 10 étages (10, 20), le gardien normal est remplacé par ce boss, seul dans une grande arène (pas de monstres ni de sceau). Deathstrake a le modèle du paladin et retourne contre le héros les pouvoirs des artefacts :
+
+| Technique | Effet |
+|---|---|
+| `fireball` | boule(s) de feu visée(s) qui explosent à l'impact |
+| `crown` | couronne de boules de feu tout autour de lui |
+| `meteor` | météore annoncé sur le héros, puis sol embrasé |
+| `lightning` | éclairs successifs sur la position du héros |
+| `frost` | onde de givre : le héros touché est gelé (très ralenti) |
+| `horn` | onde qui repousse violemment le héros |
+| `chains` | chaînes : +30 % de dégâts subis et ralenti pendant 6 s |
+| `runes` | runes explosives autour du héros |
+| `shadowstep` | surgit derrière le héros et frappe |
+| `wisps` | feux follets qui pourchassent le héros |
+| `summon` | lève des squelettes (`summon_monster`, `summon_count`) |
+| `totem` | totem qui le soigne tant qu'il n'est pas détruit |
+| `ward` | écu sacré : -60 % de dégâts subis pendant 5 s |
+| `haste` / `enrage` | plus rapide 5 s / +40 % de dégâts 7 s |
+
+## Quêtes (`quests.json`)
+
+Chaque quête est donnée par un habitant de Cendreval (`giver`). Un « ! » doré au-dessus de sa tête signale une quête à prendre, un « ? » doré une quête terminée à lui rendre (un « ? » gris : quête en cours). Les quêtes en cours s'affichent à droite de l'écran.
+
+```json
+"os_sans_repos": {
+  "name": "Des os sans repos", "giver": "anselme",
+  "desc": "Résumé de la quête.",
+  "intro": "Ce que dit l'habitant quand il propose la quête.",
+  "progress": "Ce qu'il dit tant qu'elle n'est pas terminée.",
+  "done": "Ce qu'il dit quand on la lui rend.",
+  "requires": ["le_seuil"], "min_level": 1,
+  "objectives": [{"type": "kill", "monster": "squelette", "count": 15}],
+  "reward": {"gold": 80, "xp": 180, "item": "magique"}
+}
+```
+
+Habitants : `gorvan`, `hilda`, `ysolde`, `elise`, `anselme`, `mira`, `aldebert`, `garde_nord`, `garde_sud`, `garde_ronde` (liste dans `game/town.py`). `turn_in` désigne un autre habitant à qui rendre la quête. `requires` : quêtes à avoir rendues avant.
+
+| Objectif | Paramètres |
+|---|---|
+| `kill` | `count`, `monster` (identifiant de `monsters.json`, sinon n'importe quel monstre), `elite` (`true` : élites seulement), `min_floor` |
+| `boss` | `count`, `floor` (un étage précis, sinon n'importe quel gardien) |
+| `clear` | `floor` : gardien de cet étage déjà vaincu (compte aussi s'il l'a été avant la quête) |
+| `floor` | `floor` : étage atteint |
+| `talk` | `npc` : parler à cet habitant |
+
+Chaque objectif accepte `text` pour remplacer le texte affiché. `item` de la récompense : `commun`, `magique`, `rare` ou `legendaire` (un objet adapté à la classe du héros).
 
 ## Notes de mise à jour
 

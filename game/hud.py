@@ -317,9 +317,33 @@ def draw_hud(surf, world):
     draw_effects(surf, world, 18, y + 2)
     draw_slots(surf, world)
     draw_minimap(surf, world)
+    draw_quests(surf, world)
     draw_top(surf, world)
     draw_notifs(surf, world)
     draw_messages(surf, world)
+
+
+def draw_quests(surf, world):
+    """Suivi des quêtes, à droite sous la barre de sorts."""
+    from . import quests
+    p = world.player
+    right, y = SCREEN_W - 22, 164
+    for qid in quests.tracked(p):
+        q = quests.QUESTS[qid]
+        ui.draw_text(surf, q["name"], (right, y), 15, GOLD_BRIGHT, "bold", anchor="topright")
+        y += 20
+        if p.quests[qid]["state"] == "ready":
+            who = quests.NPC_NAMES[quests.turn_in_npc(qid)]
+            ui.draw_text(surf, f"Retournez voir {who}", (right, y), 13, (150, 230, 140), anchor="topright")
+            y += 18
+        else:
+            for text, done, need in quests.objectives(p, qid):
+                ok = done >= need
+                prog = f"  {min(done, need)}/{need}" if need > 1 else ""
+                ui.draw_text(surf, text + prog, (right, y), 13, (150, 230, 140) if ok else (214, 210, 200),
+                             anchor="topright")
+                y += 18
+        y += 8
 
 
 def draw_hud_tooltips(surf, world):

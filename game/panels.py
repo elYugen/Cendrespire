@@ -1656,3 +1656,96 @@ class DeathPanel(Panel):
                      (self.rect.centerx, self.rect.y + 104), 16, SOFT, anchor="midtop")
         if self.t > 1.0:
             self.btn.draw(surf)
+
+
+# =========================================================================== quêtes
+class QuestPanel(Panel):
+    """Dialogue avec un habitant : rendre une quête terminée, ou accepter la quête qu'il propose.
+    Son service habituel (commerce, forge...) reste accessible par un bouton."""
+    modal = True
+
+    def __init__(self, world, npc, label, action):
+        super().__init__(world, (SCREEN_W // 2 - 330, 130, 660, 450))
+        self.npc, self.label, self.action = npc, label, action
+        self.t = 0.0
+        self.pick()
+
+    def pick(self):
+        from . import quests
+        p = self.world.player
+        ready, offers = quests.to_turn_in(p, self.npc.npc_id), quests.offers(p, self.npc.npc_id)
+        if not ready and not offers:
+            self.world.close_modal()
+            return
+        self.qid = (ready or offers)[0]
+        self.turn_in = bool(ready)
+        cx, by = self.rect.centerx, self.rect.bottom - 62
+        if self.turn_in:
+            main = ui.Button((cx - 200, by, 190, 42), "Terminer la quête", self.finish)
+        else:
+            main = ui.Button((cx - 200, by, 190, 42), "Accepter", self.accept)
+        other = self.label if self.label != "Parler" else "Au revoir"
+        self.buttons = [main, ui.Button((cx + 10, by, 190, 42), other, self.leave)]
+
+    def accept(self):
+        from . import quests
+        quests.accept(self.world, self.qid)
+        self.world.close_modal()
+
+    def finish(self):
+        from . import quests
+        quests.turn_in(self.world, self.qid)
+        self.pick()     # l'habitant peut avoir une nouvelle quête à proposer
+        if self.world.modal is self:
+            self.t = 0.0
+
+    def leave(self):
+        self.world.close_modal()
+        if self.label != "Parler":
+            self.action(self.world)
+
+    def update(self, dt):
+        self.t += dt
+
+    def handle_event(self, e):
+        for b in self.buttons:
+            if b.handle(e):
+                return True
+        if e.type == pygame.KEYDOWN and e.key == pygame.K_ESCAPE:
+            self.world.close_modal()
+        return True
+
+    def draw(self, surf):
+        from . import quests
+        q = quests.QUESTS[self.qid]
+        p = self.world.player
+        r = self.rect
+        ui.botw_panel(surf, r, self.npc.label)
+        tag = "QUÊTE ACCOMPLIE" if self.turn_in else "NOUVELLE QUÊTE"
+        ui.draw_text(surf, tag, (r.centerx, r.y + 64), 12, GOLD_BRIGHT, "bold", anchor="midtop")
+        ui.draw_text(surf, q["name"], (r.centerx, r.y + 82), 22, WHITE, "title", anchor="midtop")
+        text = q["done"] if self.turn_in else q["intro"]
+        y = r.y + 124
+        for line in ui.wrap(f"« {text} »", 16, r.w - 80):
+            ui.draw_text(surf, line, (r.x + 40, y), 16, SOFT)
+            y += 22
+        y += 12
+        ui.separator(surf, r.x + 40, r.right - 40, y)
+        y += 14
+        ui.draw_text(surf, "Objectifs", (r.x + 40, y), 14, SHEIKAH, "bold")
+        y += 22
+        for text, done, need in quests.objectives(p, self.qid):
+            ok = done >= need
+            ui.draw_text(surf, "• " + text, (r.x + 52, y), 15, UP if ok else TEXT)
+            if need > 1:
+                ui.draw_text(surf, f"{min(done, need)} / {need}", (r.right - 40, y), 15, UP if ok else SOFT,
+                             anchor="topright")
+            y += 21
+        rw = quests.reward_text(self.qid)
+        if rw:
+            y += 8
+            ui.draw_text(surf, "Récompense", (r.x + 40, y), 14, SHEIKAH, "bold")
+            coin_icon(surf, r.x + 150, y + 9, 7)
+            ui.draw_text(surf, rw, (r.x + 164, y), 15, GOLD)
+        for b in self.buttons:
+            b.draw(surf)

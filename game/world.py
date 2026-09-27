@@ -5,7 +5,7 @@ from collections import deque
 
 import pygame
 
-from . import artifacts, hud, nav, save, sfx, spells, ui
+from . import artifacts, hud, nav, quests, save, sfx, spells, ui
 from .data import ANIMA_POWERS, ANIMA_TIERS, BAG_SIZE, SPELLS
 from .dungeon import WALL, BARRIER, Minimap
 from .entities import Loot
@@ -39,10 +39,20 @@ class Scene:
     def draw_ui(self, surf):
         pass
 
+    def presence(self):
+        """Discord Rich Presence : (ligne principale, seconde ligne, (image, texte) de la petite image) ;
+        None garde l'état précédent (écran de chargement)."""
+        return "Dans le menu principal", None
+
 
 class World(Scene):
     is_tower = False
     reveal_all = False
+    presence_timer = True
+
+    def hero_presence(self):
+        p = self.player
+        return f"{p.name} · {p.cls['name']} niv. {p.level}", (p.cls_id, f"{p.cls['name']} niveau {p.level}")
     hub = False
 
     def __init__(self, game, player, dungeon, theme, rng=None):
@@ -331,6 +341,7 @@ class World(Scene):
             return
         if m.curse > 0:
             dmg *= 1 + getattr(m, "curse_amp", 0.3)
+        dmg *= getattr(m, "dmg_taken", 1.0)       # Deathstrake sous l'Écu sacré
         m.hp -= dmg
         m.flash = 0.1
         if not m.aggro:
@@ -382,9 +393,11 @@ class World(Scene):
             if hasattr(m, "on_death"):
                 m.on_death(self)
             self.on_boss_killed(m)
+            quests.event(self, "boss", floor=getattr(self, "floor", 0))
         elif not m.minion:
             self.drop_monster_loot(m)
             self.on_monster_killed(m)
+            quests.event(self, "kill", monster=m.mid, elite=bool(m.elite), floor=getattr(self, "floor", 0))
 
     def floor_level(self):
         return max(1, self.player.max_floor)
@@ -782,6 +795,10 @@ class World(Scene):
 
     def update_extra(self, dt):
         pass
+
+    def npc_marker(self, o):
+        """Signe au-dessus d'un personnage (quêtes) : (texte, couleur) ou None."""
+        return None
 
     def update_ambient(self, dt):
         p = self.player
@@ -1210,7 +1227,12 @@ class World(Scene):
             if o.label:
                 pt = self.project(o.x, o.y, 78)
                 if pt:
-                    ui.draw_text(surf, o.label, pt, 14, WHITE, "bold", anchor="midbottom")
+                    r = ui.draw_text(surf, o.label, pt, 14, WHITE, "bold", anchor="midbottom")
+                    mark = self.npc_marker(o)
+                    if mark:
+                        bob = 3 * math.sin(self.time * 3 + o.x)
+                        ui.glow(surf, pt[0], r.y - 20 + bob, 20, ui.darker(mark[1], 0.45))
+                        ui.draw_text(surf, mark[0], (pt[0], r.y - 2 + bob), 40, mark[1], "title", anchor="midbottom")
         for l in self.loot:
             if l.kind == "item" and (l.item["rarity"] != "commun" or math.hypot(l.x - p.x, l.y - p.y) < 160):
                 pt = self.project(l.x, l.y, 30)

@@ -3,8 +3,8 @@ import math
 import random
 
 from . import sfx
-from .bosses import Boss
-from .data import MONSTERS, ELITE_AFFIXES, floor_name, floor_boss
+from .bosses import make_boss
+from .data import MONSTERS, ELITE_AFFIXES, floor_name, floor_boss, boss_floor
 from .dungeon import Dungeon, FLOOR, WALL
 from .entities import Monster, Chest, Portal, Loot, SecretWall, AnimaShrine, SpikeTrap
 from .fx import RingFX
@@ -15,15 +15,24 @@ from .settings import TILE, GOLD_BRIGHT, WHITE
 from .world import World
 
 
+TOWER_MUSIC = ("inside", "inside2", "inside3")    # une au hasard à chaque étage, jouée en boucle
+
+
 class TowerScene(World):
     is_tower = True
 
     def __init__(self, game, player, floor):
         self.floor = floor
+        self.arena = boss_floor(floor)      # étage BOSS : une salle d'entrée, un couloir et la grande arène
         rng = random.Random()
-        # étages vastes : de nombreuses salles, des cachettes derrière des murs fissurés et des pièges
-        d = Dungeon(170, 120)
-        d.generate(rng, n_rooms=56 + min(10, floor))
+        if self.arena:
+            d = Dungeon(80, 60)
+            d.generate(rng, n_rooms=2, boss_size=(29, 23))
+            d.secrets, d.traps = [], []
+        else:
+            # étages vastes : de nombreuses salles, des cachettes derrière des murs fissurés et des pièges
+            d = Dungeon(170, 120)
+            d.generate(rng, n_rooms=56 + min(10, floor))
         # les murs fissurés sont dessinés à part (ils se brisent) : le décor fixe les traite comme du sol
         for _room, (tx, ty), _kind in d.secrets:
             d.tiles[ty][tx] = FLOOR
@@ -40,10 +49,15 @@ class TowerScene(World):
         self.boss_started = False
         self.boss_dead = False
         self.populate()
-        self.show_banner(floor_name(floor), f"Étage {floor}", WHITE, 4.5)
-        self.message("Éliminez les créatures pour briser le sceau du gardien.", (220, 214, 200), 8)
+        if self.arena:
+            self.barrier_active = False
+            self.show_banner(floor_name(floor), f"Étage {floor} · étage du boss", (200, 140, 255), 4.5)
+            self.message(f"{self.boss.name}, {self.boss.title.lower()}, vous attend dans l'arène.", (210, 170, 255), 8)
+        else:
+            self.show_banner(floor_name(floor), f"Étage {floor}", WHITE, 4.5)
+            self.message("Éliminez les créatures pour briser le sceau du gardien.", (220, 214, 200), 8)
         sfx.play("portal")
-        sfx.music("inside")
+        sfx.music(sfx.pick_music(TOWER_MUSIC), restart=True)
 
     def floor_level(self):
         return self.floor
@@ -59,6 +73,14 @@ class TowerScene(World):
 
     def populate(self):
         rng, f, d = self.rng, self.floor, self.dungeon
+        self.traps = []
+        if self.arena:            # l'esprit de la tour, seul ; un coffre dans la salle d'entrée
+            self.total, self.seal_needed = 0, 1
+            self.interactables.append(Chest(*self.random_point(d.start_room, 24)))
+            bx, by = d.boss_room.center_px
+            self.boss = make_boss(floor_boss(f), bx, by, f, d.boss_room)
+            self.monsters.append(self.boss)
+            return
         pool = [mid for mid, m in MONSTERS.items() if m["floor"] <= f]
         rooms = [r for r in d.rooms if r is not d.start_room]
         for room in rooms:
@@ -88,7 +110,7 @@ class TowerScene(World):
         dmg = 9 * (1 + 0.28 * (f - 1))
         self.traps = [SpikeTrap((tx + 0.5) * TILE, (ty + 0.5) * TILE, dmg, rng.uniform(0, 3.8)) for tx, ty in d.traps]
         bx, by = d.boss_room.center_px
-        self.boss = Boss(floor_boss(f), bx, by, f, d.boss_room)
+        self.boss = make_boss(floor_boss(f), bx, by, f, d.boss_room)
         self.monsters.append(self.boss)
 
     # ------------------------------------------------------------------ progression
@@ -100,7 +122,18 @@ class TowerScene(World):
             return title, ""
         if self.barrier_active:
             return title, f"Sceau du gardien : {min(self.kills, self.seal_needed)} / {self.seal_needed} créatures"
+        if self.arena:
+            return title, f"{self.boss.name} vous attend dans l'arène."
         return title, "Le sceau est brisé : le gardien vous attend."
+
+    def presence(self):
+        hero, small = self.hero_presence()
+        details = f"Étage {self.floor} · {floor_name(self.floor)}"
+        if self.boss_started and not self.boss_dead:
+            return details, f"Affronte {self.boss.name}", small
+        if self.boss_dead:
+            return details, "Gardien vaincu", small
+        return details, hero, small
 
     def seal_progress(self):
         return (min(1.0, self.kills / self.seal_needed), not self.barrier_active or self.boss_started)

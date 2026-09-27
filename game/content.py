@@ -1,4 +1,4 @@
-"""Chargement du contenu modifiable (dossier data/ en JSON) : classes, sorts, talents, monstres, boss,
+"""Chargement du contenu modifiable (dossier data/ en JSON) : classes, sorts, talents, monstres, boss, quêtes,
 anima, artefacts, enchantements, effets temporaires.
 
 - Les fichiers sont lus au démarrage ; une erreur produit un message clair (fichier, élément, champ).
@@ -20,7 +20,11 @@ ZONE_KINDS = {"fire", "arrows", "holy", "heal"}
 MINIONS = {"skeleton", "wisp"}
 AI_TYPES = {"melee", "ranged", "caster", "brute"}
 BOSS_ABILITIES = {"charge", "slam", "bolts", "nova", "summon", "blink", "boulders", "waves", "leap", "webs", "beam",
-                  "shield", "firestorm", "vortex", "clones"}
+                  "shield", "firestorm", "vortex", "clones",
+                  # Deathstrake : pouvoirs des artefacts retournés contre le héros
+                  "fireball", "crown", "meteor", "lightning", "frost", "horn", "chains", "runes", "shadowstep",
+                  "totem", "ward", "haste", "enrage", "wisps"}
+QUEST_OBJECTIVES = {"kill", "boss", "clear", "floor", "talk"}
 
 
 class ContentError(Exception):
@@ -117,6 +121,9 @@ def load_all():
                                f"({', '.join(sorted(AI_TYPES))}).")
     b = load("bosses.json")
     c["bosses"], c["boss_order"] = b["bosses"], list(b["order"])
+    c["boss_special"] = b.get("special")
+    if c["boss_special"] and c["boss_special"].get("boss") not in c["bosses"]:
+        raise ContentError(f"bosses.json, special : boss « {c['boss_special'].get('boss')} » inconnu.")
     for bid, bo in c["bosses"].items():
         need(bo, ("name", "title", "hp", "dmg", "speed", "radius", "abilities", "model"), f"bosses.json, « {bid} »")
         for ab in bo["abilities"]:
@@ -137,7 +144,37 @@ def load_all():
                 raise ContentError(f"{where} : buff « {e['id']} » absent de buffs.json.")
     en = load("enchantments.json")
     c["enchants"], c["ench_slots"] = en["enchantments"], en["slots"]
+    c["quests"] = load("quests.json")["quests"]
+    check_quests(c["quests"], c["monsters"])
     return c
+
+
+def check_quests(quests, monsters):
+    from .town import NPC_IDS
+    for qid, q in quests.items():
+        where = f"quests.json, quête « {qid} »"
+        need(q, ("name", "giver", "desc", "intro", "done", "objectives"), where)
+        for key in ("giver", "turn_in"):
+            if key in q and q[key] not in NPC_IDS:
+                raise ContentError(f"{where} : habitant « {q[key]} » inconnu ({', '.join(sorted(NPC_IDS))}).")
+        for r in q.get("requires", []):
+            if r not in quests:
+                raise ContentError(f"{where} : quête requise « {r} » absente de quests.json.")
+        if not isinstance(q["objectives"], list) or not q["objectives"]:
+            raise ContentError(f"{where} : « objectives » doit être une liste non vide.")
+        for i, o in enumerate(q["objectives"]):
+            w = f"{where}, objectif n°{i + 1}"
+            if not isinstance(o, dict) or o.get("type") not in QUEST_OBJECTIVES:
+                raise ContentError(f"{w} : type inconnu ({', '.join(sorted(QUEST_OBJECTIVES))}).")
+            if o["type"] == "kill" and o.get("monster") and o["monster"] not in monsters:
+                raise ContentError(f"{w} : monstre « {o['monster']} » absent de monsters.json.")
+            if o["type"] in ("clear", "floor") and not isinstance(o.get("floor"), int):
+                raise ContentError(f"{w} : « floor » (numéro d'étage) manquant.")
+            if o["type"] == "talk" and o.get("npc") not in NPC_IDS:
+                raise ContentError(f"{w} : habitant « {o.get('npc')} » inconnu ({', '.join(sorted(NPC_IDS))}).")
+        item = q.get("reward", {}).get("item")
+        if item and item not in ("commun", "magique", "rare", "legendaire"):
+            raise ContentError(f"{where} : rareté de récompense « {item} » inconnue (commun, magique, rare, legendaire).")
 
 
 try:

@@ -1,7 +1,7 @@
 """Dessine l'icône de Cendrespire (la tour sur fond de braises) et l'écrit en .ico multi-tailles.
 
-Comme le reste du jeu, aucun fichier d'image n'est fourni : l'icône est générée par le code.
-Usage : python installer/make_icon.py [sortie.ico]
+L'icône du jeu est assets/cendrespire.ico ; ce script sert à la regénérer (ou à la créer si elle manque).
+Usage : python installer/make_icon.py [sortie.ico]   (par défaut : assets/cendrespire.ico)
 """
 import io
 import math
@@ -65,7 +65,7 @@ def write_ico(path):
 
 
 if __name__ == "__main__":
-    out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                                             "cendrespire.ico")
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(root, "assets", "cendrespire.ico")
     write_ico(out)
     print("Icône écrite :", out)

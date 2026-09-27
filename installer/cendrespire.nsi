@@ -48,7 +48,7 @@ Function LaunchGame
 FunctionEnd
 
 !macro SHORTCUT path
-  CreateShortCut "${path}" "$INSTDIR\runtime\pythonw.exe" '"$INSTDIR\main.py"' "$INSTDIR\cendrespire.ico" 0 SW_SHOWNORMAL "" "${APP}"
+  CreateShortCut "${path}" "$INSTDIR\runtime\pythonw.exe" '"$INSTDIR\main.py"' "$INSTDIR\assets\cendrespire.ico" 0 SW_SHOWNORMAL "" "${APP}"
 !macroend
 
 Section "${APP}" SecGame
@@ -60,7 +60,7 @@ Section "${APP}" SecGame
   RMDir /r "$INSTDIR\backup"
   Delete "$INSTDIR\version.txt"     ; version posée par la mise à jour intégrée : l'installeur fait foi
   SetOutPath "$INSTDIR"
-  File /r "${STAGE}/*"
+  File /r "${STAGE}${SEP}*"   ; SEP : séparateur du système (makensis Windows ne découpe les chemins que sur la barre oblique inverse)
   CreateDirectory "$APPDATA\${APP}\data"
   CreateDirectory "$SMPROGRAMS\${APP}"
   !insertmacro SHORTCUT "$SMPROGRAMS\${APP}\${APP}.lnk"
@@ -71,7 +71,7 @@ Section "${APP}" SecGame
   WriteRegStr HKCU "${UNINST_KEY}" "DisplayName" "${APP}"
   WriteRegStr HKCU "${UNINST_KEY}" "DisplayVersion" "${VERSION}"
   WriteRegStr HKCU "${UNINST_KEY}" "Publisher" "elyugen"
-  WriteRegStr HKCU "${UNINST_KEY}" "DisplayIcon" "$INSTDIR\cendrespire.ico"
+  WriteRegStr HKCU "${UNINST_KEY}" "DisplayIcon" "$INSTDIR\assets\cendrespire.ico"
   WriteRegStr HKCU "${UNINST_KEY}" "InstallLocation" "$INSTDIR"
   WriteRegStr HKCU "${UNINST_KEY}" "UninstallString" '"$INSTDIR\uninstall.exe"'
   WriteRegDWORD HKCU "${UNINST_KEY}" "EstimatedSize" ${SIZE_KB}

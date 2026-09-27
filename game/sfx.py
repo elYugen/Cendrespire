@@ -49,9 +49,16 @@ def set_volume(key, value):
         pygame.mixer.music.set_volume(volumes["master"] * volumes["music"])
 
 
-def music(name, fade_ms=1200):
-    """Joue en boucle assets/music/<name>.* (avec fondu) ; ne fait rien si ce morceau passe déjà."""
-    if not _enabled or _current[0] == name:
+def pick_music(names):
+    """Un morceau au hasard parmi names, si possible différent de celui qui passe."""
+    others = [n for n in names if n != _current[0]]
+    return random.choice(others or list(names))
+
+
+def music(name, fade_ms=1200, restart=False):
+    """Joue en boucle assets/music/<name>.* (avec fondu) ; ne fait rien si ce morceau passe déjà
+    (sauf restart : il reprend du début)."""
+    if not _enabled or (_current[0] == name and not restart):
         return
     path = next((os.path.join(MUSIC_DIR, name + ext) for ext in MUSIC_EXT
                  if os.path.exists(os.path.join(MUSIC_DIR, name + ext))), None)

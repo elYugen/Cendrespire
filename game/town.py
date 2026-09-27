@@ -94,20 +94,38 @@ SPAWN = (23.0, 32.3)
 MERCHANT = (8.9, 21.2, 0.0)
 SMITH = (33.7, 21.4, 0.0)
 TAILOR = (9.2, 31.0, -math.pi / 2)
+# habitants : id (quêtes), position et orientation de départ, nom, modèle animé, palette, réplique et, pour ceux
+# qui se promènent, tournée (cases parcourues en boucle, sans traverser les obstacles de obstacles())
 VILLAGERS = [
-    (13.9, 28.1, 1.2, "Élise l'Aubergiste", "farmer", {"LightBlue": (150, 110, 80), "Red": (190, 170, 130)},
-     "Bienvenue au Tison ! La soupe est chaude, la bière est fraîche."),
-    (26.9, 29.3, 2.4, "Frère Anselme", "hooded", {"Black": (90, 70, 50), "LightBrown": (180, 160, 120)},
-     "Que la lumière vous garde dans les étages obscurs de la tour."),
-    (20.0, 41.8, math.pi / 2, "Garde de la porte sud", "knight", {"Blue": (50, 70, 130), "Gold": "hide"},
-     "Personne n'est jamais revenu du sommet. Pas encore."),
-    (20.0, 10.6, -math.pi / 2, "Garde de la porte nord", "knight", {"Blue": (120, 36, 40), "Gold": "hide"},
-     "Au-delà de cette porte : Cendrespire. Bonne chance, aventurier."),
-    (18.2, 25.2, 0.3, "Mira la Fileuse", "witch", {"Purple": (60, 110, 90), "Gold": (220, 200, 140)},
-     "Ysolde, près de la rue du marché, coud des merveilles."),
-    (30.2, 25.6, 3.0, "Maître Aldebert", "knight", {"Blue": (90, 70, 40), "Gold": "hide"},
-     "On dit qu'au sommet de Cendrespire brûle une flamme éternelle."),
+    dict(id="elise", pos=(13.8, 28.6), facing=1.2, name="Élise l'Aubergiste", model="farmer",
+         palette={"LightBlue": (150, 110, 80), "Red": (190, 170, 130)},
+         line="Bienvenue au Tison ! La soupe est chaude, la bière est fraîche.",
+         route=[(13.8, 28.6), (13.8, 26.3), (17.6, 26.4), (10.2, 26.2)]),
+    dict(id="anselme", pos=(26.9, 29.3), facing=2.4, name="Frère Anselme", model="hooded",
+         palette={"Black": (90, 70, 50), "LightBrown": (180, 160, 120)},
+         line="Que la lumière vous garde dans les étages obscurs de la tour.",
+         route=[(26.9, 29.3), (23.0, 30.4), (19.9, 29.1), (19.6, 22.4), (23.0, 21.2), (26.4, 22.4)]),
+    dict(id="garde_sud", pos=(20.0, 41.8), facing=math.pi / 2, name="Garde de la porte sud", model="knight",
+         palette={"Blue": (50, 70, 130), "Gold": "hide"},
+         line="Personne n'est jamais revenu du sommet. Pas encore."),
+    dict(id="garde_nord", pos=(20.0, 10.6), facing=-math.pi / 2, name="Garde de la porte nord", model="knight",
+         palette={"Blue": (120, 36, 40), "Gold": "hide"},
+         line="Au-delà de cette porte : Cendrespire. Bonne chance, aventurier."),
+    dict(id="mira", pos=(18.2, 25.2), facing=0.3, name="Mira la Fileuse", model="witch",
+         palette={"Purple": (60, 110, 90), "Gold": (220, 200, 140)},
+         line="Ysolde, près de la rue du marché, coud des merveilles.",
+         route=[(18.2, 25.2), (16.8, 22.8), (13.5, 21.3), (13.5, 16.6), (18.0, 16.6), (17.0, 20.5)]),
+    dict(id="aldebert", pos=(30.2, 25.6), facing=3.0, name="Maître Aldebert", model="knight",
+         palette={"Blue": (90, 70, 40), "Gold": "hide"},
+         line="On dit qu'au sommet de Cendrespire brûle une flamme éternelle.",
+         route=[(30.2, 25.6), (35.5, 26.2), (40.2, 26.0), (35.5, 25.8)]),
+    dict(id="garde_ronde", pos=(8.0, 16.1), facing=0.0, name="Sergent Bréval", model="knight",
+         palette={"Blue": (70, 80, 60), "Gold": "hide"},
+         line="Je fais ma ronde, jour et nuit. Rien ne sort de la tour sans que je le voie.",
+         route=[(8.0, 16.1), (38.0, 16.1)]),
 ]
+SHOPKEEPERS = {"gorvan": "Gorvan le Marchand", "hilda": "Hilda la Forgeronne", "ysolde": "Ysolde la Couturière"}
+NPC_IDS = set(SHOPKEEPERS) | {v["id"] for v in VILLAGERS}
 FIREFLIES = [(4, 10, 16, 5), (27, 10, 16, 5), (3, 37, 18, 5), (27, 37, 17, 5)]   # jardins : x, y, largeur, hauteur
 
 

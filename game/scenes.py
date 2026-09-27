@@ -372,6 +372,9 @@ class CreateScene(Scene):
         self.back = ui.Button((640, SCREEN_H - 84, 200, 50), "Retour", self.backward, 18)
         self.rand = ui.Button((640, 540, 200, 42), "Aléatoire", self.randomize, 17)
 
+    def presence(self):
+        return "Crée un personnage", None
+
     def name_ok(self):
         name = self.name.strip()
         if len(name) < 2:
@@ -634,6 +637,9 @@ class LoadingScene(Scene):
 
     def handle_event(self, e):
         pass
+
+    def presence(self):
+        return None
 
     def update(self, dt):
         self.t += dt

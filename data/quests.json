@@ -1,0 +1,93 @@
+{
+  "_info": "Quêtes de Cendreval. giver : habitant qui donne la quête (et la reprend, sauf « turn_in »). Objectifs : kill (monster, elite, min_floor), boss (floor), clear (floor), floor (atteindre l'étage), talk (npc). Voir LISEZMOI.md.",
+  "quests": {
+    "le_seuil": {
+      "name": "Le seuil de la tour",
+      "giver": "garde_nord",
+      "desc": "Le garde de la porte nord veut savoir si vous avez l'étoffe d'un grimpeur.",
+      "intro": "Tout le monde veut grimper, peu en reviennent. Terrassez le gardien du premier étage et je saurai que vous n'êtes pas qu'un touriste.",
+      "progress": "Le premier gardien vous attend, derrière le sceau. Revenez quand il sera tombé.",
+      "done": "Vous êtes revenu ! Et entier, en plus. Tenez, vous l'avez mérité.",
+      "objectives": [
+        {"type": "clear", "floor": 1}
+      ],
+      "reward": {"gold": 60, "xp": 120}
+    },
+    "saluer_gorvan": {
+      "name": "Un mot pour Gorvan",
+      "giver": "elise",
+      "desc": "Élise vous demande de passer saluer Gorvan de sa part, au marché.",
+      "intro": "Vous allez au marché ? Dites à Gorvan que son ardoise au Tison ne se paiera pas toute seule. Et revenez me dire ce qu'il en pense !",
+      "progress": "Gorvan tient son étal sur la place du marché, à l'ouest de la fontaine.",
+      "done": "Il a encore promis de payer demain ? Ah, ce Gorvan... Merci quand même, voilà pour votre peine.",
+      "objectives": [
+        {"type": "talk", "npc": "gorvan", "text": "Parler à Gorvan le Marchand"}
+      ],
+      "reward": {"gold": 25, "xp": 40}
+    },
+    "os_sans_repos": {
+      "name": "Des os sans repos",
+      "giver": "anselme",
+      "desc": "Frère Anselme prie pour les âmes enchaînées aux squelettes de la tour.",
+      "intro": "Les morts de la tour ne trouvent pas le repos : leurs os se relèvent et marchent encore. Libérez-en quinze, et je prierai pour eux... et pour vous.",
+      "progress": "Chaque squelette brisé est une âme libérée. Continuez, mon enfant.",
+      "done": "Je les ai sentis partir, un à un. Que cette relique vous protège là-haut.",
+      "objectives": [
+        {"type": "kill", "monster": "squelette", "count": 15}
+      ],
+      "reward": {"gold": 80, "xp": 180, "item": "magique"}
+    },
+    "goules": {
+      "name": "L'odeur des goules",
+      "giver": "mira",
+      "desc": "Mira ne supporte plus l'odeur qui monte de la tour les soirs de vent.",
+      "intro": "Vous sentez ça ? Ce sont les goules. Quand le vent tourne, toute la ville empeste. Faites-en taire une douzaine, que je puisse filer en paix.",
+      "progress": "Encore quelques goules et l'air redeviendra respirable.",
+      "done": "Ah, l'air est déjà plus léger ! Prenez ceci, je l'ai tissé pour un aventurier qui n'est jamais revenu.",
+      "requires": ["le_seuil"],
+      "objectives": [
+        {"type": "kill", "monster": "zombie", "count": 12}
+      ],
+      "reward": {"gold": 90, "xp": 220, "item": "magique"}
+    },
+    "chasse_aux_elites": {
+      "name": "Chasse aux champions",
+      "giver": "garde_ronde",
+      "desc": "Le sergent Bréval veut qu'on s'occupe des monstres les plus dangereux de la tour.",
+      "intro": "Les monstres ordinaires, on s'en arrange. Mais les champions, ceux qui brillent d'une aura, eux, finiront par descendre. Abattez-en trois.",
+      "progress": "Trois champions, pas un de moins. Ils se reconnaissent à leur nom doré.",
+      "done": "Trois ! Je vais pouvoir dormir une nuit entière. Voici une arme de la garnison, elle vous servira mieux qu'à moi.",
+      "requires": ["le_seuil"],
+      "objectives": [
+        {"type": "kill", "elite": true, "count": 3, "text": "Abattre des champions (monstres d'élite)"}
+      ],
+      "reward": {"gold": 150, "xp": 300, "item": "rare"}
+    },
+    "acier_des_forges": {
+      "name": "L'acier des Forges Hurlantes",
+      "giver": "hilda",
+      "desc": "Hilda a entendu parler de l'acier forgé au troisième étage de la tour.",
+      "intro": "On raconte qu'au troisième étage, des forges brûlent encore. Montez jusque-là : si vous revenez, je veux tout savoir sur leur acier.",
+      "progress": "Le troisième étage, les Forges Hurlantes. Il faudra d'abord vaincre le gardien du deuxième.",
+      "done": "Des forges qui hurlent... Je savais que ce n'était pas une légende. Tenez, pour la route.",
+      "requires": ["le_seuil"],
+      "objectives": [
+        {"type": "floor", "floor": 3}
+      ],
+      "reward": {"gold": 200, "xp": 350}
+    },
+    "flamme_eternelle": {
+      "name": "La flamme éternelle",
+      "giver": "aldebert",
+      "desc": "Maître Aldebert rêve de voir la flamme qui brûlerait au sommet de Cendrespire.",
+      "intro": "J'étais trop vieux quand la tour s'est éveillée. Montez pour moi : abattez cinq gardiens d'étage, et racontez-moi.",
+      "progress": "Cinq gardiens. Je vous attendrai ici, près de la fontaine.",
+      "done": "Cinq gardiens... Alors elle existe peut-être vraiment, cette flamme. Prenez l'héritage de ma famille, il vous revient.",
+      "requires": ["acier_des_forges"],
+      "objectives": [
+        {"type": "boss", "count": 5, "text": "Vaincre des gardiens d'étage"}
+      ],
+      "reward": {"gold": 400, "xp": 700, "item": "legendaire"}
+    }
+  }
+}

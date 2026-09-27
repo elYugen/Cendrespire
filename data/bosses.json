@@ -1,27 +1,6 @@
 {
-  "_info": "Gardiens. abilities : [technique, intervalle phase 1 (null = inactive), intervalle phase 2]. Techniques : charge, slam, bolts, nova, summon, blink, boulders, waves. Techniques : charge, slam, bolts, nova, summon, blink, boulders, waves, leap (bond), webs (toiles qui ralentissent), beam (rayon tournant), shield (invulnérable tant que les pylônes tiennent), firestorm (pluie de feu), vortex (aspiration puis explosion), clones (illusions). summon_monster : monstre invoqué ; fx_color : couleur des effets. summon_count : [invocations en phase 1, en phase 2].",
-  "order": [
-    "boucher",
-    "arachne",
-    "liche",
-    "sentinelle",
-    "golem",
-    "jumeaux",
-    "mere_cendres",
-    "seigneur",
-    "boucher",
-    "arachne",
-    "liche",
-    "sentinelle",
-    "golem",
-    "jumeaux",
-    "mere_cendres",
-    "arachne",
-    "liche",
-    "sentinelle",
-    "mere_cendres",
-    "seigneur"
-  ],
+  "_info": "Gardiens. abilities : [technique, intervalle phase 1 (null = inactive), intervalle phase 2]. Techniques : charge, slam, bolts, nova, summon, blink, boulders, waves, leap (bond), webs (toiles qui ralentissent), beam (rayon tournant), shield (invulnérable tant que les pylônes tiennent), firestorm (pluie de feu), vortex (aspiration puis explosion), clones (illusions). Techniques de Deathstrake (artefacts retournés contre le héros) : fireball, crown, meteor, lightning, frost, horn, chains, runes, shadowstep, totem, ward, haste, enrage, wisps. summon_monster : monstre invoqué ; fx_color : couleur des effets. summon_count : [invocations en phase 1, en phase 2]. special : boss qui remplace le gardien normal tous les « every » étages, seul dans une grande arène.",
+  "order": ["boucher", "arachne", "liche", "sentinelle", "golem", "jumeaux", "mere_cendres", "seigneur", "boucher", "arachne", "liche", "sentinelle", "golem", "jumeaux", "mere_cendres", "arachne", "liche", "sentinelle", "mere_cendres", "seigneur"],
   "bosses": {
     "boucher": {
       "id": "boucher",
@@ -299,6 +278,71 @@
       "summon_monster": "diablotin",
       "fx_color": [255, 110, 30],
       "summon_count": [2, 3]
+    },
+    "deathstrake": {
+      "name": "Deathstrake",
+      "title": "Esprit de la tour",
+      "hp": 1200,
+      "dmg": [13, 19],
+      "speed": 118,
+      "radius": 26,
+      "xp": 900,
+      "cd": 1.2,
+      "windup": 0.5,
+      "model": {
+        "detailed": true,
+        "body": [60, 44, 82],
+        "legs": [44, 34, 60],
+        "arms": "body",
+        "skin": [170, 178, 210],
+        "cape": [120, 30, 36],
+        "pauldrons": [150, 120, 60],
+        "shield": [60, 44, 82],
+        "shield_rim": [150, 120, 60],
+        "blade": [200, 170, 255],
+        "weapon": "sword",
+        "helmet": [90, 90, 110],
+        "eyes": [190, 120, 255],
+        "rig": {
+          "model": "knight",
+          "weapons": {
+            "right": ["sword2", 26],
+            "left": ["shield_celtic", 20]
+          },
+          "palette": {
+            "Skin": [150, 160, 200],
+            "Hair_White": [225, 225, 240],
+            "Blue": [52, 36, 74],
+            "Beige": [140, 34, 40],
+            "Gold": [150, 118, 60]
+          }
+        }
+      },
+      "fx_color": [190, 120, 255],
+      "summon_monster": "squelette",
+      "summon_count": [3, 5],
+      "melee": true,
+      "abilities": [
+        ["fireball", 3.5, 2.6],
+        ["shadowstep", 10, 7],
+        ["horn", 12, 9],
+        ["frost", 15, 11],
+        ["meteor", 9, 7],
+        ["crown", 11, 8],
+        ["lightning", 13, 10],
+        ["chains", 18, 14],
+        ["runes", 16, 12],
+        ["wisps", 17, 13],
+        ["summon", 20, 15],
+        ["ward", 22, 16],
+        ["haste", 18, 14],
+        ["totem", null, 24],
+        ["enrage", null, 20]
+      ]
     }
+  },
+  "special": {
+    "boss": "deathstrake",
+    "every": 10
   }
 }

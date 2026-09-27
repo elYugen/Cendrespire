@@ -50,11 +50,27 @@ if content.ERROR is not None and __name__ == "__main__":
     content_error_screen(content.ERROR)
     sys.exit(1)
 
-from game import sfx  # noqa: E402
+from game import discord, sfx  # noqa: E402
 from game.r3d.renderer import Renderer, Frame  # noqa: E402
 from game.settings import SCREEN_W, SCREEN_H, FPS, TITLE, VIEW  # noqa: E402
 
 MOUSE_EVENTS = (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP, pygame.MOUSEMOTION)
+
+
+def load_icon():
+    """Plus grande image de assets/cendrespire.ico (des PNG, que SDL ne lit pas directement dans un .ico)."""
+    import io
+    import struct
+    from game.settings import ASSETS_DIR
+    try:
+        with open(os.path.join(ASSETS_DIR, "cendrespire.ico"), "rb") as f:
+            data = f.read()
+        n = struct.unpack_from("<H", data, 4)[0]
+        entries = [struct.unpack_from("<BBBBHHII", data, 6 + 16 * i) for i in range(n)]
+        e = max(entries, key=lambda e: e[0] or 256)
+        return pygame.image.load(io.BytesIO(data[e[7]:e[7] + e[6]]), "icon.png")
+    except (OSError, struct.error, ValueError, pygame.error):
+        return None
 
 
 class Game:
@@ -75,6 +91,9 @@ class Game:
             pygame.display.gl_set_attribute(pygame.GL_CONTEXT_FORWARD_COMPATIBLE_FLAG, True)
             self.window = pygame.Window(TITLE, size, opengl=True, allow_high_dpi=True, resizable=True)
             self.window.minimum_size = (640, 360)
+            icon = load_icon()
+            if icon:
+                self.window.set_icon(icon)
             self.ctx = moderngl.create_context()
             self.ratio = self.ctx.screen.size[0] / self.window.size[0]
             self.screen = self.ctx.screen
@@ -181,6 +200,8 @@ class Game:
     def step(self, dt, events=()):
         from game.r3d import rig
         rig.CLOCK[0] += dt           # horloge des animations des personnages (menus, PNJ)
+        if not self.headless:
+            discord.update(self.scene)
         for e in events:
             if e.type == pygame.QUIT:
                 if hasattr(self.scene, "save"):

@@ -5,7 +5,7 @@ import random
 from . import sfx
 from .data import BOSSES
 from .entities import Monster, Projectile
-from .fx import Effect, Telegraph, RingFX
+from .fx import Effect, Telegraph, RingFX, Lightning
 from .settings import TILE
 
 # techniques de data/bosses.json : (technique, intervalle phase 1 (None = inactive), intervalle phase 2)
@@ -39,7 +39,7 @@ class Boss(Monster):
     @property
     def shielded(self):
         """Invulnérable tant qu'un de ses pylônes tient debout."""
-        return any(isinstance(a, Pylon) and not a.dead for a in self.adds)
+        return any(type(a) is Pylon and not a.dead for a in self.adds)
 
     def lift(self):
         if not self.jump:
@@ -384,7 +384,7 @@ class Boss(Monster):
             fr.part("sphere", (self.x, self.y, h * 0.5), (self.r * 1.6, 0, 0), (0, 0, h * 0.75),
                     (0, self.r * 1.6, 0), (255, 220, 120), 0.35, additive=True)
             for a in self.adds:
-                if isinstance(a, Pylon) and not a.dead:
+                if type(a) is Pylon and not a.dead:
                     mx, my = (a.x + self.x) / 2, (a.y + self.y) / 2
                     L = math.hypot(a.x - self.x, a.y - self.y) / 2
                     ang = math.atan2(a.y - self.y, a.x - self.x)
@@ -538,3 +538,408 @@ class Vortex(Effect):
         for i in range(3):
             r = 300 * (1 - (k * 2 + i / 3) % 1)
             fr.decal(b.x, b.y, r, r, (255, 110, 40), 0.35, kind=1, inner=0.9)
+
+
+# =========================================================================== Deathstrake, esprit de la tour
+class Deathstrake(Boss):
+    """Boss spécial des étages 10, 20... : un paladin spectral qui retourne contre le héros les pouvoirs des
+    artefacts (boules de feu, météore, foudre, givre, corne, chaînes, runes, dague de l'ombre, totem, écu,
+    bottes, cor de bataille, lanterne des âmes) et lève des squelettes."""
+    SPIRIT = (190, 120, 255)
+
+    def __init__(self, bid, x, y, floor, room):
+        super().__init__(bid, x, y, floor, room)
+        self.base_speed = self.speed
+        self.ward = self.haste = self.rage = 0.0
+
+    @property
+    def dmg_taken(self):
+        return 0.4 if self.ward > 0 else 1.0
+
+    def roll_dmg(self):
+        return super().roll_dmg() * (1.4 if self.rage > 0 else 1.0)
+
+    def can_use(self, name, dist, world):
+        if name == "shadowstep":
+            return dist > 150
+        if name == "horn":
+            return dist < 190
+        if name == "frost":
+            return dist < 240
+        if name in ("fireball", "crown"):
+            return self.has_los
+        if name == "totem":
+            return not any(isinstance(a, SoulTotem) and not a.dead for a in self.adds)
+        if name == "ward":
+            return self.ward <= 0
+        return super().can_use(name, dist, world)
+
+    def update(self, dt, world):
+        for k in ("ward", "haste", "rage"):
+            setattr(self, k, max(0.0, getattr(self, k) - dt))
+        self.speed = self.base_speed * (1.2 if self.phase_n == 2 else 1.0) * (1.5 if self.haste > 0 else 1.0)
+        if self.active and random.random() < 0.5:
+            world.particles.emit(self.x + random.uniform(-14, 14), self.y + random.uniform(-14, 14), self.SPIRIT,
+                                 n=1, speed=10, life=0.8, size=4, up=70, z=random.uniform(10, 60), zs=0)
+        super().update(dt, world)
+
+    # ------------------------------------------------------------------ pouvoirs offensifs
+    def use_fireball(self, world):
+        """Crâne infernal visé : une (phase 1) ou trois (phase 2) boules de feu qui explosent à l'impact."""
+        p = world.player
+        base = math.atan2(p.y - self.y, p.x - self.x)
+        self.facing = base
+        n = 1 if self.phase_n == 1 else 3
+
+        def fire(w):
+            for i in range(n):
+                a = base + (i - (n - 1) / 2) * 0.28
+                w.projectiles.append(Fireball(self.x, self.y, a, 360, self.roll_dmg(), 80))
+            sfx.play("fire", 0.6)
+        self.windup_then(0.35, fire)
+
+    def use_crown(self, world):
+        """Couronne de boules de feu tout autour de lui."""
+        def fire(w, offset=0.0):
+            n = 10 if self.phase_n == 1 else 14
+            for i in range(n):
+                a = i / n * math.tau + offset
+                w.projectiles.append(Projectile(self.x, self.y, a, 250, "enemy", (255, 120, 40),
+                                                dmg=self.roll_dmg() * 0.8, radius=9, life=3.0, kind="fire"))
+            w.effects.append(RingFX(self.x, self.y, 10, 110, 0.4, (255, 120, 40), 5))
+            sfx.play("fire", 0.6)
+            if self.phase_n == 2 and offset == 0:
+                w.schedule(0.5, lambda w2: fire(w2, math.pi / n))
+        world.effects.append(RingFX(self.x, self.y, 110, 10, 0.6, (255, 150, 60), 3))
+        self.windup_then(0.6, fire)
+
+    def use_meteor(self, world):
+        """Éclat de météorite : chute annoncée sur le héros, puis le sol brûle."""
+        p = world.player
+        n = 1 if self.phase_n == 1 else 3
+        dmg = self.roll_dmg()
+        for i in range(n):
+            x, y = (p.x, p.y) if i == 0 else (p.x + random.uniform(-160, 160), p.y + random.uniform(-160, 160))
+
+            def burn(w, x=x, y=y):
+                w.effects.append(FireGround(x, y, 85, 4.0, dmg * 0.25))
+            world.effects.append(Telegraph("circle", 1.3 + i * 0.3, dmg * 1.5, x, y, 105, color=(255, 100, 30),
+                                           sound="explosion", on_fire=burn))
+        sfx.play("roar", 0.4)
+        self.windup_then(0.5, None)
+
+    def use_lightning(self, world):
+        """Pierre d'orage : des éclairs s'abattent l'un après l'autre sur la position du héros."""
+        n = 5 if self.phase_n == 1 else 8
+        dmg = self.roll_dmg() * 0.9
+
+        def strike(w):
+            p = w.player
+            x, y = p.x + random.uniform(-40, 40), p.y + random.uniform(-40, 40)
+
+            def bolt(w2):
+                w2.effects.append(Lightning(x, y))
+                sfx.play("explosion", 0.4)
+            w.effects.append(Telegraph("circle", 0.75, dmg, x, y, 55, color=(150, 190, 255), sound=None,
+                                       on_fire=bolt))
+        for i in range(n):
+            world.schedule(i * 0.35, strike)
+        self.windup_then(0.4, None)
+
+    def use_frost(self, world):
+        """Orbe de givre : onde glacée autour de lui ; le héros touché est gelé (très ralenti)."""
+        def freeze(w):
+            p = w.player
+            if math.hypot(p.x - self.x, p.y - self.y) < 230 + p.r:
+                p.snare = max(p.snare, 2.5)
+                w.message("Vous êtes gelé !", (150, 210, 255), 2)
+            w.particles.emit(self.x, self.y, (180, 230, 255), n=50, speed=320, life=0.6, size=4, up=60, z=10)
+            sfx.play("ice", 0.7)
+        world.effects.append(Telegraph("circle", 1.0, self.roll_dmg() * 0.8, self.x, self.y, 230,
+                                       color=(140, 210, 255), sound=None, on_fire=freeze))
+        self.windup_then(1.0, None)
+
+    def use_horn(self, world):
+        """Corne du Tourment / tambour de tempête : onde qui repousse violemment le héros."""
+        def blow(w):
+            p = w.player
+            if math.hypot(p.x - self.x, p.y - self.y) < 190 + p.r:
+                w.effects.append(Shove(p, math.atan2(p.y - self.y, p.x - self.x), 320))
+            w.effects.append(RingFX(self.x, self.y, 20, 200, 0.4, (240, 200, 130), 8))
+            w.shake_screen(7)
+        world.effects.append(Telegraph("circle", 0.8, self.roll_dmg() * 1.1, self.x, self.y, 190,
+                                       color=(240, 200, 130), sound="explosion", on_fire=blow))
+        sfx.play("roar", 0.6)
+        self.windup_then(0.8, None)
+
+    def use_chains(self, world):
+        """Chaînes du geôlier : le héros pris dans la zone subit 30% de dégâts en plus et est ralenti 6 s."""
+        p = world.player
+        x, y = p.x, p.y
+
+        def bind(w):
+            q = w.player
+            if math.hypot(q.x - x, q.y - y) < 95 + q.r:
+                w.effects.append(Hex(q, 6.0))
+                w.message("Les chaînes de Deathstrake vous entravent !", (200, 140, 255), 3)
+        world.effects.append(Telegraph("circle", 1.0, self.roll_dmg() * 0.5, x, y, 95, color=(170, 90, 230),
+                                       sound="magic", on_fire=bind))
+        self.windup_then(0.5, None)
+
+    def use_runes(self, world):
+        """Runes explosives posées autour du héros."""
+        p = world.player
+        n = 3 if self.phase_n == 1 else 5
+        for i in range(n):
+            a = i / n * math.tau + random.random()
+            x, y = p.x + math.cos(a) * random.uniform(70, 150), p.y + math.sin(a) * random.uniform(70, 150)
+            if not world.blocked(x, y, 10):
+                world.effects.append(Rune(x, y, self.roll_dmg() * 1.2))
+        sfx.play("magic", 0.6)
+        self.windup_then(0.5, None)
+
+    def use_shadowstep(self, world):
+        """Dague de l'ombre : il surgit derrière le héros et frappe aussitôt."""
+        p = world.player
+        ang = p.facing + math.pi
+        x, y = world.reachable(p.x, p.y, p.x + math.cos(ang) * 70, p.y + math.sin(ang) * 70, self.r)
+        world.particles.emit(self.x, self.y, self.SPIRIT, n=24, speed=160, life=0.5, size=4)
+        self.x, self.y = x, y
+        world.particles.emit(self.x, self.y, self.SPIRIT, n=24, speed=160, life=0.5, size=4)
+        sfx.play("magic", 0.6)
+        self.use_melee(world)
+
+    def use_wisps(self, world):
+        """Lanterne des âmes : des feux follets le quittent et pourchassent le héros."""
+        n = 3 if self.phase_n == 1 else 5
+        for i in range(n):
+            a = i / n * math.tau
+            world.effects.append(Wisp(self.x + math.cos(a) * 40, self.y + math.sin(a) * 40, self.roll_dmg() * 0.7,
+                                      delay=0.4 + i * 0.25))
+        sfx.play("magic", 0.6)
+        self.windup_then(0.4, None)
+
+    # ------------------------------------------------------------------ pouvoirs de soutien
+    def use_totem(self, world):
+        """Totem de régénération : le soigne tant qu'il n'est pas détruit."""
+        x, y = self.arena_point(2.0)
+        t = SoulTotem(self, x, y)
+        self.adds.append(t)
+        world.monsters.append(t)
+        world.effects.append(RingFX(x, y, 10, 90, 0.5, (110, 230, 120), 6))
+        world.message("Deathstrake plante un totem de régénération : détruisez-le !", (130, 240, 140), 5)
+        sfx.play("potion", 0.7)
+        self.windup_then(0.6, None)
+
+    def use_ward(self, world):
+        """Écu sacré : se soigne un peu et réduit fortement les dégâts subis pendant 5 s."""
+        self.ward = 5.0
+        self.hp = min(self.max_hp, self.hp + self.max_hp * 0.04)
+        world.effects.append(RingFX(self.x, self.y, 10, 90, 0.5, (255, 220, 120), 6))
+        world.add_text(self.x, self.y, self.height() + 10, "Écu sacré", (255, 220, 120), 16)
+        sfx.play("seal", 0.5)
+
+    def use_haste(self, world):
+        """Bottes de célérité : bien plus rapide pendant 5 s."""
+        self.haste = 5.0
+        world.add_text(self.x, self.y, self.height() + 10, "Célérité", (120, 220, 230), 16)
+        world.effects.append(RingFX(self.x, self.y, 10, 70, 0.4, (120, 220, 230), 4))
+        sfx.play("magic", 0.4)
+
+    def use_enrage(self, world):
+        """Cor de bataille : frappe plus fort pendant 7 s."""
+        self.rage = 7.0
+        world.add_text(self.x, self.y, self.height() + 10, "Cor de bataille", (255, 90, 60), 16)
+        world.effects.append(RingFX(self.x, self.y, 10, 120, 0.5, (255, 90, 60), 6))
+        sfx.play("roar", 0.7)
+
+    # ------------------------------------------------------------------ rendu
+    def render(self, fr, t):
+        super().render(fr, t)
+        h = self.height()
+        k = 0.5 + 0.5 * math.sin(t * 2.2)
+        fr.glow(self.x, self.y, h * 0.6, 70 + 14 * k, self.SPIRIT, 0.35)
+        fr.light(self.x, self.y, h, 240, self.SPIRIT, 0.9 + 0.3 * k)
+        if self.ward > 0:
+            fr.part("sphere", (self.x, self.y, h * 0.5), (self.r * 1.7, 0, 0), (0, 0, h * 0.75),
+                    (0, self.r * 1.7, 0), (140, 110, 50), 0.12, additive=True)
+        if self.rage > 0:
+            fr.glow(self.x, self.y, h * 0.5, 60, (255, 70, 40), 0.5)
+        if self.haste > 0:
+            fr.decal(self.x, self.y, self.r * 1.6, self.r * 1.6, (120, 220, 230), 0.4, kind=1, inner=0.8)
+
+
+class Fireball(Projectile):
+    """Boule de feu ennemie : explose à l'impact (mur, héros ou fin de course)."""
+
+    def __init__(self, x, y, ang, speed, dmg, blast):
+        super().__init__(x, y, ang, speed, "enemy", (255, 110, 30), dmg=dmg, radius=12, life=2.6, kind="fire")
+        self.blast = blast
+        self.boomed = False
+
+    def update(self, dt, world):
+        super().update(dt, world)
+        if not self.alive and not self.boomed:
+            self.boom(world)
+
+    def end(self, world):
+        self.alive = False
+
+    def boom(self, world):
+        self.boomed = True
+        p = world.player
+        if math.hypot(p.x - self.x, p.y - self.y) < self.blast + p.r:
+            p.take_damage(world, self.dmg * 0.5)
+        world.particles.emit(self.x, self.y, self.color, n=26, speed=220, life=0.45, size=4, z=12, up=100)
+        world.effects.append(RingFX(self.x, self.y, 10, self.blast, 0.3, self.color, 5))
+        world.flash_light(self.x, self.y, self.blast * 3, self.color)
+        sfx.play("explosion", 0.4)
+
+
+class FireGround(Effect):
+    """Sol embrasé après un météore : brûle le héros qui reste dedans."""
+
+    def __init__(self, x, y, r, dur, dmg):
+        self.x, self.y, self.r, self.dur, self.dmg = x, y, r, dur, dmg
+        self.t = self.tick = 0.0
+
+    def update(self, dt, world):
+        self.t += dt
+        self.tick -= dt
+        self.alive = self.t < self.dur
+        p = world.player
+        if self.tick <= 0 and math.hypot(p.x - self.x, p.y - self.y) < self.r + p.r * 0.5:
+            p.take_damage(world, self.dmg)
+            self.tick = 0.5
+        if random.random() < 0.5:
+            a, rr = random.random() * math.tau, random.random() * self.r
+            world.particles.emit(self.x + math.cos(a) * rr, self.y + math.sin(a) * rr, (255, 120, 40), n=1,
+                                 speed=10, life=0.6, size=4, up=70, z=4, zs=0)
+
+    def render(self, fr):
+        a = max(0.0, min(1.0, self.t * 4, (self.dur - self.t) * 2))
+        fr.decal(self.x, self.y, self.r, self.r, (255, 90, 20), 0.45 * a, kind=4)
+        fr.light(self.x, self.y, 10, self.r * 2, (255, 110, 40), 0.8 * a)
+
+
+class Shove(Effect):
+    """Le héros est projeté en arrière (corne du Tourment)."""
+
+    def __init__(self, target, ang, dist, dur=0.25):
+        self.p, self.ang, self.speed, self.dur = target, ang, dist / dur, dur
+        self.t = 0.0
+
+    def update(self, dt, world):
+        self.t += dt
+        self.alive = self.t < self.dur
+        world.move_circle(self.p, math.cos(self.ang) * self.speed * dt, math.sin(self.ang) * self.speed * dt)
+
+
+class Hex(Effect):
+    """Chaînes : le héros subit plus de dégâts (Player.take_damage) et avance moins vite."""
+
+    def __init__(self, target, dur):
+        self.p, self.dur = target, dur
+        self.t = 0.0
+        target.hexed = dur
+
+    def update(self, dt, world):
+        self.t += dt
+        self.alive = self.t < self.dur
+        self.p.hexed = max(0.0, self.dur - self.t)
+        self.p.snare = max(self.p.snare, 0.1)
+
+    def render(self, fr):
+        p = self.p
+        fr.decal(p.x, p.y, 30, 30, (170, 90, 230), 0.5, kind=1, inner=0.75, rot=self.t * 2)
+
+
+class Rune(Effect):
+    """Rune explosive : s'arme, puis explose quand le héros passe dessus (ou au bout de 10 s)."""
+    ARM = 0.9
+
+    def __init__(self, x, y, dmg):
+        self.x, self.y, self.dmg = x, y, dmg
+        self.t = 0.0
+
+    def update(self, dt, world):
+        self.t += dt
+        p = world.player
+        if self.t > self.ARM and (self.t > 10 or math.hypot(p.x - self.x, p.y - self.y) < 34 + p.r):
+            world.effects.append(Telegraph("circle", 0.01, self.dmg, self.x, self.y, 80, color=(200, 120, 255)))
+            self.alive = False
+
+    def render(self, fr):
+        k = 0.5 + 0.5 * math.sin(self.t * 6)
+        armed = self.t > self.ARM
+        fr.decal(self.x, self.y, 34, 34, (200, 120, 255), (0.35 + 0.3 * k) if armed else 0.2, kind=1, inner=0.6,
+                 rot=self.t)
+        fr.glow(self.x, self.y, 6, 26, (200, 120, 255), 0.6 if armed else 0.25)
+
+
+class Wisp(Effect):
+    """Feu follet hostile : poursuit le héros et explose à son contact (6 s au plus)."""
+
+    def __init__(self, x, y, dmg, delay=0.4):
+        self.x, self.y, self.dmg, self.delay = x, y, dmg, delay
+        self.t = 0.0
+        self.vx = self.vy = 0.0
+
+    def update(self, dt, world):
+        self.t += dt
+        p = world.player
+        if self.t > self.delay:
+            dx, dy = p.x - self.x, p.y - self.y
+            d = math.hypot(dx, dy) or 1
+            self.vx += (dx / d * 170 - self.vx) * min(1, dt * 2.5)
+            self.vy += (dy / d * 170 - self.vy) * min(1, dt * 2.5)
+            self.x += self.vx * dt
+            self.y += self.vy * dt
+            if d < p.r + 12:
+                p.take_damage(world, self.dmg)
+                world.particles.emit(self.x, self.y, (140, 230, 255), n=20, speed=140, life=0.4, size=4, z=30)
+                sfx.play("magic", 0.4)
+                self.alive = False
+        if self.alive and self.t > 6:
+            world.particles.emit(self.x, self.y, (140, 230, 255), n=10, speed=80, life=0.4, size=3, z=30)
+            self.alive = False
+
+    def render(self, fr):
+        z = 30 + 5 * math.sin(self.t * 5)
+        fr.part("sphere", (self.x, self.y, z), (6, 0, 0), (0, 0, 6), (0, 6, 0), (200, 240, 255), 1.0)
+        fr.glow(self.x, self.y, z, 34, (140, 230, 255), 0.9)
+        fr.light(self.x, self.y, z, 110, (140, 230, 255), 0.8)
+
+
+class SoulTotem(Pylon):
+    """Totem de régénération : soigne Deathstrake de 1% de sa vie par seconde tant qu'il est debout."""
+
+    def __init__(self, boss, x, y):
+        super().__init__(boss, x, y)
+        self.boss_ref = boss
+        self.name = "Totem de régénération"
+
+    def update(self, dt, world):
+        super().update(dt, world)
+        b = self.boss_ref
+        if not b.dead and b.hp < b.max_hp:
+            b.hp = min(b.max_hp, b.hp + b.max_hp * 0.01 * dt)
+            if random.random() < 0.3:
+                world.particles.emit(b.x, b.y, (110, 230, 120), n=1, speed=20, life=0.6, size=4, up=80, z=30)
+
+    def render(self, fr, t):
+        bob = 3 * math.sin(self.phase * 2)
+        col = (255, 255, 255) if self.flash > 0 else (110, 230, 120)
+        fr.box(self.x, self.y, 0, 9, 9, 26, (92, 70, 50), mesh="cylinder")
+        fr.part("sphere", (self.x, self.y, 62 + bob), (10, 0, 0), (0, 0, 10), (0, 10, 0), col, 0.9)
+        fr.glow(self.x, self.y, 62 + bob, 44, (110, 230, 120), 0.8)
+        fr.light(self.x, self.y, 50, 180, (110, 230, 120), 0.9)
+        fr.decal(self.x, self.y, 110, 110, (110, 230, 120), 0.2, kind=1, inner=0.92)
+
+
+BOSS_CLASSES = {"deathstrake": Deathstrake}
+
+
+def make_boss(bid, x, y, floor, room):
+    """Gardien d'un étage : classe dédiée (Deathstrake) ou boss générique piloté par bosses.json."""
+    return BOSS_CLASSES.get(bid, Boss)(bid, x, y, floor, room)

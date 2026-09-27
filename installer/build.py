@@ -4,7 +4,7 @@ Aucun Windows, Docker ni Wine n'est nécessaire :
   1. vérifie le contenu JSON (data/) ;
   2. télécharge le Python officiel pour Windows, version « embarquable » (python.org), mis en cache dans build/cache ;
   3. télécharge les paquets Windows (pygame-ce, moderngl, numpy...) avec pip (--platform win_amd64) ;
-  4. assemble le jeu dans build/windows/Cendrespire (code, data, assets, Python, paquets, icône) ;
+  4. assemble le jeu dans build/windows/Cendrespire (code, data, assets avec l'icône, Python, paquets) ;
   5. compile l'installeur avec NSIS (makensis), qui fonctionne sur les trois systèmes.
 
 Prérequis : Python 3.10+ (celui qui lance ce script, avec pygame-ce pour dessiner l'icône) et NSIS :
@@ -131,8 +131,9 @@ def stage_game():
         shutil.copy2(os.path.join(ROOT, f), STAGE)
     for d in GAME_DIRS:
         shutil.copytree(os.path.join(ROOT, d), os.path.join(STAGE, d), ignore=IGNORE)
-    icon = os.path.join(STAGE, "cendrespire.ico")
-    run([sys.executable, os.path.join(ROOT, "installer", "make_icon.py"), icon])
+    icon = os.path.join(STAGE, "assets", "cendrespire.ico")      # icône du jeu (copiée avec assets/)
+    if not os.path.exists(icon):
+        run([sys.executable, os.path.join(ROOT, "installer", "make_icon.py"), icon])
     # marqueur « version installée » : sauvegardes dans %APPDATA%\Cendrespire (voir game/settings.py)
     with open(os.path.join(STAGE, "installed.txt"), "w", encoding="utf-8") as f:
         f.write("Cendrespire installé : les sauvegardes sont dans %APPDATA%\\Cendrespire\\saves\n")
@@ -151,7 +152,7 @@ def build_installer(version, icon):
     step("Compilation de l'installeur (NSIS)")
     os.makedirs(OUTPUT, exist_ok=True)
     out = os.path.join(OUTPUT, f"Cendrespire-{version}-Setup.exe")
-    run([find_makensis(), "-V2", f"-DVERSION={version}", f"-DSTAGE={STAGE}", f"-DOUTFILE={out}",
+    run([find_makensis(), "-V2", f"-DVERSION={version}", f"-DSTAGE={STAGE}", f"-DSEP={os.sep}", f"-DOUTFILE={out}",
          f"-DICON={icon}", f"-DSIZE_KB={size_kb(STAGE)}", os.path.join(ROOT, "installer", "cendrespire.nsi")])
     return out
 

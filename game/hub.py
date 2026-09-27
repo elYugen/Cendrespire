@@ -2,12 +2,12 @@
 import math
 import random
 
-from . import sfx
+from . import quests, sfx
 from . import town as T
 from .dungeon import build_hub
 from .entities import NPC, Portal, Prop
 from .items import generate_item, generate_artifact
-from .panels import MerchantPanel, ForgePanel, PortalPanel
+from .panels import MerchantPanel, ForgePanel, PortalPanel, QuestPanel
 from .r3d import models, objmodels
 from .wardrobe import WardrobePanel
 from .settings import TILE, WHITE
@@ -30,14 +30,11 @@ class HubScene(World):
         player.facing = -math.pi / 2
         self.cam.tx, self.cam.ty = player.x, player.y
         mx, my, mf = T.MERCHANT
-        self.interactables.append(NPC(mx * TILE, my * TILE, "Gorvan le Marchand", "Commercer",
-                                      models.NPC_SPECS["marchand"], self.open_merchant, facing=mf))
+        self.add_npc("gorvan", mx, my, mf, "Commercer", models.NPC_SPECS["marchand"], self.open_merchant)
         sx, sy, sf = T.SMITH
-        self.interactables.append(NPC(sx * TILE, sy * TILE, "Hilda la Forgeronne", "Forge",
-                                      models.NPC_SPECS["forgeronne"], self.open_forge, facing=sf, work=True))
+        self.add_npc("hilda", sx, sy, sf, "Forge", models.NPC_SPECS["forgeronne"], self.open_forge, work=True)
         tx, ty, tf = T.TAILOR
-        self.interactables.append(NPC(tx * TILE, ty * TILE, "Ysolde la Couturière", "Changer d'apparence",
-                                      models.NPC_SPECS["couturiere"], self.open_wardrobe, facing=tf))
+        self.add_npc("ysolde", tx, ty, tf, "Changer d'apparence", models.NPC_SPECS["couturiere"], self.open_wardrobe)
         px, pz = T.PORTAL
         grand = bool(objmodels.family("dungeon"))
         self.interactables.append(Portal(px * TILE, (pz + (0.05 if grand else 0.3)) * TILE, "Entrer dans la Tour",
@@ -56,17 +53,49 @@ class HubScene(World):
         self.show_banner(T.NAME, message or "La ville au pied de Cendrespire", WHITE, 5)
         self.message("Échap : menu · les touches sont dans Système > Commandes", (220, 215, 200), 8)
 
-    def add_villagers(self):
-        """Habitants de la ville : animés, ils ont chacun une réplique."""
-        for x, y, facing, name, model, pal, line in T.VILLAGERS:
-            spec = dict(detailed=True, body=(120, 100, 80), skin=(220, 180, 140), rig={"model": model, "palette": pal})
+    def add_npc(self, npc_id, x, y, facing, prompt, spec, action, work=False, route=None):
+        """Personnage de la ville : son action habituelle passe d'abord par les quêtes qu'il donne ou reprend."""
+        name = T.SHOPKEEPERS.get(npc_id) or next(v["name"] for v in T.VILLAGERS if v["id"] == npc_id)
+        npc = NPC(x * TILE, y * TILE, name, prompt, spec, None, facing=facing, work=work, npc_id=npc_id,
+                  route=[(px * TILE, py * TILE) for px, py in route or []])
+        npc.action = lambda world: self.talk_to(npc, prompt, action)
+        self.interactables.append(npc)
+        return npc
 
-            def talk(world, name=name, line=line):
+    def add_villagers(self):
+        """Habitants de la ville : animés, certains se promènent ; chacun a une réplique."""
+        for v in T.VILLAGERS:
+            spec = dict(detailed=True, body=(120, 100, 80), skin=(220, 180, 140),
+                        rig={"model": v["model"], "palette": v["palette"]})
+
+            def talk(world, name=v["name"], line=v["line"]):
                 world.message(f"{name} : « {line} »", (235, 225, 200), 6)
-            self.interactables.append(NPC(x * TILE, y * TILE, name, "Parler", spec, talk, facing=facing))
+            self.add_npc(v["id"], *v["pos"], v["facing"], "Parler", spec, talk, route=v.get("route"))
+
+    def talk_to(self, npc, label, action):
+        p = self.player
+        quests.event(self, "talk", npc=npc.npc_id)
+        if quests.to_turn_in(p, npc.npc_id) or quests.offers(p, npc.npc_id):
+            self.close_panels()
+            self.modal = QuestPanel(self, npc, label, action)
+            sfx.play("click")
+            return
+        active = quests.in_progress(p, npc.npc_id)
+        if active and label == "Parler":
+            q = quests.QUESTS[active[0]]
+            self.message(f"{npc.label} : « {q.get('progress', q['desc'])} »", (235, 225, 200), 6)
+            return
+        action(self)
+
+    def npc_marker(self, o):
+        return quests.marker(self.player, getattr(o, "npc_id", None))
 
     def hud_title(self):
         return T.NAME, ""
+
+    def presence(self):
+        hero, small = self.hero_presence()
+        return f"Dans le village de {T.NAME}", hero, small
 
     def open_merchant(self, world):
         self.left_panel = MerchantPanel(self)
@@ -96,6 +125,9 @@ class HubScene(World):
 
     def update_extra(self, dt):
         p = self.player
+        for o in self.interactables:
+            if isinstance(o, NPC) and not o.work:
+                o.update(dt, self)
         if self.left_panel:
             near = any(isinstance(o, NPC) and math.hypot(o.x - p.x, o.y - p.y) < 140 for o in self.interactables)
             if not near:

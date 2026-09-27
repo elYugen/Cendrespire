@@ -85,7 +85,7 @@ Classes, sorts, talents, effets temporaires, artefacts, monstres, boss, anima, e
 
 ## Boucle de jeu
 
-1. **Cendreval** : une ville fortifiée au pied de la tour (remparts, portes, place à la fontaine, marché, forge, taverne, quartiers d'habitation). On y trouve Gorvan le marchand (équipement et artefacts), Hilda la forgeronne (améliorations jusqu'à +5), Ysolde la couturière (changer d'apparence), des habitants à qui parler et, au-delà de la porte nord, le grand portail de la Tour. Le plan complet est décrit dans `game/town.py`.
+1. **Cendreval** : une ville fortifiée au pied de la tour (remparts, portes, place à la fontaine, marché, forge, taverne, quartiers d'habitation). On y trouve Gorvan le marchand (équipement et artefacts), Hilda la forgeronne (améliorations jusqu'à +5), Ysolde la couturière (changer d'apparence), des habitants qui se promènent dans les rues et donnent des quêtes (« ! » au-dessus de leur tête ; voir `data/quests.json`) et, au-delà de la porte nord, le grand portail de la Tour. Le plan complet est décrit dans `game/town.py`.
 2. **Étage** : un vaste donjon 3D généré aléatoirement (56 à 66 salles), sur 20 étages au total, chacun avec son ambiance et son mobilier. Chaque étage a son ambiance : Geôles, Ossuaire, Forges avec lave, Sanctuaire, Cryptes de givre… On y trouve des plaques à pointes et des salles cachées derrière des murs fissurés (trésor ou autel d'anima).
 3. **Sceau du gardien** : il se brise quand 35 % des créatures de l'étage (90 au plus) sont tuées. L'arène se referme alors sur le gardien. Chacun des 8 étages a son gardien : le Boucher, Arachné, la Liche, la Sentinelle Radieuse, le Golem, les Jumeaux d'Ombre, la Mère des Cendres et le Seigneur.
 4. **Victoire** : l'étage suivant est débloqué, le gardien laisse du butin (objet légendaire garanti à la première victoire) et un portail ramène au campement.
@@ -163,18 +163,20 @@ game/fx.py           particules 3D, zones au sol, attaques annoncées
 game/world.py        scène de jeu : logique, combat, rendu 3D, interface en jeu
 game/tower.py        un étage de la tour
 game/hub.py          la ville (Cendreval) : PNJ, échoppes, portail
-game/town.py         plan de la ville : rues, bâtiments, mobilier, personnages
+game/town.py         plan de la ville : rues, bâtiments, mobilier, personnages et leurs tournées
+game/quests.py       quêtes : disponibilité, objectifs, progression, récompenses
+game/discord.py      Discord Rich Presence (lieu et héros affichés sur le profil ; DISCORD_APP_ID dans settings.py)
 game/hud.py          HUD façon BotW
 game/panels.py       menus (inventaire avec héros 3D, personnage, système, marchand, forge…)
 game/scenes.py       écran titre façon BotW (illustration, logo), chargement, création de personnage
 game/ui.py, gfx.py   boîte à outils d'interface (nette en Retina)
-assets/              illustration du menu principal, polices, modèles 3D (assets/models)
+assets/              illustration du menu principal, icône du jeu (cendrespire.ico), polices, modèles 3D
 game/r3d/            moteur 3D : renderer, shaders, caméra, maillages, modèles, niveaux, décor du campement
 game/r3d/objmodels.py  chargeur OBJ/MTL et bibliothèque de modèles importés
 game/r3d/skinned.py  chargeur glTF (.glb) : squelette, animations, poses
 game/r3d/city.py     décor 3D de la ville (remparts, maisons, marché, forge, taverne, portail)
 game/r3d/rig.py      héros et PNJ animés : choix de l'animation, équipement fixé aux os
 game/nav.py          déplacement au clic : recherche de chemin A*
-installer/           construction de l'installeur (build.py, script NSIS, icône, vérification du contenu)
+installer/           construction de l'installeur (build.py, script NSIS, vérification du contenu)
 build_installer.sh   construction depuis macOS / Linux (build_installer.ps1 : depuis Windows)
 ```

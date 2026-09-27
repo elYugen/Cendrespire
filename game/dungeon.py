@@ -91,9 +91,9 @@ class Dungeon:
             node = came[node]
         return True
 
-    def generate(self, rng, n_rooms=10):
+    def generate(self, rng, n_rooms=10, boss_size=(21, 17)):
         W, H = self.w, self.h
-        bw, bh = 21, 17
+        bw, bh = boss_size
         boss = Room(rng.randint(3, W - bw - 3), rng.randint(3, H - bh - 3), bw, bh)
         rooms = []
         tries = 0

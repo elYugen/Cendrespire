@@ -8,6 +8,9 @@ SCREEN_W, SCREEN_H = 1280, 720
 FPS = 60
 TILE = 40
 TITLE = "Cendrespire"
+# Discord Rich Presence (game/discord.py) : identifiant de l'application Discord (« Application ID » sur
+# https://discord.com/developers/applications). Vide : désactivé.
+DISCORD_APP_ID = "1553856171956375626"
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 

@@ -39,6 +39,8 @@ class Player:
             it.setdefault("ench", [])
         self.kills = data.get("kills", 0)
         self.deaths = data.get("deaths", 0)
+        from . import quests
+        self.quests = quests.clean(data.get("quests"))
         self.created_at = data.get("created_at", 0)
         # état en jeu
         self.x = self.y = 0.0
@@ -57,6 +59,7 @@ class Player:
         self.clock = 0.0          # horloge des animations
         self.anim_state, self.anim_start, self.anim_len, self.anim_speed = None, 0.0, 0.0, 1.0
         self.snare = 0.0          # entravé (toile) : fortement ralenti
+        self.hexed = 0.0          # chaînes de Deathstrake : +30% de dégâts subis
         self.atk_total = 0.5
         self.attack_lock = 0.0
         self.invuln = 0.0
@@ -91,7 +94,7 @@ class Player:
                 "points": self.points, "gold": self.gold, "max_floor": self.max_floor,
                 "cleared": sorted(self.cleared), "equipment": self.equipment, "inventory": self.inventory,
                 "kills": self.kills, "deaths": self.deaths, "created_at": self.created_at, "look": dict(self.look),
-                "talents": dict(self.talents)}
+                "talents": dict(self.talents), "quests": self.quests}
 
     @property
     def spec(self):
@@ -137,6 +140,7 @@ class Player:
         self.art_cds = {}
         self.potion_cd = self.roll_cd = 0.0
         self.leap = self.dash = None
+        self.snare = self.hexed = 0.0
         self.recompute()
         self.full_restore()
 
@@ -252,7 +256,7 @@ class Player:
         if random.random() * 100 < self.ench("esquive"):
             world.add_text(self.x, self.y, 50, "Esquive", (200, 230, 255), 16)
             return 0
-        dmg = amount * (1 - self.damage_reduction())
+        dmg = amount * (1 - self.damage_reduction()) * (1.3 if self.hexed > 0 else 1.0)
         self.hp -= dmg
         self.flash = 0.12
         if not (self.anim_state and self.clock - self.anim_start < self.anim_len):
@@ -829,20 +833,59 @@ class Portal(Interactable):
 
 
 class NPC(Interactable):
-    def __init__(self, x, y, name, prompt, spec, action, facing=math.pi / 2, work=False):
+    WALK_SPEED = 42
+    STOP_DIST = 120      # s'arrête et se tourne vers le héros qui s'approche
+
+    def __init__(self, x, y, name, prompt, spec, action, facing=math.pi / 2, work=False, npc_id=None, route=None):
         super().__init__(x, y)
         self.label = name
         self.prompt, self.spec, self.action = prompt, spec, action
         self.facing = facing
         self.work = work     # frappe l'enclume en boucle
+        self.npc_id = npc_id
+        self.route = route or []      # tournée en boucle (points en unités logiques)
+        self.leg = 1 % max(1, len(self.route))
+        self.pause = random.uniform(0.5, 3.0)
+        self.walking = False
 
     def interact(self, world):
         self.action(world)
 
+    def update(self, dt, world):
+        self.walking = False
+        p = world.player
+        if math.hypot(p.x - self.x, p.y - self.y) < self.STOP_DIST:
+            self._turn(math.atan2(p.y - self.y, p.x - self.x), dt)
+            return
+        if len(self.route) < 2:
+            return
+        if self.pause > 0:
+            self.pause -= dt
+            return
+        tx, ty = self.route[self.leg]
+        dx, dy = tx - self.x, ty - self.y
+        d = math.hypot(dx, dy)
+        step = self.WALK_SPEED * dt
+        if d <= step:
+            self.x, self.y = tx, ty
+            self.leg = (self.leg + 1) % len(self.route)
+            self.pause = random.uniform(1.5, 5.0)
+            return
+        self.x += dx / d * step
+        self.y += dy / d * step
+        self._turn(math.atan2(dy, dx), dt)
+        self.walking = True
+
+    def _turn(self, ang, dt):
+        diff = (ang - self.facing + math.pi) % math.tau - math.pi
+        self.facing += diff * min(1.0, dt * 6)
+
     def render(self, fr, t):
         swing = -1.4 * max(0.0, math.sin(t * 2.6)) if self.work else 0.0
-        models.humanoid(fr, self.x, self.y, 0, self.facing + (0.0 if self.work else 0.1 * math.sin(t * 0.7)), t * 2,
-                        self.spec, sc=1.05, moving=False, swing=swing, anim="work" if self.work else None)
+        sway = 0.0 if self.work or self.walking else 0.1 * math.sin(t * 0.7)
+        anim = "work" if self.work else ("walk" if self.walking else None)
+        models.humanoid(fr, self.x, self.y, 0, self.facing + sway, t * 2, self.spec, sc=1.05, moving=self.walking,
+                        swing=swing, anim=anim)
 
 
 class Campfire(Interactable):

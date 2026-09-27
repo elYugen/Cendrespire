@@ -1,0 +1,20 @@
+Traceback (most recent call last):
+  File "E:\Tourmented\main.py", line 259, in <module>
+    Game().run()
+    ~~~~~~~~~~^^
+  File "E:\Tourmented\main.py", line 230, in run
+    self.step(dt, pygame.event.get())
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Tourmented\main.py", line 224, in step
+    self.scene.update(dt)
+    ~~~~~~~~~~~~~~~~~^^^^
+  File "E:\Tourmented\game\scenes.py", line 648, in update
+    self.result = self.factory()
+                  ~~~~~~~~~~~~^^
+  File "E:\Tourmented\game\hub.py", line 124, in <lambda>
+    self.game.load_scene(lambda: TowerScene(self.game, self.player, floor), f"Étage {floor}", floor_name(floor))
+                                 ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Tourmented\game\tower.py", line 60, in __init__
+    sfx.music(sfx.pick_music(TOWER_MUSIC), restart=True)
+              ^^^^^^^^^^^^^^
+AttributeError: module 'game.sfx' has no attribute 'pick_music'

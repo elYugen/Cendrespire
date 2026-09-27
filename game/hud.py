@@ -152,10 +152,9 @@ def slot_box(surf, rect, border=UI_LINE, alpha=150):
     ui.botw_box(surf, rect, alpha, border, radius=10)
 
 
-MANA_COL = (86, 146, 255)
 FLAT_BG = (16, 20, 26)               # fond des cases (style plat : aplats, pas de bordure ni de dégradé)
 FLAT_LOCK = (30, 33, 38)
-SLOT, GAP, BOTTOM = 56, 6, 18        # barre de compétences en bas au centre de l'écran
+SLOT, GAP, BOTTOM = 44, 5, 14        # barre de compétences en bas au centre de l'écran
 
 
 def _ready_flash(world, key, cd):
@@ -186,41 +185,33 @@ def _flat_slot(surf, world, rect, key, label, accent, icon, cd_frac=0.0, cd_left
     if locked:
         icon(surf, rect.center, True)
         ui.rect(surf, (0, 0, 0, 110), rect, 0, 6)
-        ui.draw_text(surf, f"Niv {level_req}", rect.center, 12, (170, 172, 170), "bold", anchor="center")
+        ui.draw_text(surf, f"Niv {level_req}", rect.center, 11, (170, 172, 170), "bold", anchor="center")
     else:
         icon(surf, rect.center, False)
         if lacking:
             ui.rect(surf, (30, 60, 170, 95), rect, 0, 6)
         _flat_cooldown(surf, rect, cd_frac)
         if cd_left > 0.95:
-            ui.draw_text(surf, f"{cd_left:.0f}", rect.center, 19, WHITE, "bold", anchor="center")
-        ui.rect(surf, accent, (rect.x + 8, rect.bottom - 4, rect.w - 16, 3), 0, 2)
+            ui.draw_text(surf, f"{cd_left:.0f}", rect.center, 16, WHITE, "bold", anchor="center")
+        ui.rect(surf, accent, (rect.x + 7, rect.bottom - 3, rect.w - 14, 2), 0, 1)
         flash = _ready_flash(world, key, cd_left)
         if flash > 0:
             ui.rect(surf, (255, 255, 255, int(110 * flash)), rect, 0, 6)
-    ui.draw_text(surf, label, (rect.x + 5, rect.y + 3), 10, (200, 204, 204) if not locked else (120, 122, 120),
+    ui.draw_text(surf, label, (rect.x + 4, rect.y + 2), 9, (200, 204, 204) if not locked else (120, 122, 120),
                  "bold")
     if cost is not None and not locked:
-        ui.draw_text(surf, str(cost), (rect.right - 5, rect.bottom - 6), 10,
+        ui.draw_text(surf, str(cost), (rect.right - 4, rect.bottom - 5), 9,
                      (255, 120, 110) if lacking else (150, 190, 255), "bold", anchor="bottomright")
 
 
 def draw_slots(surf, world):
-    """Barre des compétences, en bas au centre : attaque, 4 sorts, roulade, et jauge de mana au-dessus."""
+    """Barre des compétences, en bas au centre : attaque, 4 sorts, roulade (le mana reste affiché près du héros)."""
     p = world.player
     atk = p.cls["attack"]
     n = 2 + len(p.spells)
     width = n * SLOT + (n - 1) * GAP + 10               # 10 : écart supplémentaire avant la roulade
     x0 = SCREEN_W // 2 - width // 2
     y0 = SCREEN_H - BOTTOM - SLOT
-    # jauge de mana, fine, au-dessus des cases
-    bar = pygame.Rect(x0, y0 - 12, width, 5)
-    frac = max(0.0, min(1.0, p.mana / max(1, p.stats["max_mana"])))
-    ui.rect(surf, (10, 14, 18, 200), bar, 0, 3)
-    if frac > 0:
-        ui.rect(surf, MANA_COL, (bar.x, bar.y, max(3, bar.w * frac), bar.h), 0, 3)
-    ui.draw_text(surf, f"{int(p.mana)} / {int(p.stats['max_mana'])}", (bar.right, bar.y - 3), 10, (160, 190, 240),
-                 "bold", anchor="bottomright")
     x = x0
     rc = pygame.Rect(x, y0, SLOT, SLOT)
     acol = atk.get("color", p.cls["color"])
@@ -244,8 +235,8 @@ def draw_slots(surf, world):
     col = (150, 220, 175)
 
     def roll_icon(s, c, lk):
-        ui.arc(s, col, pygame.Rect(c[0] - 12, c[1] - 12, 24, 24), 0.6, 5.4, 3)
-        ui.polygon(s, col, [(c[0] + 12, c[1] - 2), (c[0] + 6, c[1] - 12), (c[0] + 16, c[1] - 10)])
+        ui.arc(s, col, pygame.Rect(c[0] - 9, c[1] - 9, 18, 18), 0.6, 5.4, 2)
+        ui.polygon(s, col, [(c[0] + 9, c[1] - 1), (c[0] + 4, c[1] - 9), (c[0] + 12, c[1] - 7)])
     _flat_slot(surf, world, rc, "roll", "Espace", col, roll_icon, p.roll_cd / max(0.01, p.roll_total))
     world.skill_rects.append((rc, ("roll", None)))
     # or : apparaît brièvement quand il change, en haut à droite

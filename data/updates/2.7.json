@@ -1,0 +1,29 @@
+{
+  "version": "2.7",
+  "date": "2026-09-27",
+  "title": "Quêtes et esprit de la tour",
+  "sections": [
+    {"name": "Étage BOSS : Deathstrake", "notes": [
+      "Tous les 10 étages (10 et 20), le gardien laisse place à Deathstrake, esprit de la tour, seul dans une grande arène.",
+      "Ce paladin spectral retourne contre vous les pouvoirs des artefacts : boules de feu, couronne de feu, météore, éclairs, givre, corne, chaînes, runes explosives, feux follets et dague de l'ombre.",
+      "Il lève des squelettes, plante un totem qui le soigne (détruisez-le !) et se protège avec l'écu sacré.",
+      "Sous la moitié de sa vie, il s'enrage et sonne le cor de bataille."
+    ]},
+    {"name": "Quêtes", "notes": [
+      "Les habitants de Cendreval donnent désormais des quêtes : un « ! » doré signale une quête à prendre, un « ? » doré une quête à rendre.",
+      "Sept premières quêtes : chasse aux squelettes et aux goules, champions d'élite, gardiens d'étage, commissions en ville.",
+      "Récompenses en or, expérience et objets (jusqu'au légendaire).",
+      "Les quêtes en cours s'affichent à droite de l'écran et sont conservées dans la sauvegarde."
+    ]},
+    {"name": "Cendreval", "notes": [
+      "Les habitants se promènent dans les rues et se tournent vers vous quand vous approchez.",
+      "Nouveau venu : le sergent Bréval, qui fait sa ronde sur la rue haute."
+    ]},
+    {"name": "Musique", "notes": [
+      "Deux nouvelles musiques dans la tour : à chaque étage, l'un des trois morceaux est choisi au hasard."
+    ]},
+    {"name": "Divers", "notes": [
+      "Le jeu a maintenant sa propre icône, dans la barre des tâches comme sur la fenêtre."
+    ]}
+  ]
+}

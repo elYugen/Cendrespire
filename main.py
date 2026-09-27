@@ -3,6 +3,7 @@
 Lancement :  python main.py
 Rendu 3D (moderngl / OpenGL 3.3) + interface pygame, à la résolution native de l'écran (Retina compris).
 """
+import os
 import sys
 
 import moderngl
@@ -198,6 +199,32 @@ class Game:
         pygame.quit()
 
 
+def report_crash():
+    """Plantage : trace écrite dans crash.log (à côté des sauvegardes) et, sous Windows, message à l'écran
+    (la version installée tourne sans console)."""
+    import traceback
+    from game.settings import SAVE_DIR
+    text = traceback.format_exc()
+    path = os.path.join(os.path.dirname(SAVE_DIR), "crash.log")
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(text)
+    except OSError:
+        path = None
+    print(text, file=sys.stderr) if sys.stderr else None
+    if sys.platform == "win32":
+        import ctypes
+        msg = "Cendrespire a rencontré une erreur et doit se fermer."
+        if path:
+            msg += f"\n\nDétails : {path}"
+        ctypes.windll.user32.MessageBoxW(None, msg + "\n\n" + text[-600:], "Cendrespire", 0x10)
+
+
 if __name__ == "__main__":
-    Game().run()
+    try:
+        Game().run()
+    except Exception:
+        report_crash()
+        sys.exit(1)
     sys.exit()

@@ -28,3 +28,10 @@ def load():
         except (OSError, json.JSONDecodeError) as e:
             print(f"[notes] {os.path.basename(path)} ignoré : {e}")
     return sorted(res, key=_key, reverse=True)
+
+
+def current_version(default="2.2"):
+    """Version affichée par le jeu : celle de la note de mise à jour la plus récente."""
+    notes = load()
+    return str(notes[0]["version"]) if notes else default
+

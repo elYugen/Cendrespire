@@ -6,7 +6,7 @@ Action-RPG roguelike en 3D, écrit en Python. Les inspirations :
 - **Diablo** pour l'ambiance des donjons ;
 - **Zelda Breath of the Wild** pour l'interface et l'écran titre.
 
-Presque tout est généré par le code : les modèles 3D en formes simples (sphères, cylindres, cônes, blocs), les niveaux et les sons. Seuls l'illustration et le logo du menu principal sont des images (`assets/`).
+Les personnages, les monstres, les niveaux et les sons sont générés par le code. Les personnages sont faits de formes simples (sphères, cylindres, cônes, blocs), avec un contour et un ombrage cartoon. Le décor du campement utilise des modèles 3D libres de droits de Kenney (CC0). L'illustration du menu principal et les polices sont dans `assets/`.
 
 ## Lancer le jeu
 
@@ -20,11 +20,32 @@ Il faut une carte graphique compatible OpenGL 3.3, ce qui est le cas de tout Mac
 
 ## Installeur Windows
 
-```powershell
-.\build_installer.ps1
-```
+L'installeur Windows (`.exe`) se construit depuis **macOS, Linux ou Windows**, sans machine Windows, Docker ni Wine.
 
-Le script empaquette le jeu avec PyInstaller (`dist\Cendrespire`), puis compile l'installeur avec Inno Setup 6 (`winget install JRSoftware.InnoSetup`). Avant l'empaquetage, le script vérifie que le contenu JSON est valide (`installer\check_content.py`). Résultat : `installer\Output\Cendrespire-2.1-Setup.exe`, qui embarque `assets\` (polices, modèles 3D) et `data\` (contenu du jeu). L'installation ne demande pas de droits administrateur et propose un raccourci sur le bureau. La version installée écrit ses sauvegardes dans `%APPDATA%\Cendrespire\saves`. Un fichier JSON copié dans `%APPDATA%\Cendrespire\data` remplace celui du jeu, ce qui permet de modifier le contenu d'une version installée.
+| Système | Prérequis (une seule fois) | Commande |
+|---|---|---|
+| macOS | Python 3.10+, `brew install makensis` | `./build_installer.sh` |
+| Linux | Python 3.10+, `sudo apt install nsis` | `./build_installer.sh` |
+| Windows | Python 3.10+, `winget install NSIS.NSIS` | `.\build_installer.ps1` |
+
+Résultat : `installer/Output/Cendrespire-<version>-Setup.exe` (environ 26 Mo). Par défaut, la version est la plus récente de `data/updates/`. On peut en forcer une autre avec `./build_installer.sh 2.3` ou `.\build_installer.ps1 -Version 2.3`.
+
+Étapes de [installer/build.py](installer/build.py) :
+1. vérification du contenu JSON (`installer/check_content.py`) ;
+2. téléchargement du Python officiel pour Windows, version « embarquable » (python.org) ;
+3. téléchargement des paquets Windows avec `pip download --platform win_amd64` (pygame-ce, moderngl, numpy) ;
+4. assemblage du jeu dans `build/windows/Cendrespire` ;
+5. compilation de l'installeur avec NSIS ([installer/cendrespire.nsi](installer/cendrespire.nsi)).
+
+Les téléchargements sont mis en cache dans `build/cache`.
+
+Côté joueur :
+- l'installation se fait dans `%LOCALAPPDATA%\Programs\Cendrespire`, sans droits administrateur ;
+- raccourcis dans le menu Démarrer (et sur le bureau en option) ;
+- désinstallation depuis les paramètres de Windows ;
+- sauvegardes dans `%APPDATA%\Cendrespire\saves`, conservées lors des mises à jour et de la désinstallation ;
+- un fichier JSON copié dans `%APPDATA%\Cendrespire\data` remplace celui du jeu ;
+- en cas de plantage, le détail est écrit dans `%APPDATA%\Cendrespire\crash.log`.
 
 ## Commandes
 
@@ -85,7 +106,13 @@ Classes, sorts, talents, effets temporaires, artefacts, monstres, boss, anima, e
   - zones d'attaque dessinées au sol ;
   - particules ;
   - murs qui s'effacent quand ils masquent le héros ;
-  - modèles importés (.obj/.mtl) : arbres, buissons, rochers, souches, fleurs et champignons du campement, tirés du [Nature Kit de Kenney](https://kenney.nl/assets/nature-kit) (CC0). Ils sont déclarés dans `assets/models/models.json`, avec leur échelle et une palette accordée à l'ambiance du jeu. Si un modèle manque, le décor procédural d'origine le remplace.
+  - personnages : contour cartoon (coque inversée, épaisseur constante à l'écran), ombrage en paliers et liseré de lumière ;
+  - modèles importés (.obj/.mtl) de Kenney (CC0) :
+    - [Nature Kit](https://kenney.nl/assets/nature-kit) : arbres, buissons, rochers, fleurs ;
+    - [Fantasy Town Kit](https://kenney.nl/assets/fantasy-town-kit) : maisons du hameau, étal, charrette, lanternes, clôtures ;
+    - [Survival Kit](https://kenney.nl/assets/survival-kit) : enclume, établis, tonneaux, caisses.
+
+    Les couleurs des textures-palettes sont lues à chaque sommet, puis étalonnées pour s'accorder à l'ambiance du jeu. Les modèles sont déclarés dans `assets/models/models.json`. Si un modèle manque, le décor procédural d'origine le remplace.
 - **Interface** (pygame) : dessinée à la résolution native, puis posée sur l'image 3D, ce qui garde les textes nets. Police Lato embarquée (`assets/fonts`, licence OFL) : même rendu sur toutes les machines.
 - **HUD façon BotW** :
   - cœurs par quarts en haut à gauche ;
@@ -125,5 +152,6 @@ game/ui.py, gfx.py   boîte à outils d'interface (nette en Retina)
 assets/              illustration du menu principal, polices, modèles 3D (assets/models)
 game/r3d/            moteur 3D : renderer, shaders, caméra, maillages, modèles, niveaux, décor du campement
 game/r3d/objmodels.py  chargeur OBJ/MTL et bibliothèque de modèles importés
-installer/           script Inno Setup, icône, vérification du contenu
+installer/           construction de l'installeur (build.py, script NSIS, icône, vérification du contenu)
+build_installer.sh   construction depuis macOS / Linux (build_installer.ps1 : depuis Windows)
 ```

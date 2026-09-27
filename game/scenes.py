@@ -6,7 +6,7 @@ import random
 
 import pygame
 
-from . import looks, save, sfx, ui
+from . import looks, save, sfx, ui, updates
 from .data import CLASSES, SPELLS, ATTR_NAMES, ATTRS
 from .entities import Player
 from .r3d import models
@@ -175,7 +175,7 @@ class TitleScene(Scene):
                         f"étage {d.get('max_floor', 1)}")
                 ui.draw_text(surf, info, (SCREEN_W / 2, SCREEN_H - 34), 14, (214, 208, 190), anchor="center",
                              alpha=int(220 * e))
-        for i, line in enumerate(("Ver. 2.0", TITLE, "© 2026 Saku Game")):
+        for i, line in enumerate((f"Ver. {updates.current_version()}", TITLE, "© 2026 Saku Game")):
             ui.draw_text(surf, line, (SCREEN_W - 30, SCREEN_H - 70 + i * 19), 13, (226, 222, 204), anchor="topright",
                          alpha=190)
 

@@ -378,7 +378,8 @@
    "upgrade": 0,
    "affixes": {},
    "base": "Artefact",
-   "name": "Crâne infernal"
+   "name": "Crâne infernal",
+   "ench": []
   },
   {
    "uid": 74298727863132,
@@ -608,7 +609,8 @@
    "upgrade": 0,
    "affixes": {},
    "base": "Artefact",
-   "name": "Bottes de célérité"
+   "name": "Bottes de célérité",
+   "ench": []
   },
   {
    "uid": 247642014406362,
@@ -643,7 +645,8 @@
    "upgrade": 0,
    "affixes": {},
    "base": "Artefact",
-   "name": "Lanterne des âmes"
+   "name": "Lanterne des âmes",
+   "ench": []
   },
   {
    "uid": 6088270115171,
@@ -785,7 +788,8 @@
    "upgrade": 0,
    "affixes": {},
    "base": "Artefact",
-   "name": "Fiole d'essence"
+   "name": "Fiole d'essence",
+   "ench": []
   },
   {
    "uid": 47122811931605,
@@ -853,5 +857,5 @@
   "ba_peau": 1,
   "ba_tourb": 1
  },
- "saved_at": 1790497131.7037492
+ "saved_at": 1790497835.750384
 }

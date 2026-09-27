@@ -1,0 +1,21 @@
+{
+  "version": "2.2",
+  "date": "2026-09-27",
+  "title": "Le hameau de Cendrespire",
+  "sections": [
+    {"name": "Graphismes", "notes": [
+      "Le campement devient un hameau : quatre maisons à colombages en lisière de forêt, étal à auvent et charrette pour le marchand, lanternes, clôtures, établi et enclume pour la forge (Fantasy Town Kit et Survival Kit de Kenney).",
+      "Personnages redessinés : contour cartoon, ombrage en paliers et liseré de lumière façon Breath of the Wild, formes plus lisses.",
+      "Héros plus détaillés : tunique sur les hanches, robes évasées avec plis, ourlet et manches larges, sacoche de ceinture, semelles."
+    ]},
+    {"name": "Améliorations", "notes": [
+      "Le décor du campement a désormais des collisions (étal, charrette, puits, tentes, enclume).",
+      "En cas d'erreur, le jeu écrit un fichier crash.log et affiche un message au lieu de se fermer sans explication.",
+      "La version affichée sur l'écran titre suit les notes de mise à jour."
+    ]},
+    {"name": "Installeur Windows", "notes": [
+      "Nouvel installeur construit avec NSIS, qui peut être compilé depuis macOS, Linux ou Windows.",
+      "Installation sans droits administrateur, raccourcis dans le menu Démarrer et sur le bureau, désinstallation depuis les paramètres de Windows."
+    ]}
+  ]
+}

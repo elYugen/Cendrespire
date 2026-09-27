@@ -123,4 +123,18 @@ La version la plus récente s'affiche en haut de la boîte « Notes de mise à j
 
 ## Modèles 3D
 
-Les modèles importés (`.obj` + `.mtl`) se trouvent dans `assets/models`. Leur liste est dans `assets/models/models.json`, rangée par familles (`pine`, `leafy`, `bush`, `rock`, `mushroom`, `stump`, `flower`, `grass`, `log`). Chaque famille définit une échelle (1 unité du fichier = 1 case) et une palette qui remplace les couleurs des matériaux pour les accorder à l'ambiance du jeu. Pour ajouter un modèle, copiez ses fichiers dans le dossier et ajoutez son nom à une famille.
+Les modèles importés (`.obj` + `.mtl`) se trouvent dans `assets/models`. Leur liste est dans `assets/models/models.json`, rangée par familles :
+
+| Famille | Contenu |
+|---|---|
+| `pine`, `leafy`, `bush`, `rock`, `mushroom`, `stump`, `flower`, `grass`, `log` | Nature Kit : placés au hasard dans le décor |
+| `town` | Fantasy Town Kit : murs des maisons, étal, charrette, lanternes, clôtures… |
+| `camp` | Survival Kit : enclume, établis, tonneaux, caisses… |
+
+Réglages d'une famille :
+- `scale` : taille (1 unité du fichier = 1 case) ;
+- `palette` : remplace les couleurs unies des matériaux ;
+- `grade` : étalonne les couleurs des kits à texture-palette (`saturation`, `multiply` `[r, v, b]`, `brightness`) ;
+- `normals_up` : éclaire un feuillage fin comme le sol.
+
+Pour ajouter un modèle, copiez son `.obj`, son `.mtl` et sa texture dans le dossier du kit, puis ajoutez son nom à une famille. Les maisons du hameau (position, taille, étages, couleur du toit) sont définies dans `HOUSES`, dans `game/r3d/camp.py`.

@@ -13,9 +13,10 @@ ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def _save_dir():
-    """Depuis les sources : saves/ à côté du code. Version installée (exécutable) : dossier de données utilisateur,
-    car le dossier d'installation (Program Files) n'est pas inscriptible."""
-    if not getattr(sys, "frozen", False):
+    """Depuis les sources : saves/ à côté du code. Version installée (fichier installed.txt posé par l'installeur, ou
+    exécutable figé) : dossier de données de l'utilisateur, pour que les sauvegardes survivent aux mises à jour."""
+    installed = getattr(sys, "frozen", False) or os.path.exists(os.path.join(ROOT_DIR, "installed.txt"))
+    if not installed:
         return os.path.join(ROOT_DIR, "saves")
     if sys.platform == "win32":
         base = os.environ.get("APPDATA") or os.path.expanduser("~")

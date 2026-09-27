@@ -219,82 +219,26 @@ class Dungeon:
         return self.tiles[ty][tx] == WALL
 
 
-HUB_MAP = [
-    "##################################",
-    "##################################",
-    "##############TTTTTT##############",
-    "#######......#TTTTTT#.......######",
-    "######........TTTTTT.........#####",
-    "#####..............................#",
-    "####...............................#",
-    "###.....##...................##....#",
-    "###.....##...................##....#",
-    "###................................#",
-    "###................................#",
-    "###................................#",
-    "###.....##...................##....#",
-    "###.....##...................##....#",
-    "####...............................#",
-    "#####.............................##",
-    "######...........................###",
-    "########.......................#####",
-    "##################################",
-    "##################################",
-]
-
-
-HUB_FIRE = (17.5, 10.5)
-HUB_PLAZA_R = 2.7
-
-
-def _hub_paths(d, rng):
-    """Chemins de terre du campement : du feu vers le portail, le marchand, la forge, la couturière et l'entrée."""
-    paths = set()
-
-    def line(x0, y0, x1, y1, width=2):
-        n = int(max(abs(x1 - x0), abs(y1 - y0)) * 2) + 1
-        for i in range(n + 1):
-            x = x0 + (x1 - x0) * i / n
-            y = y0 + (y1 - y0) * i / n
-            for ox in range(width):
-                for oy in range(width):
-                    paths.add((int(x - width / 2 + 0.5) + ox, int(y - width / 2 + 0.5) + oy))
-
-    fx, fy = HUB_FIRE
-    line(fx - 0.5, fy, fx - 0.5, 5.0)       # portail
-    line(fx, fy, 7.5, fy)                    # marchand
-    line(fx, fy, 28.0, fy)                   # forge
-    line(fx, fy, fx, 16.5)                   # entrée
-    line(fx, 14.5, 12.0, 14.5)               # couturière
-    line(12.0, 14.5, 11.0, 15.0)
-    # bords irréguliers
-    for (x, y) in list(paths):
-        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-            if rng.random() < 0.08:
-                paths.add((x + dx, y + dy))
-    return {(x, y) for x, y in paths if 0 <= x < d.w and 0 <= y < d.h and d.tiles[y][x] == FLOOR}
-
-
 def build_hub():
-    w = max(len(r) for r in HUB_MAP)
-    h = len(HUB_MAP)
-    d = Dungeon(w, h)
-    for y, row in enumerate(HUB_MAP):
-        for x in range(w):
-            c = row[x] if x < len(row) else "#"
-            d.tiles[y][x] = FLOOR if c == "." else WALL
-    d.tower_tiles = {(x, y) for y, row in enumerate(HUB_MAP) for x, c in enumerate(row) if c == "T"}
+    """Cendreval (game/town.py) : grille praticable, rues pavées, remparts, maisons, décor des jardins."""
+    from . import town as T
+    d = Dungeon(T.W, T.H)
+    walk = T.walkable_cells()
+    for y in range(T.H):
+        for x in range(T.W):
+            d.tiles[y][x] = FLOOR if (x, y) in walk else WALL
+    d.tower_tiles = set(T.TOWER_CELLS)
+    d.house_cells = T.house_cells()
+    d.rampart = T.rampart_cells()
+    d.plaza = T.street_cells() & walk          # pavés
+    d.paths = set()
     rng = random.Random(3)
-    fx, fy = HUB_FIRE
-    d.plaza = {(x, y) for y in range(h) for x in range(w) if d.tiles[y][x] == FLOOR
-               and math.hypot(x + 0.5 - fx, y + 0.5 - fy) < HUB_PLAZA_R}
-    d.paths = _hub_paths(d, rng) - d.plaza
-    busy = d.plaza | d.paths
-    for y in range(h):
-        for x in range(w):
-            if d.tiles[y][x] == FLOOR and (x, y) not in busy and rng.random() < 0.3:
-                d.decor.append((rng.choice(["herbe", "herbe", "herbe", "fleur", "fleur", "buisson", "rocher",
-                                            "champignon", "souche"]), x, y))
+    near_obs = {(int(x), int(y)) for x, y, _r in T.obstacles()}
+    for y in range(T.H):
+        for x in range(T.W):
+            if (x, y) in walk and (x, y) not in d.plaza and (x, y) not in near_obs and rng.random() < 0.28:
+                d.decor.append((rng.choice(["herbe", "herbe", "herbe", "fleur", "fleur", "fleur", "buisson",
+                                            "rocher", "champignon"]), x, y))
     return d
 
 

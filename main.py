@@ -90,8 +90,8 @@ class Game:
         self.next_scene = None
         self.fade = 1.0
         self.fading_out = False
-        from game.scenes import TitleScene
-        self.scene = TitleScene(self)
+        from game.scenes import SplashScene, TitleScene
+        self.scene = TitleScene(self) if headless else SplashScene(self)
 
     # ------------------------------------------------------------------ affichage
     def refresh_view(self):
@@ -132,6 +132,11 @@ class Game:
         self.next_scene = scene
         self.fading_out = True
 
+    def load_scene(self, factory, title="", subtitle=""):
+        """Écran de chargement pendant la construction d'une scène (étage, campement)."""
+        from game.scenes import LoadingScene
+        self.change_scene(LoadingScene(self, factory, title, subtitle))
+
     def quit(self):
         self.running = False
 
@@ -151,6 +156,8 @@ class Game:
             mesh = scene.geo.mesh
         if self.static_owner is not scene:
             self.renderer.set_static(mesh)
+            geo = getattr(scene, "geo", None)
+            self.renderer.set_static_instances(getattr(geo, "inst_models", {}), getattr(geo, "instances", {}))
             self.static_owner = scene
         fr = Frame()
         res = scene.render3d(fr)

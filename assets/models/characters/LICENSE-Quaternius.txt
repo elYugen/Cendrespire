@@ -7,3 +7,6 @@ Fichiers récupérés via poly.pizza (licence « Public Domain ») :
   hooded.glb        Hooded Adventurer    https://poly.pizza/m/y9KWOVG21R
   farmer.glb        Farmer               https://poly.pizza/m/7pn3R6hPvE
 Crédit facultatif : merci à Quaternius.
+
+Personnage sous licence CC-BY 3.0 (attribution requise) :
+  witch.glb         « Witch » par Quaternius, CC-BY 3.0, https://poly.pizza/m/QBEOV9ZUT8

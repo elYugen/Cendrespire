@@ -31,6 +31,25 @@
       "color": [210, 214, 230],
       "dr": "v",
       "visual": "bubble"
+    },
+    "cor": {
+      "name": "Cor de bataille",
+      "color": [255, 170, 80],
+      "dmg_pct": "v",
+      "visual": "ring"
+    },
+    "sang": {
+      "name": "Frénésie sanglante",
+      "color": [220, 40, 50],
+      "atk_speed": "v",
+      "visual": "glow"
+    },
+    "ecu": {
+      "name": "Écu sacré",
+      "color": [255, 236, 170],
+      "dr": "v",
+      "armor_pct": 30,
+      "visual": "bubble"
     }
   }
 }

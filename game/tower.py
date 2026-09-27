@@ -43,6 +43,7 @@ class TowerScene(World):
         self.show_banner(floor_name(floor), f"Étage {floor}", WHITE, 4.5)
         self.message("Éliminez les créatures pour briser le sceau du gardien.", (220, 214, 200), 8)
         sfx.play("portal")
+        sfx.music("inside")
 
     def floor_level(self):
         return self.floor
@@ -154,7 +155,11 @@ class TowerScene(World):
         f = self.floor
         first = f not in p.cleared
         p.cleared.add(f)
-        p.max_floor = max(p.max_floor, f + 1)
+        from .r3d.level import MAX_FLOOR
+        p.max_floor = max(p.max_floor, min(MAX_FLOOR, f + 1))
+        if f >= MAX_FLOOR:
+            self.show_banner("Cendrespire est conquise !", "Le Sommet est à vous — la tour reste ouverte pour la gloire",
+                             (255, 214, 110), 7)
         x, y = boss.x, boss.y
         for _ in range(6):
             self.loot.append(Loot(x, y, "gold", amount=self.gold_amount(random.randint(15, 30))))
@@ -208,7 +213,7 @@ class TowerScene(World):
         p = self.player
         p.reset_run()
         self.save()
-        self.game.change_scene(HubScene(self.game, p, message))
+        self.game.load_scene(lambda: HubScene(self.game, p, message), "Cendreval", "La ville au pied de Cendrespire")
 
     # ------------------------------------------------------------------ rendu
     def render_extra(self, fr):

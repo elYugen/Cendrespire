@@ -18,12 +18,15 @@ ART_POWER = CONTENT["art_power"]
 ART_BASE = {aid: a["base"] for aid, a in ARTIFACTS.items()}
 
 BASES = {
-    "casque": ["Heaume", "Casque à cornes", "Capuche", "Couronne de fer"],
-    "torse": ["Cuirasse", "Cotte de mailles", "Tunique de cuir", "Robe runique"],
-    "gants": ["Gantelets", "Gants de cuir", "Mitaines cloutées"],
-    "bottes": ["Bottes", "Grèves", "Solerets"],
-    "amulette": ["Amulette", "Talisman", "Pendentif"],
-    "anneau": ["Anneau", "Bague", "Chevalière"],
+    "casque": ["Heaume", "Casque à cornes", "Capuche", "Couronne de fer", "Bassinet", "Camail", "Heaume à visière",
+               "Capuchon de mailles", "Diadème d'os", "Casque ailé"],
+    "torse": ["Cuirasse", "Cotte de mailles", "Tunique de cuir", "Robe runique", "Brigandine", "Haubert",
+              "Gambison", "Plastron d'écailles", "Robe de sacre", "Pourpoint clouté"],
+    "gants": ["Gantelets", "Gants de cuir", "Mitaines cloutées", "Gantelets à griffes", "Manchettes runiques",
+              "Gants de fauconnier"],
+    "bottes": ["Bottes", "Grèves", "Solerets", "Bottes de chevaucheur", "Jambières d'écailles", "Sandales du pèlerin"],
+    "amulette": ["Amulette", "Talisman", "Pendentif", "Médaillon", "Reliquaire", "Scarabée d'ambre"],
+    "anneau": ["Anneau", "Bague", "Chevalière", "Sceau", "Alliance d'os", "Anneau de braise"],
 }
 ARMOR_FACTOR = {"casque": 0.6, "torse": 1.0, "gants": 0.4, "bottes": 0.5}
 
@@ -61,12 +64,12 @@ RARE_A = ["Fléau", "Chant", "Murmure", "Ruine", "Éclat", "Serment", "Colère",
 RARE_B = ["du Crépuscule", "des Damnés", "de Sang", "du Néant", "des Cendres", "de l'Abîme", "du Tourment",
           "de Givre", "des Ossements", "de la Tour", "des Âmes", "du Bourreau"]
 LEGENDARY_NAMES = {
-    "casque": ["Heaume du Tourment éternel", "Visage du Damné"],
-    "torse": ["Cuirasse du Geôlier", "Linceul d'Ombreveuve"],
+    "casque": ["Heaume du Tourment éternel", "Visage du Damné", "Couronne du Sommet"],
+    "torse": ["Cuirasse du Geôlier", "Linceul d'Ombreveuve", "Haubert de la Citadelle"],
     "gants": ["Poignes de l'Abîme", "Mains du Bourreau"],
     "bottes": ["Pas du Spectre", "Foulée des Cendres"],
-    "amulette": ["Cœur de la Tour", "Larme du Dieu mort"],
-    "anneau": ["Anneau du Geôlier", "Sceau de l'Oublié"],
+    "amulette": ["Cœur de la Tour", "Larme du Dieu mort", "Œil du Sommet", "Relique de la Première Flamme"],
+    "anneau": ["Anneau du Geôlier", "Sceau de l'Oublié", "Alliance des Cendres", "Anneau du Roi-Liche"],
 }
 LEGENDARY_NAMES.update({cid: c.get("legendary") or [c["name"]] for cid, c in CLASSES.items()})
 RARITY_POWER = {"commun": 1.0, "magique": 1.08, "rare": 1.18, "legendaire": 1.32}

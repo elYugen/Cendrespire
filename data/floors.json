@@ -1,5 +1,5 @@
 {
-  "_info": "Noms des étages (cycliques).",
+  "_info": "Noms des 20 étages de Cendrespire (l'étage 20 est le dernier).",
   "names": [
     "Les Geôles Maudites",
     "L'Ossuaire",
@@ -8,6 +8,18 @@
     "Les Cryptes de Givre",
     "La Fosse aux Âmes",
     "Les Chambres Écarlates",
-    "Le Trône du Tourment"
+    "Le Trône du Tourment",
+    "Les Mines Englouties",
+    "La Bibliothèque Interdite",
+    "Les Jardins Pourrissants",
+    "Les Catacombes Sans Fin",
+    "La Citadelle Engloutie",
+    "Le Cœur de Magma",
+    "Le Reliquaire d'Ivoire",
+    "Les Salles du Néant",
+    "La Nécropole Royale",
+    "Les Halls de Cristal",
+    "L'Arène des Damnés",
+    "Le Sommet de Cendrespire"
   ]
 }

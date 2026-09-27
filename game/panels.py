@@ -342,6 +342,7 @@ class MenuScreen(Panel):
                        lambda: w.exit_to_hub("Vous avez abandonné l'ascension.")))
         es += [("Sauvegarder", "Enregistrer la progression du personnage.", self.do_save),
                ("Commandes", "Afficher les touches du jeu.", self.open_controls),
+               ("Options", "Volume général, musique et effets sonores.", self.open_options),
                ("Plein écran", "Basculer entre fenêtre et plein écran (F11).", w.game.toggle_fullscreen),
                ("Menu principal", "Sauvegarder, puis revenir à l'écran titre.", w.save_and_menu),
                ("Quitter le jeu", "Sauvegarder, puis fermer le jeu.", w.save_and_quit)]
@@ -349,6 +350,22 @@ class MenuScreen(Panel):
 
     def open_controls(self):
         self.sys_sub = "controls"
+
+    OPTION_ROWS = [("master", "Volume général"), ("music", "Musique"), ("sfx", "Effets sonores")]
+
+    def open_options(self):
+        self.sys_sub = "options"
+        self.opt_sel = 0
+        self.opt_drag = None
+
+    def option_bar(self, i):
+        box = pygame.Rect(SCREEN_W // 2 - 300, 190, 600, 330)
+        return pygame.Rect(box.x + 225, box.y + 92 + i * 70, 280, 14)
+
+    def close_sub(self):
+        if self.sys_sub == "options":
+            sfx.save_options()
+        self.sys_sub = None
 
     def do_save(self):
         self.world.save()
@@ -365,8 +382,16 @@ class MenuScreen(Panel):
             if self.ctx and self.ctx_key(e):
                 return True
             if self.sys_sub and self.page == PAGE_SYS:
-                if e.key in (pygame.K_ESCAPE, pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE, pygame.K_BACKSPACE):
-                    self.sys_sub = None
+                if self.sys_sub == "options" and (e.key in (pygame.K_UP, pygame.K_DOWN) or e.scancode in (26, 22)):
+                    d = -1 if (e.key == pygame.K_UP or e.scancode == 26) else 1
+                    self.opt_sel = (self.opt_sel + d) % len(self.OPTION_ROWS)
+                elif self.sys_sub == "options" and (e.key in (pygame.K_LEFT, pygame.K_RIGHT) or e.scancode in (4, 7)):
+                    d = -0.1 if (e.key == pygame.K_LEFT or e.scancode == 4) else 0.1
+                    key = self.OPTION_ROWS[self.opt_sel][0]
+                    sfx.set_volume(key, round(sfx.volumes[key] + d, 2))
+                    sfx.play("click")
+                elif e.key in (pygame.K_ESCAPE, pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE, pygame.K_BACKSPACE):
+                    self.close_sub()
                 return True
             if e.key == pygame.K_ESCAPE:
                 w.close_modal()
@@ -387,6 +412,12 @@ class MenuScreen(Panel):
             return True
         if e.type == pygame.MOUSEBUTTONUP and e.button == 1:
             self.drag = None
+            if getattr(self, "opt_drag", None) is not None:
+                self.opt_drag = None
+                sfx.play("click")
+        elif e.type == pygame.MOUSEMOTION and getattr(self, "opt_drag", None) is not None:
+            self.drag_volume(e.pos)
+            return True
         elif e.type == pygame.MOUSEMOTION and self.drag is not None:
             self.rot += (e.pos[0] - self.drag) * 0.012
             self.drag = e.pos[0]
@@ -409,8 +440,15 @@ class MenuScreen(Panel):
             self.char_click(e)
         elif self.page == PAGE_TAL:
             self.talent_click(e)
+        elif self.sys_sub == "options" and e.button == 1:
+            for i in range(len(self.OPTION_ROWS)):
+                if self.option_bar(i).inflate(20, 24).collidepoint(e.pos):
+                    self.opt_sel, self.opt_drag = i, i
+                    self.drag_volume(e.pos)
+                    return True
+            self.close_sub()
         elif self.sys_sub:
-            self.sys_sub = None
+            self.close_sub()
         elif e.button == 1:
             for i, rc in enumerate(self.sys_rects):
                 if rc.collidepoint(e.pos):
@@ -1114,6 +1152,39 @@ class MenuScreen(Panel):
         self.draw_notes(surf)
         if self.sys_sub == "controls":
             self.draw_controls(surf)
+        elif self.sys_sub == "options":
+            self.draw_options(surf)
+
+    def drag_volume(self, pos):
+        bar = self.option_bar(self.opt_drag)
+        key = self.OPTION_ROWS[self.opt_drag][0]
+        sfx.set_volume(key, round((pos[0] - bar.x) / bar.w, 2))
+
+    def draw_options(self, surf):
+        ui.veil(surf, (0, 0, 0), 200)
+        box = ui.botw_box(surf, (SCREEN_W // 2 - 300, 190, 600, 330), 255, FRAME, radius=4, fill=(12, 16, 20))
+        ui.draw_text(surf, "Options", (box.centerx, box.y + 16), 22, WHITE, "title", anchor="midtop")
+        ui.rect(surf, (110, 112, 108), (box.x + 24, box.y + 54, box.w - 48, 1))
+        mouse = ui.mouse_pos()
+        for i, (key, label) in enumerate(self.OPTION_ROWS):
+            bar = self.option_bar(i)
+            if bar.inflate(20, 24).collidepoint(mouse) and getattr(self, "opt_drag", None) is None:
+                self.opt_sel = i
+            sel = i == getattr(self, "opt_sel", 0)
+            row = pygame.Rect(box.x + 16, bar.centery - 24, box.w - 32, 48)
+            if sel:
+                ui.rect(surf, (40, 60, 70, 110), row, 0, 4)
+            ui.draw_text(surf, label, (box.x + 36, bar.centery), 17, WHITE if sel else SOFT, "title", anchor="midleft")
+            v = sfx.volumes[key]
+            ui.rect(surf, (0, 0, 0, 200), bar.inflate(4, 4), 0, 8)
+            ui.rect(surf, (60, 64, 66), bar, 0, 7)
+            if v > 0:
+                ui.rect(surf, BOTW_YELLOW if sel else (200, 200, 190), (bar.x, bar.y, max(6, bar.w * v), bar.h), 0, 7)
+            ui.circle(surf, WHITE, (bar.x + bar.w * v, bar.centery), 10)
+            ui.draw_text(surf, f"{int(round(v * 100))} %", (bar.right + 38, bar.centery), 15, WHITE, "bold",
+                         anchor="center")
+        ui.draw_text(surf, "Glisser ou ← → pour régler · Échap : retour (réglages enregistrés)",
+                     (box.centerx, box.bottom - 16), 13, SOFT, anchor="midbottom")
 
     def draw_notes(self, surf):
         """Notes de mise à jour (data/updates/*.json), la plus récente en haut ; molette pour défiler."""

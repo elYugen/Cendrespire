@@ -1,0 +1,21 @@
+{
+  "version": "2.4",
+  "date": "2026-09-27",
+  "title": "Musique, options et textures",
+  "sections": [
+    {"name": "Son", "notes": [
+      "Musiques : une pour le campement et l'écran titre, une pour la tour (assets/music).",
+      "Nouvel écran Options dans Système : volume général, musique et effets sonores, enregistrés d'une partie à l'autre."
+    ]},
+    {"name": "Graphismes", "notes": [
+      "Textures : dalles de pierre, murs en briques, herbe et terre du campement, grain léger sur les personnages et les monstres.",
+      "Héros plus médiévaux : capes qui flottent à la course, tuniques, tabard du paladin, épaulières, fourrure, ceintures, carquois.",
+      "Le contour noir des personnages est retiré."
+    ]},
+    {"name": "Interface", "notes": [
+      "Le jeu reste visible derrière les pages Inventaire et Personnage.",
+      "La croix des artefacts est descendue sous les cœurs et l'anneau de recharge est correctement placé.",
+      "La barre d'expérience et les rappels de points à dépenser sont retirés de l'écran de jeu."
+    ]}
+  ]
+}

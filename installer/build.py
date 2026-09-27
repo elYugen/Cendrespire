@@ -35,7 +35,7 @@ PY_URL = f"https://www.python.org/ftp/python/{PY_VERSION}/python-{PY_VERSION}-em
 
 GAME_FILES = ["main.py", "README.md"]
 GAME_DIRS = ["game", "data", "assets"]
-IGNORE = shutil.ignore_patterns("__pycache__", "*.pyc", ".DS_Store")
+IGNORE = shutil.ignore_patterns("__pycache__", "*.pyc", ".DS_Store", "*.m4a", "backup", "version.txt")   # m4a : originaux des musiques (.opus)
 
 
 def step(msg):

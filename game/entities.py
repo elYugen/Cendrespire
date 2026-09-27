@@ -811,17 +811,21 @@ class Chest(Interactable):
 
 
 class Portal(Interactable):
-    def __init__(self, x, y, prompt, action, color=(120, 100, 255)):
+    def __init__(self, x, y, prompt, action, color=(120, 100, 255), grand=False):
         super().__init__(x, y)
         self.prompt = prompt
         self.action = action
         self.color = color
+        self.grand = grand          # portail monumental du campement (arche dans le décor)
 
     def interact(self, world):
         self.action(world)
 
     def render(self, fr, t):
-        models.portal(fr, self.x, self.y, self.color, t)
+        if self.grand:
+            models.grand_portal_veil(fr, self.x, self.y, self.color, t)
+        else:
+            models.portal(fr, self.x, self.y, self.color, t)
 
 
 class NPC(Interactable):

@@ -56,6 +56,9 @@ Section "${APP}" SecGame
   ; une mise à jour remplace le code sans toucher aux sauvegardes (%APPDATA%\Cendrespire)
   RMDir /r "$INSTDIR\game"
   RMDir /r "$INSTDIR\runtime"
+  RMDir /r "$INSTDIR\data"
+  RMDir /r "$INSTDIR\backup"
+  Delete "$INSTDIR\version.txt"     ; version posée par la mise à jour intégrée : l'installeur fait foi
   SetOutPath "$INSTDIR"
   File /r "${STAGE}/*"
   CreateDirectory "$APPDATA\${APP}\data"

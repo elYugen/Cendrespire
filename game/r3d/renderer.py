@@ -132,6 +132,8 @@ class Renderer:
                 }
         self.ident = ctx.buffer(IDENTITY.tobytes())
         self.static = None
+        self.static_inst = {}      # décor instancié du niveau (murs et dalles du kit de donjon...)
+        self.inst_radius = 24.0    # rayon (en cases) autour de la caméra dans lequel on dessine ce décor
         q = ctx.buffer(quad2d().tobytes())
         self.decal_buf = ctx.buffer(reserve=56 * 64, dynamic=True)
         self.vao_decal = ctx.vertex_array(self.p_decal, [(q, "2f", "in_uv"),
@@ -163,11 +165,11 @@ class Renderer:
         key = id(model)
         if key not in self.skin_gpu:
             vbo = self.ctx.buffer(model.vertices.tobytes())
-            fmt = ("3f 3f 1f 4f 4f", "in_pos", "in_norm", "in_mat", "in_joints", "in_weights")
+            fmt = ("3f 3f 1f 3f 4f 4f", "in_pos", "in_norm", "in_mat", "in_color", "in_joints", "in_weights")
             self.skin_gpu[key] = {
                 "lit": self.ctx.vertex_array(self.p_skin, [(vbo, *fmt)]),
                 "depth": self.ctx.vertex_array(self.p_skin_depth,
-                                               [(vbo, "3f 12x 4x 4f 4f", "in_pos", "in_joints", "in_weights")]),
+                                               [(vbo, "3f 12x 4x 12x 4f 4f", "in_pos", "in_joints", "in_weights")]),
                 "outline": self.ctx.vertex_array(self.p_skin_outline, [(vbo, *fmt)]),
                 "vbo": vbo,
             }
@@ -218,6 +220,35 @@ class Renderer:
         }
         self.static_n = len(arr)
 
+    def set_static_instances(self, models, instances):
+        """models : {nom: sommets (n, 10)} ; instances : {nom: tableau (N, 16)} placés une fois pour tout le niveau.
+        À chaque image, seules les instances proches de la caméra sont envoyées à la carte graphique."""
+        for v in self.static_inst.values():
+            for k in ("vbo", "ibuf", "lit", "depth"):
+                v[k].release()
+        self.static_inst = {}
+        for name, verts in (models or {}).items():
+            inst = np.ascontiguousarray(instances.get(name, np.zeros((0, 16))), dtype="f4")
+            if not len(inst):
+                continue
+            vbo = self.ctx.buffer(np.ascontiguousarray(verts, dtype="f4").tobytes())
+            ibuf = self.ctx.buffer(reserve=max(64, inst.nbytes), dynamic=True)
+            self.static_inst[name] = {
+                "vbo": vbo, "ibuf": ibuf, "inst": inst, "pos": inst[:, 9:12].copy(), "n": 0,
+                "lit": self._vao(self.p_lit, vbo, ibuf, depth=False),
+                "depth": self._vao(self.p_depth, vbo, ibuf, depth=True),
+            }
+
+    def _cull_static_instances(self, center):
+        r2 = self.inst_radius ** 2
+        for v in self.static_inst.values():
+            d = v["pos"] - center
+            mask = d[:, 0] ** 2 + d[:, 2] ** 2 < r2
+            sub = v["inst"][mask]
+            v["n"] = len(sub)
+            if len(sub):
+                v["ibuf"].write(sub.tobytes())
+
     def ensure_size(self, size):
         if size == self.size:
             return
@@ -255,6 +286,8 @@ class Renderer:
             self._write(self.meshes[name]["ibuf"], arr)
             counts[name] = len(arr) // 16
 
+        if self.static_inst and not overlay:
+            self._cull_static_instances(np.array(cam.target, dtype="f4"))
         # ombres (lumière directionnelle orthographique autour de la cible)
         L = np.array(env.sun_dir, dtype="f4")
         L /= np.linalg.norm(L)
@@ -274,6 +307,10 @@ class Renderer:
             self.p_depth["u_light_vp"].write(lvp_bytes)
             if self.static:
                 self.static["depth"].render(instances=1)
+            if not overlay:
+                for v in self.static_inst.values():
+                    if v["n"]:
+                        v["depth"].render(instances=v["n"])
             for name, n in counts.items():
                 if n:
                     self.meshes[name]["depth"].render(instances=n)
@@ -342,6 +379,10 @@ class Renderer:
         self._set(p, "u_toon", 0.0)
         if self.static:
             self.static["lit"].render(instances=1)
+        if not overlay:
+            for v in self.static_inst.values():
+                if v["n"]:
+                    v["lit"].render(instances=v["n"])
         for toon in (False, True):
             self._set(p, "u_toon", 1.0 if toon else 0.0)
             for name, n in counts.items():

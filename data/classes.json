@@ -31,7 +31,16 @@
         "icon": "axe"
       },
       "spells": ["tourbillon", "cri_guerre", "bond", "seisme"],
-      "weapons": ["Hache de guerre", "Épée longue", "Masse d'armes", "Fléau"],
+      "weapons": [
+        "Hache de guerre",
+        "Épée longue",
+        "Masse d'armes",
+        "Fléau",
+        "Hache d'armes",
+        "Marteau de guerre",
+        "Masse à ailettes",
+        "Grande hache"
+      ],
       "legendary": ["Brise-Monde", "Hurlement du Chef de guerre", "Faucheuse des Steppes"],
       "headgear_name": "Casque cornu",
       "look_defaults": {
@@ -64,15 +73,19 @@
         "horns": [236, 226, 200]
       },
       "rig": {
-        "model": "adventurer_b",
+        "model": "knight",
         "colors": {
           "Skin": "skin",
-          "Hair_Brown": "hair",
-          "Brown": "hair",
-          "Green": "main",
-          "LightGreen": "main:1.25",
-          "White": "second",
-          "Brown2": "second:0.7"
+          "Hair_White": "hair",
+          "Metal": "second:0.8",
+          "Metal_Dark": "second:0.55",
+          "Blue": "main",
+          "Beige": "main:0.75",
+          "DarkBrown": "second:0.45",
+          "Gold": "hide"
+        },
+        "weapons": {
+          "right": ["axe_double", 24]
         }
       }
     },
@@ -106,7 +119,16 @@
         "icon": "orb"
       },
       "spells": ["boule_feu", "nova_givre", "teleport", "meteore"],
-      "weapons": ["Bâton", "Baguette", "Orbe", "Sceptre"],
+      "weapons": [
+        "Bâton",
+        "Baguette",
+        "Orbe",
+        "Sceptre",
+        "Bâton de chêne-noir",
+        "Sceptre de cristal",
+        "Bâton des arcanes",
+        "Férule de braise"
+      ],
       "legendary": ["Bâton de l'Archimage", "Œil du Vide", "Sceptre des Mille Flammes"],
       "headgear_name": "Chapeau de mage",
       "look_defaults": {
@@ -137,15 +159,15 @@
         "hat": "second"
       },
       "rig": {
-        "model": "adventurer_b",
+        "model": "witch",
         "colors": {
           "Skin": "skin",
-          "Hair_Brown": "hair",
-          "Brown": "hair",
-          "Green": "main",
-          "LightGreen": "main:1.25",
-          "White": "second",
-          "Brown2": "second:0.7"
+          "Hair_Black": "hair",
+          "Purple": "main",
+          "Gold": "second"
+        },
+        "weapons": {
+          "right": ["staff", 38]
         }
       }
     },
@@ -180,7 +202,14 @@
         "icon": "arrow"
       },
       "spells": ["tir_multiple", "piege", "fleche_perforante", "pluie_fleches"],
-      "weapons": ["Arc court", "Arc long", "Arbalète", "Arc composite"],
+      "weapons": [
+        "Arc court",
+        "Arc long",
+        "Arbalète",
+        "Arc composite",
+        "Arc de chasse",
+        "Arc elfique"
+      ],
       "legendary": ["Murmure-du-Vent", "Chant de la Traque", "Corde de l'Éclipse"],
       "headgear_name": "Capuche",
       "look_defaults": {
@@ -212,15 +241,16 @@
         "hood": "second"
       },
       "rig": {
-        "model": "adventurer_a",
+        "model": "hooded",
         "colors": {
           "Skin": "skin",
-          "Hair": "hair",
-          "Eyebrows": "hair",
-          "Green": "main",
-          "LightGreen": "main:1.25",
-          "Brown": "second",
-          "Brown2": "second:0.75"
+          "Black": "main",
+          "LightBrown": "second",
+          "DarkBrown": "second:0.6",
+          "Brown": "hair"
+        },
+        "weapons": {
+          "left": ["bow", 30]
         }
       }
     },
@@ -254,7 +284,15 @@
         "icon": "sword"
       },
       "spells": ["charge_bouclier", "consecration", "egide", "jugement"],
-      "weapons": ["Épée bâtarde", "Marteau de guerre", "Masse bénie", "Lame de l'Aube"],
+      "weapons": [
+        "Épée bâtarde",
+        "Marteau de guerre",
+        "Masse bénie",
+        "Lame de l'Aube",
+        "Lame bénie",
+        "Masse de templier",
+        "Épée du croisé"
+      ],
       "legendary": ["Aube Éternelle", "Serment du Porte-Lumière", "Marteau du Jugement"],
       "headgear_name": "Heaume",
       "look_defaults": {
@@ -296,6 +334,10 @@
           "Blue": "main",
           "Beige": "second",
           "Gold": "hide"
+        },
+        "weapons": {
+          "right": ["sword2", 26],
+          "left": ["shield_celtic", 20]
         }
       }
     },
@@ -329,7 +371,16 @@
         "icon": "bone"
       },
       "spells": ["lance_os", "squelettes", "malediction", "moisson"],
-      "weapons": ["Faux", "Faucille d'os", "Sceptre d'os", "Faux funéraire"],
+      "weapons": [
+        "Faux",
+        "Faucille d'os",
+        "Sceptre d'os",
+        "Faux funéraire",
+        "Faux d'os",
+        "Sceptre funéraire",
+        "Bâton du caveau",
+        "Faux de la moisson"
+      ],
       "legendary": ["Moissonneuse d'Âmes", "Faux du Dernier Souffle", "Sceptre du Roi-Liche"],
       "headgear_name": "Capuche d'ombre",
       "look_defaults": {
@@ -361,15 +412,18 @@
         "hood": "main"
       },
       "rig": {
-        "model": "hooded",
+        "model": "witch",
         "colors": {
           "Skin": "skin",
-          "Black": "main",
-          "LightBrown": "second",
-          "DarkBrown": "second:0.6",
-          "Brown": "hair"
+          "Hair_Black": "hair",
+          "Purple": "main",
+          "Gold": "second",
+          "Brown2": "main:0.6",
+          "Brown": "main:0.45"
         },
-        "skip": ["hood"]
+        "weapons": {
+          "right": ["scythe", 40]
+        }
       }
     },
     "assassin": {
@@ -402,7 +456,7 @@
         "icon": "dagger"
       },
       "spells": ["pas_ombre", "eventail", "venin", "danse_lames"],
-      "weapons": ["Dagues jumelles", "Kriss", "Lames de l'ombre", "Stylets"],
+      "weapons": ["Dagues jumelles", "Kriss", "Lames de l'ombre", "Stylets", "Lames du silence"],
       "legendary": ["Crocs du Crépuscule", "Murmure et Silence", "Lames de la Nuit sans Lune"],
       "headgear_name": "Capuche et masque",
       "look_defaults": {
@@ -442,7 +496,10 @@
           "DarkBrown": "second:0.6",
           "Brown": "hair"
         },
-        "skip": ["hood"]
+        "weapons": {
+          "right": ["dagger2", 12],
+          "left": ["dagger2", 12]
+        }
       }
     }
   }

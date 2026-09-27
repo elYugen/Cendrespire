@@ -2,7 +2,7 @@
  "name": "Sakou",
  "cls": "barbare",
  "level": 14,
- "xp": 1565,
+ "xp": 4511,
  "alloc": {
   "force": 23,
   "dex": 1,
@@ -10,7 +10,7 @@
   "vit": 41
  },
  "points": 0,
- "gold": 3351,
+ "gold": 5272,
  "max_floor": 7,
  "cleared": [
   1,
@@ -1365,22 +1365,23 @@
    "upgrade": 0,
    "affixes": {},
    "base": "Artefact",
-   "name": "Orbe de givre"
+   "name": "Orbe de givre",
+   "ench": []
   }
  ],
- "kills": 633,
+ "kills": 693,
  "deaths": 2,
  "created_at": 1790432904.3347578,
  "look": {
-  "skin": 0,
-  "build": 1,
+  "skin": 1,
+  "build": 2,
   "hair": 3,
-  "hair_col": 6,
-  "beard": 1,
-  "eyes": 4,
-  "marks": 2,
-  "main": 2,
-  "second": 12,
+  "hair_col": 1,
+  "beard": 3,
+  "eyes": 1,
+  "marks": 3,
+  "main": 6,
+  "second": 11,
   "headgear": 0
  },
  "talents": {
@@ -1388,5 +1389,5 @@
   "ba_peau": 3,
   "ba_tourb": 1
  },
- "saved_at": 1790512485.727117
+ "saved_at": 1790535829.24909
 }

@@ -1,20 +1,77 @@
-"""Effets sonores synthétisés à la volée (aucun fichier audio requis)."""
+"""Son du jeu : effets synthétisés à la volée, musiques (assets/music) et réglages de volume.
+
+Les volumes (général, musique, effets) sont enregistrés dans options.json, à côté des sauvegardes.
+"""
 import array
+import json
 import math
+import os
 import random
 import time
 
 import pygame
 
+from .settings import ASSETS_DIR, SAVE_DIR
+
 _sounds = {}
 _last = {}
 _enabled = False
+MUSIC_DIR = os.path.join(ASSETS_DIR, "music")
+MUSIC_EXT = (".opus", ".ogg", ".mp3", ".flac", ".wav")
+OPTIONS_PATH = os.path.join(os.path.dirname(SAVE_DIR), "options.json")
+volumes = {"master": 0.8, "music": 0.6, "sfx": 0.8}
+_current = [None]
+
+
+def load_options():
+    try:
+        with open(OPTIONS_PATH, encoding="utf-8") as f:
+            data = json.load(f)
+        for k in volumes:
+            if isinstance(data.get(k), (int, float)):
+                volumes[k] = max(0.0, min(1.0, float(data[k])))
+    except (OSError, ValueError):
+        pass
+
+
+def save_options():
+    try:
+        os.makedirs(os.path.dirname(OPTIONS_PATH), exist_ok=True)
+        with open(OPTIONS_PATH, "w", encoding="utf-8") as f:
+            json.dump(volumes, f, indent=2)
+    except OSError:
+        pass
+
+
+def set_volume(key, value):
+    volumes[key] = max(0.0, min(1.0, value))
+    if _enabled:
+        pygame.mixer.music.set_volume(volumes["master"] * volumes["music"])
+
+
+def music(name, fade_ms=1200):
+    """Joue en boucle assets/music/<name>.* (avec fondu) ; ne fait rien si ce morceau passe déjà."""
+    if not _enabled or _current[0] == name:
+        return
+    path = next((os.path.join(MUSIC_DIR, name + ext) for ext in MUSIC_EXT
+                 if os.path.exists(os.path.join(MUSIC_DIR, name + ext))), None)
+    if not path:
+        return
+    try:
+        pygame.mixer.music.fadeout(400)
+        pygame.mixer.music.load(path)
+        pygame.mixer.music.set_volume(volumes["master"] * volumes["music"])
+        pygame.mixer.music.play(-1, fade_ms=fade_ms)
+        _current[0] = name
+    except pygame.error as e:
+        print(f"[musique] {path} illisible : {e}")
 
 
 def init():
     global _enabled
+    load_options()
     try:
-        pygame.mixer.init(22050, -16, 1, 512)
+        pygame.mixer.init(44100, -16, 2, 1024)
         freq, size, ch = pygame.mixer.get_init()
         if size != -16:
             return
@@ -98,5 +155,5 @@ def play(name, vol=1.0):
     if now - _last.get(name, 0) < 0.04:
         return
     _last[name] = now
-    s.set_volume(vol)
+    s.set_volume(vol * volumes["master"] * volumes["sfx"])
     s.play()

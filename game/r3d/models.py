@@ -90,14 +90,16 @@ NPC_SPECS = {
                      hood=(156, 114, 64), belt=(206, 176, 84), hair_style="Court", hair=(130, 118, 104),
                      beard_style="Longue", beard=(150, 140, 128), eye_col=(104, 66, 38), weapon=None,
                      pack=(112, 82, 50), boots=(70, 50, 34), build=1.05,
-                     rig={"model": "farmer", "palette": {}}),
+                     rig={"model": "farmer",
+                          "palette": {"LightBlue": (96, 70, 46), "Red": (140, 40, 36), "Beige": (190, 160, 110),
+                                      "Brown": (84, 60, 40)}}),
     "forgeronne": dict(detailed=True, body=(98, 78, 66), skin=(228, 182, 144), legs=(66, 50, 40), arms="skin",
                        apron=(74, 48, 32), hair_style="Tresses", hair=(206, 96, 44), eye_col=(70, 160, 80),
                        weapon="hammer", build=1.18, boots=(56, 40, 30), bracers=(70, 46, 30), gloves=(80, 56, 36),
                        belt=(60, 40, 26),
-                       rig={"model": "adventurer_b", "palette": {"Green": (98, 78, 66), "LightGreen": (122, 98, 82),
-                                                                 "White": (74, 48, 32), "Hair_Brown": (206, 96, 44),
-                                                                 "Brown": (206, 96, 44)}}),
+                       rig={"model": "knight", "weapons": {"right": ["hammer", 18]},
+                            "palette": {"Blue": (98, 78, 66), "Beige": (74, 48, 32), "Metal": (92, 66, 44),
+                                        "Metal_Dark": (70, 50, 34), "Hair_White": (206, 96, 44), "Gold": "hide"}}),
     "couturiere": dict(detailed=True, body=(112, 44, 110), skin=(178, 124, 84), legs=(54, 40, 60), arms="body",
                        hair_style="Queue de cheval", hair=(38, 32, 30), eye_col=(214, 150, 40), weapon=None,
                        sash=(226, 194, 120), collar=(226, 194, 120), boots=(60, 44, 36), marks="Tatouage runique",
@@ -680,6 +682,21 @@ def portal(fr, x, y, color, t):
         a = t * 2 + i * math.tau / 3
         fr.glow(x + math.cos(a) * s[0] * 18, y + math.cos(a) * s[1] * 18, 36 + math.sin(a) * 26, 12, color, 0.8)
     fr.light(x, y, 40, 280, color, 1.3)
+
+
+def grand_portal_veil(fr, x, y, color, t):
+    """Voile d'énergie tourbillonnant dans l'arche de pierre du portail de la tour (l'arche est dans le décor)."""
+    h, w = 58, 34
+    k = 1 + 0.04 * math.sin(t * 2.3)
+    fr.part("sphere", (x, y, h * 0.55), (w * k, 0, 0), (0, 0, h * 0.55 * k), (0, 2.0, 0), color, 0.85, additive=True)
+    fr.part("sphere", (x, y, h * 0.55), (w * 0.7, 0, 0), (0, 0, h * 0.4), (0, 2.5, 0), (255, 255, 255), 0.35,
+            additive=True)
+    for i in range(10):
+        a = t * (1.4 + (i % 3) * 0.35) + i * math.tau / 10
+        r = 0.35 + 0.55 * ((i * 0.37 + t * 0.2) % 1.0)
+        fr.glow(x + math.cos(a) * w * r, y - 2, h * 0.55 + math.sin(a) * h * 0.5 * r, 7, color, 0.9)
+    fr.decal(x, y + 22, 44, 20, color, 0.35 + 0.1 * math.sin(t * 3), kind=1, inner=0.6, rot=t * 0.4)
+    fr.light(x, y + 30, 45, 320, color, 1.4)
 
 
 def campfire(fr, x, y, t):

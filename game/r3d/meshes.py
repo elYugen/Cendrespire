@@ -92,8 +92,12 @@ PRIMITIVES = {"cube": cube, "sphere": sphere, "cylinder": cylinder, "cone": cone
 class MeshBuilder:
     """Accumule des primitives transformées dans un seul maillage statique (niveau, décor)."""
 
+    # matériaux (textures procédurales du shader) : 0 aucun, 1 dalles de pierre, 2 briques, 3 herbe, 4 terre
+    NONE, STONE, BRICK, GRASS, DIRT = 0, 1, 2, 3, 4
+
     def __init__(self):
         self.parts = []
+        self.mat = 0
         self._prims = {k: f().reshape(-1, STRIDE) for k, f in PRIMITIVES.items()}
 
     def add(self, prim, center, ax, ay, az, color, flag=0.0):
@@ -108,7 +112,7 @@ class MeshBuilder:
         nrm /= np.linalg.norm(nrm, axis=1, keepdims=True) + 1e-9
         col = np.empty((len(base), 4), dtype="f4")
         col[:, 0:3] = color[:3]
-        col[:, 3] = flag
+        col[:, 3] = flag + 2 * self.mat           # bit « coupable » + 2 × matériau
         self.parts.append(np.hstack([pos, nrm, col]).astype("f4"))
 
     def box(self, x0, y0, z0, x1, y1, z1, color, flag=0.0):

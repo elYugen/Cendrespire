@@ -19,7 +19,7 @@ from ..settings import ASSETS_DIR
 CHAR_DIR = os.path.join(ASSETS_DIR, "models", "characters")
 MAX_JOINTS = 64
 MAX_MATS = 16
-STRIDE = 3 + 3 + 1 + 4 + 4        # position, normale, matériau, articulations, poids
+STRIDE = 3 + 3 + 1 + 3 + 4 + 4    # position, normale, matériau, couleur, articulations, poids
 
 SKIP_MESHES = {"Backpack"}        # accessoires encombrants du pack, remplacés par l'équipement du jeu
 _COMP = {5120: "b", 5121: "B", 5122: "h", 5123: "H", 5125: "I", 5126: "f"}
@@ -116,6 +116,29 @@ class Model:
         self.materials = [m.get("name", f"mat{i}") for i, m in enumerate(g.get("materials", []))]
         self.base_colors = [_srgb(m.get("pbrMetallicRoughness", {}).get("baseColorFactor", (0.8, 0.8, 0.8, 1)))
                             for m in g.get("materials", [])]
+        self.tex_factor = [tuple(m.get("pbrMetallicRoughness", {}).get("baseColorFactor", (1, 1, 1, 1))[:3])
+                           for m in g.get("materials", [])]
+        # textures-palettes (atlas de couleurs) : la couleur est lue à chaque sommet
+        images = {}
+
+        def texture(mi):
+            m = g["materials"][mi] if mi is not None and mi < len(g.get("materials", [])) else {}
+            t = m.get("pbrMetallicRoughness", {}).get("baseColorTexture")
+            if t is None:
+                return None
+            src = g["textures"][t["index"]]["source"]
+            if src not in images:
+                import io
+                import pygame
+                im = g["images"][src]
+                v = g["bufferViews"][im["bufferView"]]
+                raw = binary[v.get("byteOffset", 0):v.get("byteOffset", 0) + v["byteLength"]]
+                try:
+                    images[src] = pygame.surfarray.array3d(pygame.image.load(io.BytesIO(raw))).astype("f4") / 255
+                except (pygame.error, ValueError):
+                    images[src] = None
+            return images[src]
+
         verts = []
         for ni, n in enumerate(nodes):
             if "mesh" not in n or "skin" not in n or n.get("name") in SKIP_MESHES:
@@ -129,8 +152,18 @@ class Model:
                 jn = remap[acc(at["JOINTS_0"]).astype("i4")]
                 wt = acc(at["WEIGHTS_0"]).astype("f4")
                 wt /= wt.sum(1, keepdims=True) + 1e-9
-                mat = np.full((len(pos), 1), prim.get("material", 0), "f4")
-                v = np.hstack([pos, nor, mat, jn, wt]).astype("f4")
+                mi = prim.get("material", 0)
+                mat = np.full((len(pos), 1), mi, "f4")
+                base = np.array(self.base_colors[mi] if mi < len(self.base_colors) else (0.8, 0.8, 0.8), "f4")
+                col = np.tile(base, (len(pos), 1))
+                tex = texture(mi)
+                if tex is not None and "TEXCOORD_0" in at:
+                    uv = acc(at["TEXCOORD_0"]).astype("f4")
+                    w, h = tex.shape[0], tex.shape[1]
+                    xs = np.clip(((uv[:, 0] % 1.0) * w).astype(int), 0, w - 1)
+                    ys = np.clip(((uv[:, 1] % 1.0) * h).astype(int), 0, h - 1)
+                    col = tex[xs, ys] * np.array(self.tex_factor[mi], "f4")
+                v = np.hstack([pos, nor, mat, col, jn, wt]).astype("f4")
                 idx = acc(prim["indices"]).reshape(-1) if "indices" in prim else np.arange(len(pos))
                 verts.append(v[idx])
         self.vertices = np.ascontiguousarray(np.vstack(verts), dtype="f4")
@@ -150,8 +183,8 @@ class Model:
         mats, _ = self.pose(None, 0.0)
         v = self.vertices
         P = np.hstack([v[:, 0:3], np.ones((len(v), 1), "f4")])
-        J = v[:, 7:11].astype(int)
-        M = np.einsum("nk,nkij->nij", v[:, 11:15], mats[J])
+        J = v[:, 10:14].astype(int)
+        M = np.einsum("nk,nkij->nij", v[:, 14:18], mats[J])
         out = np.einsum("nij,nj->ni", M, P)[:, :3]
         self.height = float(out[:, 1].max() - out[:, 1].min()) or 1.0
         self.floor = float(out[:, 1].min())
@@ -195,13 +228,13 @@ class Model:
 
     def palette(self, overrides):
         """Couleurs des matériaux (0-1), en remplaçant celles indiquées {nom de matériau: (r, g, b) 0-255}."""
-        pal = np.zeros((MAX_MATS, 3), dtype="f4")
+        pal = np.zeros((MAX_MATS, 4), dtype="f4")      # rgb + 1 si la couleur remplace celle du modèle
         for i, name in enumerate(self.materials[:MAX_MATS]):
             c = overrides.get(name)
             if c == "hide":
-                pal[i] = (-1.0, -1.0, -1.0)          # matériau masqué (le shader ne le dessine pas)
-            else:
-                pal[i] = [v / 255 for v in c] if c else self.base_colors[i]
+                pal[i] = (-1.0, -1.0, -1.0, 1.0)     # matériau masqué (le shader ne le dessine pas)
+            elif c:
+                pal[i] = (c[0] / 255, c[1] / 255, c[2] / 255, 1.0)
         return pal
 
 
@@ -216,3 +249,95 @@ def load(name):
             print(f"[personnages] {path} illisible : {e} (modèle procédural utilisé)")
             _models[name] = None
     return _models[name]
+
+
+# =========================================================================== objets tenus (armes, boucliers)
+PROP_DIR = os.path.join(ASSETS_DIR, "models", "weapons")
+_props = {}
+
+
+class Prop:
+    """Objet glTF non animé (arme, bouclier), dessiné comme un personnage à un seul os : la matrice de cet os
+    place l'objet dans la main à chaque image. Axe de l'objet : +Y, poignée vers le bas."""
+
+    def __init__(self, path):
+        m = Model.__new__(Model)
+        with open(path, "rb") as f:
+            data = f.read()
+        jlen = struct.unpack("<I", data[12:16])[0]
+        g = json.loads(data[20:20 + jlen])
+        off = 20 + jlen
+        blen = struct.unpack("<I", data[off:off + 4])[0]
+        binary = data[off + 8:off + 8 + blen]
+        nodes = g["nodes"]
+        parent = [-1] * len(nodes)
+        for i, n in enumerate(nodes):
+            for c in n.get("children", []):
+                parent[c] = i
+
+        def local(n):
+            if "matrix" in n:
+                return np.array(n["matrix"], "f4").reshape(4, 4).T
+            return trs(n.get("translation", (0, 0, 0)), n.get("rotation", (0, 0, 0, 1)), n.get("scale", (1, 1, 1)))
+
+        def world(i):
+            mtx = local(nodes[i])
+            while parent[i] >= 0:
+                i = parent[i]
+                mtx = local(nodes[i]) @ mtx
+            return mtx
+
+        def acc(i):
+            a = g["accessors"][i]
+            v = g["bufferViews"][a["bufferView"]]
+            comps = _NCOMP[a["type"]]
+            fmt = np.dtype("<" + _COMP[a["componentType"]])
+            start = v.get("byteOffset", 0) + a.get("byteOffset", 0)
+            stride = v.get("byteStride", 0) or fmt.itemsize * comps
+            if stride == fmt.itemsize * comps:
+                return np.frombuffer(binary, dtype=fmt, count=a["count"] * comps, offset=start).reshape(-1, comps)
+            return np.stack([np.frombuffer(binary, dtype=fmt, count=comps, offset=start + k * stride)
+                             for k in range(a["count"])])
+        mats = g.get("materials", [])
+        cols = [_srgb(mm.get("pbrMetallicRoughness", {}).get("baseColorFactor", (0.8, 0.8, 0.8, 1))) for mm in mats]
+        verts = []
+        for i, n in enumerate(nodes):
+            if "mesh" not in n:
+                continue
+            W = world(i)
+            N = np.linalg.inv(W[:3, :3]).T
+            for prim in g["meshes"][n["mesh"]]["primitives"]:
+                at = prim["attributes"]
+                pos = acc(at["POSITION"]).astype("f4")
+                nor = acc(at["NORMAL"]).astype("f4") if "NORMAL" in at else np.tile((0, 1, 0), (len(pos), 1)).astype("f4")
+                pos = pos @ W[:3, :3].T + W[:3, 3]
+                nor = nor @ N.T
+                nor /= np.linalg.norm(nor, axis=1, keepdims=True) + 1e-9
+                mi = prim.get("material", 0)
+                col = np.tile(np.array(cols[mi] if mi < len(cols) else (0.8, 0.8, 0.8), "f4"), (len(pos), 1))
+                n0 = len(pos)
+                v = np.hstack([pos, nor, np.full((n0, 1), mi, "f4"), col, np.zeros((n0, 4), "f4"),
+                               np.tile((1, 0, 0, 0), (n0, 1)).astype("f4")]).astype("f4")
+                idx = acc(prim["indices"]).reshape(-1) if "indices" in prim else np.arange(n0)
+                verts.append(v[idx])
+        self.vertices = np.ascontiguousarray(np.vstack(verts), dtype="f4")
+        self.materials = [mm.get("name", "") for mm in mats]
+        p = self.vertices[:, 0:3]
+        self.lo, self.hi = p.min(0), p.max(0)
+        self.length = float(self.hi[1] - self.lo[1]) or 1.0
+
+    def palette(self, overrides=None):
+        return np.zeros((MAX_MATS, 4), dtype="f4")
+
+
+def load_prop(name):
+    if not ENABLED:
+        return None
+    if name not in _props:
+        path = os.path.join(PROP_DIR, name + ".glb")
+        try:
+            _props[name] = Prop(path)
+        except (OSError, ValueError, KeyError, IndexError, struct.error) as e:
+            print(f"[armes] {path} illisible : {e}")
+            _props[name] = None
+    return _props[name]

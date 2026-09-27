@@ -1,0 +1,31 @@
+{
+  "version": "2.5",
+  "date": "2026-09-27",
+  "title": "Vingt étages, une ville et les mises à jour automatiques",
+  "sections": [
+    {"name": "La tour", "notes": [
+      "Cendrespire compte désormais 20 étages, chacun avec son nom, son ambiance et son gardien.",
+      "Étages construits avec le Modular Dungeon Kit de Kenney : murs sculptés, colonnes, dalles détaillées.",
+      "Mobilier propre à chaque ambiance : tombes et cercueils, tonneaux et étais de mine, autels, bannières, braseros…",
+      "Au-delà des murs, une masse rocheuse remplace le vide noir."
+    ]},
+    {"name": "Le campement devient une ville", "notes": [
+      "Une avenue mène à une place avec fontaine, étals du marché, bancs, lanternes et douze nouvelles maisons.",
+      "Des habitants animés à qui parler.",
+      "Un portail monumental en pierre, avec braseros et voile d'énergie, garde l'entrée de la tour."
+    ]},
+    {"name": "Personnages", "notes": [
+      "Les formes ajoutées par-dessus les modèles sont supprimées.",
+      "Modèles plus médiévaux : chevalier pour le barbare et le paladin, sorcière pour le sorcier et le nécromancien, aventurier encapuchonné pour le chasseur et l'assassin.",
+      "Armes et boucliers en 3D (Quaternius) : hache double, épée longue et écu celtique, bâton, faux, arc, dagues."
+    ]},
+    {"name": "Objets", "notes": [
+      "9 nouveaux artefacts : Cor de bataille, Fiole de sang, Écu sacré, Éclat de météorite, Chaînes du geôlier, Rune explosive, Phylactère d'ossements, Tambour de tempête, Dague de l'ombre.",
+      "Nouvelles pièces d'équipement, armes de classe et objets légendaires."
+    ]},
+    {"name": "Lancement", "notes": [
+      "Logo Sakugame au démarrage, musique de l'écran titre et écrans de chargement avec conseils.",
+      "Mise à jour automatique : à l'écran titre, le jeu vérifie la dernière release GitHub et propose de l'installer. Les sauvegardes ne sont jamais touchées."
+    ]}
+  ]
+}

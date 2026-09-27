@@ -2,3 +2,7 @@ build/
 dist/
 installer/Output/
 installer/cendrespire.ico
+backup/
+version.txt
+__pycache__/
+saves/

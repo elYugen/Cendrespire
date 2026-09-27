@@ -20,6 +20,8 @@ out vec3 v_col;
 out vec4 v_lpos;
 out float v_emis;
 out float v_flag;
+out vec3 v_opos;
+out float v_mat;
 void main() {
     mat3 M = mat3(i_ax, i_ay, i_az);
     vec3 wp = M * in_pos + i_pos;
@@ -27,7 +29,9 @@ void main() {
     v_norm = normalize(transpose(inverse(M)) * in_norm);
     v_col = in_col.rgb * i_col.rgb;
     v_emis = i_col.a;
-    v_flag = in_col.a;
+    v_flag = mod(in_col.a, 2.0);                 // bit « coupable » (murs qui s'effacent)
+    v_mat = floor(in_col.a / 2.0 + 0.01);        // matériau (texture procédurale)
+    v_opos = in_pos * (length(i_ax) + length(i_ay) + length(i_az)) * 0.333;
     v_lpos = u_light_vp * vec4(wp, 1.0);
     gl_Position = u_vp * vec4(wp, 1.0);
 }
@@ -57,7 +61,59 @@ in vec3 v_col;
 in vec4 v_lpos;
 in float v_emis;
 in float v_flag;
+in vec3 v_opos;
+in float v_mat;
 out vec4 f_col;
+
+// ---- textures procédurales (aucune image : bruit calculé à partir de la position)
+float hash3(vec3 p) {
+    p = fract(p * 0.3183099 + 0.1);
+    p *= 17.0;
+    return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+}
+float vnoise(vec3 x) {
+    vec3 i = floor(x);
+    vec3 f = fract(x);
+    f = f * f * (3.0 - 2.0 * f);
+    return mix(mix(mix(hash3(i), hash3(i + vec3(1, 0, 0)), f.x), mix(hash3(i + vec3(0, 1, 0)), hash3(i + vec3(1, 1, 0)), f.x), f.y),
+               mix(mix(hash3(i + vec3(0, 0, 1)), hash3(i + vec3(1, 0, 1)), f.x), mix(hash3(i + vec3(0, 1, 1)), hash3(i + vec3(1, 1, 1)), f.x), f.y), f.z);
+}
+float fbm(vec3 p) {
+    return 0.5 * vnoise(p) + 0.25 * vnoise(p * 2.03 + 7.1) + 0.125 * vnoise(p * 4.07 + 3.3);
+}
+vec3 stone(vec3 c, vec3 p) {
+    float k = 0.84 + 0.32 * fbm(p * 2.6);
+    float speck = step(0.96, hash3(floor(p * 26.0))) * 0.07;
+    float crack = 1.0 - 0.16 * (1.0 - smoothstep(0.0, 0.02, abs(vnoise(p * 2.2 + 5.0) - 0.5)));
+    return c * k * crack - speck * c;
+}
+vec3 texture_detail(vec3 c, vec3 wp, vec3 n, vec3 op, float mat) {
+    if (mat > 7.5) {                                   // personnages et monstres : grain de tissu / de peau
+        return c * (0.92 + 0.14 * vnoise(op * 9.0));
+    }
+    if (mat < 0.5) return c;
+    if (mat < 1.5) return stone(c, wp);                // dalles de pierre
+    if (mat < 2.5) {                                   // briques (faces verticales), pierre (dessus)
+        if (abs(n.y) > 0.6) return stone(c, wp);
+        vec2 t = normalize(vec2(-n.z, n.x));
+        float u = dot(wp.xz, t);
+        float row = floor(wp.y / 0.22);
+        float bu = u / 0.42 + 0.5 * mod(row, 2.0);
+        vec2 id = vec2(floor(bu), row);
+        float fu = fract(bu), fv = fract(wp.y / 0.22);
+        float edge = min(min(fu, 1.0 - fu) * 0.42, min(fv, 1.0 - fv) * 0.22);
+        float brick = 0.82 + 0.3 * hash3(vec3(id, 3.0));
+        vec3 b = c * brick * (0.88 + 0.24 * fbm(wp * 6.0));
+        return mix(c * 0.45, b, smoothstep(0.008, 0.018, edge));
+    }
+    if (mat < 3.5) {                                   // herbe : taches, brins, zones sèches
+        float blot = fbm(wp * 1.2);
+        vec3 g = c * (0.82 + 0.36 * blot) + (hash3(floor(wp * 45.0)) - 0.5) * 0.08 * c;
+        return mix(g, g * vec3(1.12, 1.05, 0.7), smoothstep(0.58, 0.78, fbm(wp * 0.45 + 11.0)));
+    }
+    float pebble = step(0.975, hash3(floor(wp * 16.0))) * 0.06;  // terre caillouteuse
+    return c * (0.82 + 0.3 * fbm(wp * 3.0)) + pebble * c;
+}
 
 float shadow_at() {
     vec3 p = v_lpos.xyz / v_lpos.w * 0.5 + 0.5;
@@ -85,7 +141,7 @@ void main() {
         }
     }
     vec3 n = normalize(v_norm);
-    vec3 base = v_col;
+    vec3 base = texture_detail(v_col, v_wpos, n, v_opos, u_toon > 0.5 ? 8.0 : v_mat);
     vec3 light = mix(u_ground, u_sky, n.y * 0.5 + 0.5);
     float sh = u_shadow_on > 0.5 ? shadow_at() : 1.0;
     float ndl = dot(n, -u_sun_dir);
@@ -373,6 +429,7 @@ uniform mat4 u_joints[64];
 in vec3 in_pos;
 in vec3 in_norm;
 in float in_mat;
+in vec3 in_color;
 in vec4 in_joints;
 in vec4 in_weights;
 mat4 skin_matrix() {
@@ -383,7 +440,7 @@ mat4 skin_matrix() {
 
 SKIN_VS = SKIN_HEAD + """
 uniform mat4 u_light_vp;
-uniform vec3 u_pal[16];
+uniform vec4 u_pal[16];
 uniform vec4 u_tint;
 uniform float u_emis;
 out vec3 v_wpos;
@@ -392,12 +449,19 @@ out vec3 v_col;
 out vec4 v_lpos;
 out float v_emis;
 out float v_flag;
+out vec3 v_opos;
+out float v_mat;
 void main() {
-    mat4 M = u_model * skin_matrix();
+    mat4 S = skin_matrix();
+    mat4 M = u_model * S;
+    v_opos = (S * vec4(in_pos, 1.0)).xyz * 2.2;
+    v_mat = 8.0;
     vec4 wp = M * vec4(in_pos, 1.0);
     v_wpos = wp.xyz;
     v_norm = normalize(mat3(M) * in_norm);
-    v_col = mix(u_pal[int(in_mat + 0.5)], u_tint.rgb, u_tint.a);
+    vec4 pal = u_pal[int(in_mat + 0.5)];
+    vec3 base = pal.a > 0.5 ? pal.rgb : in_color;       // couleur choisie (personnalisation) ou celle du modèle
+    v_col = pal.r < -0.5 ? vec3(-1.0) : mix(base, u_tint.rgb, u_tint.a);
     v_emis = u_emis;
     v_flag = 0.0;
     v_lpos = u_light_vp * wp;
@@ -415,7 +479,7 @@ void main() {
 SKIN_OUTLINE_VS = SKIN_HEAD + """
 uniform vec2 u_px;
 uniform vec3 u_cam;
-uniform vec3 u_pal[16];
+uniform vec4 u_pal[16];
 out vec3 v_col;
 void main() {
     mat4 M = u_model * skin_matrix();
@@ -428,7 +492,8 @@ void main() {
     float l = length(d);
     d = l > 1e-6 ? d / l : vec2(0.0);
     c.xy += d * u_px * c.w;
-    v_col = u_pal[int(in_mat + 0.5)];
+    vec4 pal = u_pal[int(in_mat + 0.5)];
+    v_col = pal.a > 0.5 ? pal.rgb : in_color;
     gl_Position = c;
 }
 """

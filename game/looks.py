@@ -123,8 +123,8 @@ def hero_spec(cls_id, look):
             spec[k] = _resolve(v, main, second, spec["skin"])
     r = cl.get("rig")
     if r:
-        spec["rig"] = {"model": r["model"], "palette": _rig_palette(r.get("colors", {}), spec["skin"], hair, main,
-                                                                    second)}
+        spec["rig"] = {"model": r["model"], "weapons": r.get("weapons", {}),
+                       "palette": _rig_palette(r.get("colors", {}), spec["skin"], hair, main, second)}
         for k in r.get("skip", []):
             spec.pop(k, None)
     return spec

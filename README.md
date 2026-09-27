@@ -47,6 +47,17 @@ Côté joueur :
 - un fichier JSON copié dans `%APPDATA%\Cendrespire\data` remplace celui du jeu ;
 - en cas de plantage, le détail est écrit dans `%APPDATA%\Cendrespire\crash.log`.
 
+## Mises à jour automatiques
+
+À chaque lancement, sur l'écran titre, le jeu interroge l'API GitHub (`/repos/elYugen/Cendrespire/releases/latest`). Si la release est plus récente que le jeu, un bandeau propose de l'installer (clic ou touche U) :
+
+1. le code source de la release (zipball) est téléchargé et vérifié (il doit contenir `main.py` et `game/`) ;
+2. l'ancienne version est copiée dans `backup/avant-<version>` ;
+3. `game/` et `data/` sont remplacés, `assets/` est complété, `main.py`, `README.md` et `requirements.txt` sont mis à jour ;
+4. `version.txt` reçoit la nouvelle version, puis le jeu redémarre. En cas d'erreur, l'ancienne version est restaurée.
+
+Les sauvegardes (`saves/`, ou `%APPDATA%\Cendrespire` pour la version installée) et le contenu personnalisé ne sont jamais touchés. La version d'une release est lue dans son tag ou son nom (`alpha2.5`, `v2.5` ou `2.5`). Pensez à ajouter la note `data/updates/<version>.json` dans chaque release. Depuis un dépôt git, le jeu signale la mise à jour sans l'installer (utilisez `git pull`). Si les dépendances Python changent (`requirements.txt`), il faut un nouvel installeur.
+
 ## Commandes
 
 | Touche | Action |
@@ -66,14 +77,16 @@ Côté joueur :
 
 Les commandes sont aussi affichées en jeu : menu Système > Commandes.
 
+Le menu Système > Options règle le volume général, la musique et les effets sonores (enregistrés dans `options.json`, à côté des sauvegardes). Les musiques sont dans `assets/music` : `title` (écran titre), `hub` (campement) et `inside` (tour), aux formats .opus, .ogg, .mp3, .flac ou .wav.
+
 ## Contenu modifiable (dossier `data/`)
 
 Classes, sorts, talents, effets temporaires, artefacts, monstres, boss, anima, enchantements et noms d'étages sont décrits en JSON. Les sorts et les artefacts sont des listes d'effets génériques (projectile, nova, zone, bond, invocation…) exécutées par `game/spells.py`. On peut donc en ajouter sans écrire de code. Les notes de mise à jour (`data/updates/<version>.json`) s'affichent dans le menu Système. Le format complet est documenté dans [data/LISEZMOI.md](data/LISEZMOI.md).
 
 ## Boucle de jeu
 
-1. **Campement** : une clairière au pied de la tour, avec feu de camp, chemins, lanternes et lucioles. On y trouve le marchand (équipement et artefacts), la forgeronne (améliorations jusqu'à +5), la couturière (changer d'apparence) et le portail de la Tour.
-2. **Étage** : un vaste donjon 3D généré aléatoirement (56 à 66 salles). Chaque étage a son ambiance : Geôles, Ossuaire, Forges avec lave, Sanctuaire, Cryptes de givre… On y trouve des plaques à pointes et des salles cachées derrière des murs fissurés (trésor ou autel d'anima).
+1. **Cendreval** : une ville fortifiée au pied de la tour (remparts, portes, place à la fontaine, marché, forge, taverne, quartiers d'habitation). On y trouve Gorvan le marchand (équipement et artefacts), Hilda la forgeronne (améliorations jusqu'à +5), Ysolde la couturière (changer d'apparence), des habitants à qui parler et, au-delà de la porte nord, le grand portail de la Tour. Le plan complet est décrit dans `game/town.py`.
+2. **Étage** : un vaste donjon 3D généré aléatoirement (56 à 66 salles), sur 20 étages au total, chacun avec son ambiance et son mobilier. Chaque étage a son ambiance : Geôles, Ossuaire, Forges avec lave, Sanctuaire, Cryptes de givre… On y trouve des plaques à pointes et des salles cachées derrière des murs fissurés (trésor ou autel d'anima).
 3. **Sceau du gardien** : il se brise quand 35 % des créatures de l'étage (90 au plus) sont tuées. L'arène se referme alors sur le gardien. Chacun des 8 étages a son gardien : le Boucher, Arachné, la Liche, la Sentinelle Radieuse, le Golem, les Jumeaux d'Ombre, la Mère des Cendres et le Seigneur.
 4. **Victoire** : l'étage suivant est débloqué, le gardien laisse du butin (objet légendaire garanti à la première victoire) et un portail ramène au campement.
 5. **Mort** : on revient au campement en perdant la moitié de l'or ramassé pendant l'ascension. L'équipement et l'expérience sont conservés.
@@ -109,7 +122,8 @@ Classes, sorts, talents, effets temporaires, artefacts, monstres, boss, anima, e
   - zones d'attaque dessinées au sol ;
   - particules ;
   - murs qui s'effacent quand ils masquent le héros ;
-  - personnages : contour cartoon (coque inversée, épaisseur constante à l'écran), ombrage en paliers et liseré de lumière ;
+  - personnages : ombrage en paliers et liseré de lumière (le contour cartoon existe encore, désactivé : `OUTLINES` dans renderer.py) ;
+  - textures procédurales calculées par le shader (aucune image) : dalles de pierre, briques, herbe, terre, grain des personnages ;
   - héros et PNJ animés : personnages glTF de [Quaternius](https://quaternius.com) (domaine public), animés sur la carte graphique (squelette de 62 os). Couleurs issues de la personnalisation, équipement de classe fixé aux os (main, tête, bassin) ;
   - modèles importés (.obj/.mtl) de Kenney (CC0) :
     - [Nature Kit](https://kenney.nl/assets/nature-kit) : arbres, buissons, rochers, fleurs ;
@@ -148,7 +162,8 @@ game/allies.py       serviteurs (squelettes, feu follet)
 game/fx.py           particules 3D, zones au sol, attaques annoncées
 game/world.py        scène de jeu : logique, combat, rendu 3D, interface en jeu
 game/tower.py        un étage de la tour
-game/hub.py          le campement
+game/hub.py          la ville (Cendreval) : PNJ, échoppes, portail
+game/town.py         plan de la ville : rues, bâtiments, mobilier, personnages
 game/hud.py          HUD façon BotW
 game/panels.py       menus (inventaire avec héros 3D, personnage, système, marchand, forge…)
 game/scenes.py       écran titre façon BotW (illustration, logo), chargement, création de personnage
@@ -157,6 +172,7 @@ assets/              illustration du menu principal, polices, modèles 3D (asset
 game/r3d/            moteur 3D : renderer, shaders, caméra, maillages, modèles, niveaux, décor du campement
 game/r3d/objmodels.py  chargeur OBJ/MTL et bibliothèque de modèles importés
 game/r3d/skinned.py  chargeur glTF (.glb) : squelette, animations, poses
+game/r3d/city.py     décor 3D de la ville (remparts, maisons, marché, forge, taverne, portail)
 game/r3d/rig.py      héros et PNJ animés : choix de l'animation, équipement fixé aux os
 game/nav.py          déplacement au clic : recherche de chemin A*
 installer/           construction de l'installeur (build.py, script NSIS, icône, vérification du contenu)

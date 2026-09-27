@@ -1,13 +1,14 @@
-"""Le campement au pied de la tour : marchand, forgeronne, portail vers les étages."""
+"""Cendreval, la ville au pied de la tour : marchand, forgeronne, couturière, habitants, portail vers les étages."""
 import math
 import random
 
 from . import sfx
+from . import town as T
 from .dungeon import build_hub
-from .entities import NPC, Portal, Campfire, Prop
+from .entities import NPC, Portal, Prop
 from .items import generate_item, generate_artifact
 from .panels import MerchantPanel, ForgePanel, PortalPanel
-from .r3d import camp, models, objmodels
+from .r3d import models, objmodels
 from .wardrobe import WardrobePanel
 from .settings import TILE, WHITE
 from .world import World
@@ -22,41 +23,50 @@ class HubScene(World):
         super().__init__(game, player, d, "camp", random.Random(4))
         self.env.sky = ((0.10, 0.12, 0.25), (0.32, 0.26, 0.42), (0.55, 0.36, 0.34), (0.8, 0.9, 0.5), (0.5, 0.35, 0.3))
         self.env.fog_col = (0.16, 0.14, 0.24)
-        self.env.fog = (15.0, 26.0)
+        self.env.fog = (16.0, 28.0)
         self.env.sun_dir = (-0.6, -0.8, -0.25)
         player.reset_run()
-        player.x, player.y = 17.5 * TILE, 13.5 * TILE
+        player.x, player.y = T.SPAWN[0] * TILE, T.SPAWN[1] * TILE
+        player.facing = -math.pi / 2
         self.cam.tx, self.cam.ty = player.x, player.y
-        self.interactables.append(NPC(6.4 * TILE, 10.5 * TILE, "Gorvan le Marchand", "Commercer",
-                                      models.NPC_SPECS["marchand"], self.open_merchant, facing=0.3))
-        self.interactables.append(NPC(28.9 * TILE, 10.6 * TILE, "Hilda la Forgeronne", "Forge",
-                                      models.NPC_SPECS["forgeronne"], self.open_forge, facing=2.47, work=True))
-        self.interactables.append(NPC(11.4 * TILE, 15.1 * TILE, "Ysolde la Couturière", "Changer d'apparence",
-                                      models.NPC_SPECS["couturiere"], self.open_wardrobe, facing=-0.6))
-        self.interactables.append(Prop(8.4 * TILE, 16.1 * TILE, models.tent, (120, 60, 120), -0.4))
-        self.interactables.append(Portal(17 * TILE, 6.4 * TILE, "Entrer dans la Tour", self.open_portal))
-        self.fire = Campfire(17.5 * TILE, 10.5 * TILE)
-        self.interactables.append(self.fire)
-        self.interactables.append(Prop(5 * TILE, 8.2 * TILE, models.tent, (170, 70, 60), 0.4))
-        if not objmodels.family("camp"):
-            self.interactables.append(Prop(8.2 * TILE, 12.8 * TILE, models.crate))
-            self.interactables.append(Prop(7.4 * TILE, 12.9 * TILE, models.barrel))
-        self.interactables.append(Prop(32.6 * TILE, 7.9 * TILE, models.tent, (70, 90, 150), 2.6))
+        mx, my, mf = T.MERCHANT
+        self.interactables.append(NPC(mx * TILE, my * TILE, "Gorvan le Marchand", "Commercer",
+                                      models.NPC_SPECS["marchand"], self.open_merchant, facing=mf))
+        sx, sy, sf = T.SMITH
+        self.interactables.append(NPC(sx * TILE, sy * TILE, "Hilda la Forgeronne", "Forge",
+                                      models.NPC_SPECS["forgeronne"], self.open_forge, facing=sf, work=True))
+        tx, ty, tf = T.TAILOR
+        self.interactables.append(NPC(tx * TILE, ty * TILE, "Ysolde la Couturière", "Changer d'apparence",
+                                      models.NPC_SPECS["couturiere"], self.open_wardrobe, facing=tf))
+        px, pz = T.PORTAL
+        grand = bool(objmodels.family("dungeon"))
+        self.interactables.append(Portal(px * TILE, (pz + (0.05 if grand else 0.3)) * TILE, "Entrer dans la Tour",
+                                         self.open_portal, (150, 110, 255), grand=grand))
+        self.add_villagers()
         if not objmodels.family("camp"):      # décor procédural si les modèles importés manquent
-            self.interactables.append(Prop(27.6 * TILE, 11.6 * TILE, models.anvil))
-            self.interactables.append(Prop(26.6 * TILE, 12.8 * TILE, models.barrel))
-        self.obstacles = [(x * TILE, z * TILE, r * TILE) for x, z, r in camp.OBSTACLES]
+            self.interactables.append(Prop(T.ANVIL[0] * TILE, T.ANVIL[1] * TILE, models.anvil))
+        self.obstacles = [(x * TILE, y * TILE, r * TILE) for x, y, r in T.obstacles()]
         lvl = max(1, player.max_floor)
         stock = [generate_item(lvl, cls_id=player.cls_id, tier=random.choice([0, 1, 1])) for _ in range(7)]
         stock += [generate_artifact(lvl, random.choice(["commun", "magique", "rare"])) for _ in range(2)]
         self.shop_stock = stock
         self._last_hit = 0.0
         self.save()
-        self.show_banner("Le Campement", message or "Au pied de Cendrespire", WHITE, 5)
+        sfx.music("hub")
+        self.show_banner(T.NAME, message or "La ville au pied de Cendrespire", WHITE, 5)
         self.message("Échap : menu · les touches sont dans Système > Commandes", (220, 215, 200), 8)
 
+    def add_villagers(self):
+        """Habitants de la ville : animés, ils ont chacun une réplique."""
+        for x, y, facing, name, model, pal, line in T.VILLAGERS:
+            spec = dict(detailed=True, body=(120, 100, 80), skin=(220, 180, 140), rig={"model": model, "palette": pal})
+
+            def talk(world, name=name, line=line):
+                world.message(f"{name} : « {line} »", (235, 225, 200), 6)
+            self.interactables.append(NPC(x * TILE, y * TILE, name, "Parler", spec, talk, facing=facing))
+
     def hud_title(self):
-        return "Le Campement", ""
+        return T.NAME, ""
 
     def open_merchant(self, world):
         self.left_panel = MerchantPanel(self)
@@ -81,7 +91,8 @@ class HubScene(World):
     def enter_tower(self, floor):
         from .tower import TowerScene
         self.save()
-        self.game.change_scene(TowerScene(self.game, self.player, floor))
+        from .data import floor_name
+        self.game.load_scene(lambda: TowerScene(self.game, self.player, floor), f"Étage {floor}", floor_name(floor))
 
     def update_extra(self, dt):
         p = self.player
@@ -89,30 +100,30 @@ class HubScene(World):
             near = any(isinstance(o, NPC) and math.hypot(o.x - p.x, o.y - p.y) < 140 for o in self.interactables)
             if not near:
                 self.close_panels()
-        f = self.fire
-        if random.random() < 0.7:
-            self.particles.emit(f.x + random.uniform(-8, 8), f.y + random.uniform(-8, 8),
-                                random.choice([(255, 140, 40), (255, 200, 90)]), n=1, speed=12, life=0.9, size=4,
-                                up=110, z=12, zs=0)
-        if random.random() < 0.08:
-            self.particles.emit(f.x, f.y, (255, 170, 60), n=1, speed=30, life=2.0, size=2, up=160, z=30, zs=0.2)
-        # forge : étincelles quand le marteau frappe, fumée de la cheminée
+        # fontaine : gerbe d'eau au sommet de la statue
+        fx, fy = T.FOUNTAIN
+        if random.random() < 0.6:
+            a = random.random() * math.tau
+            self.particles.emit(fx * TILE + math.cos(a) * 6, fy * TILE + math.sin(a) * 6, (170, 215, 255), n=1,
+                                speed=30, life=0.7, size=3, glow=False, gravity=260, up=110, z=64)
+        # forge : étincelles quand le marteau frappe, fumée de la cheminée du four
+        ax, ay = T.ANVIL
         hit = math.sin(self.time * 2.6)
         if hit < 0 <= self._last_hit:
-            self.particles.emit(27.6 * TILE, 11.6 * TILE, (255, 190, 90), n=7, speed=70, life=0.5, size=2, up=90,
+            self.particles.emit(ax * TILE, ay * TILE, (255, 190, 90), n=7, speed=70, life=0.5, size=2, up=90,
                                 z=16, zs=0.3)
-            if math.hypot(p.x - 27.6 * TILE, p.y - 11.6 * TILE) < 260:
+            if math.hypot(p.x - ax * TILE, p.y - ay * TILE) < 260:
                 sfx.play("hit", 0.08)
         self._last_hit = hit
-        fx, fz = camp.FURNACE
+        kx, ky = T.FURNACE
         if random.random() < 0.25:
-            self.particles.emit((fx + 0.15) * TILE, (fz + 0.1) * TILE, random.choice([(90, 88, 92), (120, 116, 118)]),
+            self.particles.emit((kx + 0.15) * TILE, (ky + 0.1) * TILE, random.choice([(90, 88, 92), (120, 116, 118)]),
                                 n=1, speed=6, life=2.6, size=7, glow=False, up=40, z=88, zs=0.1)
 
     def render_extra(self, fr):
         # Cendrespire, la tour qui domine le campement
         t = self.time
-        tx, ty = 17 * TILE, 3 * TILE
+        tx, ty = T.TOWER[0] * TILE, T.TOWER[1] * TILE
         fr.part("cylinder", (tx, ty, 200), (95, 0, 0), (0, 0, 200), (0, 95, 0), (70, 66, 74))
         fr.part("cylinder", (tx, ty, 420), (80, 0, 0), (0, 0, 22), (0, 80, 0), (56, 52, 60))
         for i in range(10):
@@ -130,15 +141,16 @@ class HubScene(World):
             fr.glow(tx + math.cos(a) * r, ty + math.sin(a) * r, 470 + 30 * math.sin(t * 1.3 + i), 60, (255, 60, 40), 0.7)
         fr.light(tx, ty + 120, 60, 420, (255, 60, 40), 0.9)
         # bouche du four de la forge
-        fx, fz = camp.FURNACE
+        fx, fz = T.FURNACE
         k = 1 + 0.15 * math.sin(t * 9) + 0.08 * math.sin(t * 23)
         fr.glow((fx - 0.5) * TILE, fz * TILE, 13, 22 * k, (255, 120, 40), 0.9)
         fr.light((fx - 0.8) * TILE, fz * TILE, 20, 220 * k, (255, 120, 50), 1.3)
-        # lucioles au-dessus de l'herbe
-        for i in range(26):
+        # lucioles au-dessus des jardins
+        for i in range(32):
             ph = i * 2.399
-            x = (4 + (i * 7.3) % 29 + 1.2 * math.sin(t * 0.3 + ph)) * TILE
-            y = (5 + (i * 3.7) % 11 + 1.0 * math.cos(t * 0.23 + ph * 1.3)) * TILE
+            gx, gy, gw, gh = T.FIREFLIES[i % len(T.FIREFLIES)]
+            x = (gx + (i * 7.3) % gw + 1.2 * math.sin(t * 0.3 + ph)) * TILE
+            y = (gy + (i * 3.7) % gh + 1.0 * math.cos(t * 0.23 + ph * 1.3)) * TILE
             a = max(0.0, math.sin(t * 1.7 + ph * 3))
             if a > 0.05:
                 fr.glow(x, y, 26 + 14 * math.sin(t * 0.9 + ph), 7, (200, 255, 120), 0.8 * a)

@@ -1,4 +1,5 @@
-"""Décor statique du campement : forêt de pins, bancs, étal, forge, puits, lanternes, coin de la couturière.
+"""Pièces de décor réutilisables (forêt, arbres, maisons modulaires, étal, forge, puits, lanternes, armoire...),
+assemblées dans la ville par city.py.
 
 Coordonnées du maillage statique : (x, hauteur, z) en tuiles, z étant l'axe y logique de la carte.
 Le drapeau 1.0 rend la pièce « effaçable » quand elle masque le héros (comme les murs).
@@ -8,32 +9,6 @@ import math
 from . import objmodels
 
 # maisons du hameau, sur les cases de lisière (non praticables) : (x, z, modules, étages, rotation, toit)
-HOUSES = [(3.4, 2.5, 2, 2, 0.0, (0.62, 0.24, 0.2)), (10.6, 1.4, 1, 1, 0.0, (0.30, 0.50, 0.46)),
-          (30.9, 2.3, 2, 1, 0.0, (0.30, 0.50, 0.46)), (1.2, 10.5, 2, 1, -math.pi / 2, (0.62, 0.24, 0.2))]
-# obstacles ronds du décor (x, z, rayon) en tuiles : le héros et les monstres les contournent
-OBSTACLES = [(8.2, 10.5, 0.7), (4.7, 13.2, 0.6), (27.6, 11.6, 0.35), (23.6, 13.7, 0.55), (5.0, 8.2, 0.8),
-             (32.6, 7.9, 0.8), (7.6, 12.85, 0.45), (26.4, 12.9, 0.3)]
-
-
-def house_tiles():
-    """Cases occupées par les maisons (le talus et les arbres n'y sont pas dessinés)."""
-    tiles = set()
-    for x, z, n, _fl, rot, _roof in HOUSES:
-        hl, hw = n * 1.0 + 0.2, 1.2          # demi-longueur et demi-largeur (modules de 2 tuiles)
-        if abs(math.sin(rot)) > 0.5:
-            hl, hw = hw, hl
-        for tx in range(int(x - hl), int(x + hl) + 1):
-            for tz in range(int(z - hw), int(z + hw) + 1):
-                tiles.add((tx, tz))
-    return tiles
-
-
-LANTERNS = [(15.1, 7.9), (19.9, 7.9), (11.0, 9.3), (24.0, 9.3), (13.6, 13.6), (19.9, 13.9)]
-FURNACE = (32.0, 10.6)
-WELL = (23.6, 13.7)
-WARDROBE = (10.0, 15.95)
-MIRROR = (12.9, 15.85)
-
 WOOD = (0.45, 0.31, 0.19)
 DARK_WOOD = (0.30, 0.21, 0.13)
 STONE = (0.50, 0.48, 0.45)
@@ -94,8 +69,10 @@ def forest(mb, d, rng, is_floor):
     W, H = d.w, d.h
     ground = (0.20, 0.30, 0.16)
     # sol de forêt tout autour de la carte (cache le vide)
+    mb.mat = mb.GRASS
     for x0, z0, x1, z1 in ((-14, -12, W + 14, 0), (-14, H, W + 14, H + 12), (-14, 0, 0, H), (W, 0, W + 14, H)):
         mb.box(x0, -0.1, z0, x1, 0.32, z1, ground)
+    mb.mat = 0
     for z in range(-10, H + 10):
         for x in range(-12, W + 12):
             if 0 <= x < W and 0 <= z < H:
@@ -219,49 +196,7 @@ def mirror(mb, x, z):
     mb.box(x - 0.21, 0.4, z - 0.04, x + 0.21, 1.2, z - 0.02, (0.62, 0.8, 0.88))
 
 
-def build(mb, geo, d, rng, tile):
-    fx, fz = 17.5, 10.5
-    benches(mb, fx, fz)
-    for x, z in LANTERNS:
-        lantern(mb, geo, x, z, tile)
-    stall(mb, 8.2, 10.5)
-    furnace(mb, *FURNACE)
-    weapon_rack(mb, 26.2, 8.9)
-    woodpile(mb, 33.0, 12.8, rng)
-    well(mb, *WELL)
-    banner(mb, 14.8, 5.6, (0.62, 0.12, 0.12))
-    banner(mb, 19.2, 5.6, (0.62, 0.12, 0.12))
-    signpost(mb, 16.1, 15.6)
-    wardrobe(mb, *WARDROBE)
-    mirror(mb, *MIRROR)
-    for x, z in ((4.4, 12.3), (5.1, 12.8)):     # bottes de foin
-        log(mb, x, 0.2, z, 0.4, 0.55, 0.2, (0.78, 0.66, 0.34))
-    village(mb, rng)
 
-
-def village(mb, rng):
-    """Hameau et mobilier de camp importés (Fantasy Town Kit, Survival Kit) ; rien si les modèles manquent."""
-    if not objmodels.family("town"):
-        return
-    for x, z, n, fl, rot, roof in HOUSES:
-        house(mb, x, z, n, fl, rot, 2.0, door=0, roof=roof)
-    put = objmodels.put
-    put(mb, "town", 4.7, 0.0, 13.2, 0.5, 1.4, 0.0, "cart")                 # charrette du marchand
-    put(mb, "camp", 7.6, 0.0, 12.85, 0.2, 2.6, 0.0, "barrel")
-    put(mb, "camp", 8.3, 0.0, 12.7, 0.6, 2.4, 0.0, "box-large")
-    put(mb, "camp", 5.6, 0.0, 9.0, 1.1, 2.4, 0.0, "box")
-    put(mb, "camp", 5.4, 0.0, 12.0, 0.0, 2.6, 0.0, "barrel-open")
-    put(mb, "camp", 27.6, 0.0, 11.6, 2.3, 2.3, 0.0, "workbench-anvil")     # forge
-    put(mb, "camp", 26.4, 0.0, 12.9, 0.9, 2.4, 0.0, "barrel")
-    put(mb, "camp", 30.3, 0.0, 12.5, 2.0, 2.2, 0.0, "workbench-grind")
-    put(mb, "camp", 29.8, 0.0, 8.6, 0.4, 2.4, 0.0, "workbench")
-    put(mb, "camp", 29.9, 0.62, 8.6, 1.2, 2.0, 0.0, "tool-hammer")
-    put(mb, "camp", 21.2, 0.0, 12.9, 2.2, 1.8, 0.0, "bedroll")             # couchage près du feu
-    put(mb, "camp", 20.6, 0.0, 8.0, 0.5, 2.0, 0.0, "bedroll-packed")
-    for i in range(6):                                                      # clôture au nord-est
-        put(mb, "town", 21.5 + i, 0.0, 3.25, math.pi / 2, 1.0, 0.0, "fence" if i != 3 else "fence-broken")
-    for i in range(4):                                                      # clôture au nord-ouest
-        put(mb, "town", 8.5 + i, 0.0, 3.25, math.pi / 2, 1.0, 0.0, "fence")
 
 
 
@@ -342,4 +277,3 @@ def _roof(mb, x, z, rot, L, W, H, color):
     # faîtière
     mb.add("cylinder", pt(0, H + rh + th * 0.4, 0), vec(0, W * 0.04, 0), vec(L / 2 + o, 0, 0), vec(0, 0, W * 0.04),
            shade(color, 0.6), 1.0)
-

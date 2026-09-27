@@ -74,7 +74,7 @@ def draw(fr, x, y, z0, facing, spec, state, t, sc=1.0, flash=False, tint_col=Non
     prev = getattr(fr, "outline", False)
     fr.outline = True
     try:
-        _equipment(fr, M3, model, Mw, world, spec, facing, sc, flash, tint_col)
+        _equipment(fr, M3, model, Mw, world, spec, facing, sc, flash, tint_col, state)
     finally:
         fr.outline = prev
     return True
@@ -85,68 +85,58 @@ def _grip_dir(M3, ax, side):
     return M3.norm(M3.add(M3.mul(ax[0], -side), M3.mul(ax[2], 0.4)))
 
 
-def _equipment(fr, M3, model, Mw, world, spec, facing, sc, flash, tint_col):
-    p = M3.Painter(fr, flash, tint_col)
+def _to3(v):
+    return np.array((v[0], v[2], v[1]), dtype="f4")
+
+
+def _hold(fr, name, length, grip, ydir, zdir, tint, emis=0.0):
+    """Place un objet 3D (assets/models/weapons) : poignée en grip, axe Y selon ydir, face Z selon zdir."""
+    prop = skinned.load_prop(name)
+    if prop is None:
+        return False
+    y = _to3(ydir)
+    y /= np.linalg.norm(y) or 1.0
+    z = _to3(zdir)
+    z = z - y * float(np.dot(z, y))
+    z /= np.linalg.norm(z) or 1.0
+    x = np.cross(y, z)
+    k = length * U / prop.length
+    M = np.eye(4, dtype="f4")
+    M[:3, 0], M[:3, 1], M[:3, 2] = x * k, y * k, z * k
+    M[:3, 3] = (grip[0] * U, grip[2] * U, grip[1] * U)
+    fr.skin(prop, M, np.eye(4, dtype="f4")[None], prop.palette(), tint, emis)
+    return True
+
+
+def _equipment(fr, M3, model, Mw, world, spec, facing, sc, flash, tint_col, state="idle"):
+    """Armes et bouclier (modèles 3D importés) dans les mains, et lueurs magiques."""
     f, s = M3.frame_axes(facing)
     bone = {}
-    for name in ("Head", "Head_end", "Wrist.R", "Wrist.L", "Hips", "Fist.R", "Fist.L"):
+    for name in ("Wrist.R", "Wrist.L"):
         i = model.node(name)
         if i >= 0:
             bone[name] = _bone(Mw, world, i)
-    head, head_ax = bone["Head"]
-    top = bone.get("Head_end", bone["Head"])[0]
-    hr = max(3.0, math.dist(head, top) * 0.42)
-    up = M3.norm(M3.add(top, M3.mul(head, -1)))
-    hc = M3.add(head, M3.mul(up, hr * 0.95))
-    if spec.get("helmet"):
-        p.ellipsoid(M3.add(hc, M3.mul(up, hr * 0.3)), f, s, hr * 1.4, hr * 1.4, hr * 1.05, spec["helmet"])
-        p.part("cylinder", M3.add(hc, M3.mul(up, -hr * 0.05)), M3.mul(f, hr * 1.42), M3.mul(up, 0.6 * sc),
-               M3.mul(s, hr * 1.42), M3.tint(spec["helmet"], (60, 50, 40), 0.35))
-    if spec.get("horns"):
-        for side in (-1, 1):
-            hb = M3.add(hc, M3.mul(s, side * hr * 0.85), M3.mul(up, hr * 0.45))
-            mid = M3.add(hb, M3.mul(s, side * 3.0 * sc), M3.mul(up, 1.8 * sc))
-            p.rod(hb, mid, 1.4 * sc, spec["horns"], f)
-            p.rod(mid, M3.add(mid, M3.mul(s, side * 1.3 * sc), M3.mul(up, 4.4 * sc)), 1.4 * sc, spec["horns"], f,
-                  mesh="cone")
-    if spec.get("hat"):
-        h = spec["hat"]
-        p.part("cylinder", M3.add(hc, M3.mul(up, hr * 0.75)), M3.mul(f, 8.5 * sc), M3.mul(up, 0.7 * sc),
-               M3.mul(s, 8.5 * sc), h)
-        p.part("cylinder", M3.add(hc, M3.mul(up, hr * 0.95)), M3.mul(f, 5.0 * sc), M3.mul(up, 0.8 * sc),
-               M3.mul(s, 5.0 * sc), spec.get("trim", h))
-        p.rod(M3.add(hc, M3.mul(up, hr * 0.8)), M3.add(hc, M3.mul(f, -5 * sc), M3.mul(up, hr + 13 * sc)), 4.8 * sc, h,
-              s, mesh="cone")
-    if spec.get("hood"):
-        p.ellipsoid(M3.add(hc, M3.mul(f, -0.8 * sc), M3.mul(up, hr * 0.15)), f, s, hr * 1.08, hr * 1.1, hr * 1.08,
-                    spec["hood"])
-        p.rod(M3.add(hc, M3.mul(f, -4 * sc), M3.mul(up, hr * 0.6)), M3.add(hc, M3.mul(f, -10 * sc), M3.mul(up, hr)),
-              3.2 * sc, spec["hood"], s, mesh="cone")
-    if spec.get("mask"):
-        p.ellipsoid(M3.add(hc, M3.mul(f, hr * 0.62), M3.mul(up, -hr * 0.35)), f, s, hr * 0.55, hr * 0.92, hr * 0.5,
-                    spec["mask"])
-    if spec.get("robe") and "Hips" in bone:
-        hips = bone["Hips"][0]
-        hz = max(6.0, hips[2] + 3 * sc)
-        base = (hips[0], hips[1], 0.0)
-        p.part("frustum", M3.add(base, (0, 0, hz / 2)), M3.mul(f, 9.0 * sc), (0, 0, hz / 2), M3.mul(s, 9.4 * sc),
-               spec["body"])
-        if spec.get("trim"):
-            p.part("frustum", M3.add(base, (0, 0, 1.2 * sc)), M3.mul(f, 9.2 * sc), (0, 0, 1.2 * sc),
-                   M3.mul(s, 9.6 * sc), spec["trim"])
-    kind = spec.get("weapon")
-    if "Wrist.R" in bone:
-        hand, ax = bone["Wrist.R"]
-        grip = M3.add(hand, M3.mul(M3.norm(ax[1]), 2.5 * sc))
-        wdir = _grip_dir(M3, ax, 1)
-        if kind and kind != "bow":
-            M3._weapon(p, fr, spec, grip, f, s, wdir, sc)
-    if "Wrist.L" in bone:
-        hand, ax = bone["Wrist.L"]
-        grip = M3.add(hand, M3.mul(M3.norm(ax[1]), 2.5 * sc))
-        if kind == "bow":
-            M3._bow(p, grip, f, s, sc)
-        if spec.get("shield"):
-            M3._shield(p, spec, grip, f, s, sc)
-        if kind == "daggers":
-            M3._weapon(p, fr, dict(weapon="dagger"), grip, f, s, _grip_dir(M3, ax, -1), sc)
+    tint = (1.0, 1.0, 1.0, 0.65) if flash else ((tint_col[0] / 255, tint_col[1] / 255, tint_col[2] / 255, 0.45)
+                                                if tint_col else (0.0, 0.0, 0.0, 0.0))
+    held = spec.get("rig", {}).get("weapons", {})
+    for side_name, bone_name, side in (("right", "Wrist.R", 1), ("left", "Wrist.L", -1)):
+        item = held.get(side_name)
+        if not item or bone_name not in bone:
+            continue
+        name, length = item[0], item[1] * sc
+        hand, ax = bone[bone_name]
+        grip = M3.add(hand, M3.mul(M3.norm(ax[1]), 2.4 * sc))
+        if name.startswith("shield"):
+            _hold(fr, name, length, M3.add(grip, M3.mul(f, 2.0 * sc)), (0, 0, 1), f, tint)
+            continue
+        if name == "bow":
+            _hold(fr, name, length, grip, M3.norm(M3.add((0, 0, 1), M3.mul(f, 0.25))), M3.mul(s, side), tint)
+            continue
+        wdir = _grip_dir(M3, ax, side)
+        _hold(fr, name, length, grip, wdir, M3.mul(s, side), tint)
+        tip = M3.add(grip, M3.mul(wdir, length * 0.9))
+        if spec.get("orb") and name in ("staff", "scythe"):
+            fr.glow(tip[0], tip[1], tip[2], 13 * sc, spec["orb"], 0.9)
+            fr.light(tip[0], tip[1], tip[2], 120, spec["orb"], 0.7)
+        if spec.get("blade") and name.startswith("sword"):
+            fr.glow(tip[0], tip[1], tip[2], 12 * sc, spec["blade"], 0.5)

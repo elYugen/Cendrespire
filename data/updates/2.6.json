@@ -1,0 +1,19 @@
+{
+  "version": "2.6",
+  "date": "2026-09-27",
+  "title": "Cendreval, la ville au pied de la tour",
+  "sections": [
+    {"name": "Nouvelle ville", "notes": [
+      "Le campement est remplacé par Cendreval, une ville fortifiée entièrement reconstruite.",
+      "Remparts crénelés, tours d'angle, portes nord et sud avec herse.",
+      "Place centrale et sa fontaine, avenue, rue haute, rue du marché et rue basse pavées, lanternes et bannières.",
+      "Quartiers d'habitation avec jardins, arbres et haies : dix-huit bâtiments en tout.",
+      "Marché de Gorvan, forge de Hilda (four, enclume, meule, râtelier), atelier d'Ysolde, taverne « Le Tison » et sa terrasse.",
+      "Esplanade de la tour au-delà de la porte nord, avec le grand portail, ses braseros et deux obélisques.",
+      "Six habitants à qui parler, dont les gardes des portes."
+    ]},
+    {"name": "Interface", "notes": [
+      "Le « N » de la minicarte est retiré."
+    ]}
+  ]
+}

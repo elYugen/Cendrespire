@@ -183,6 +183,201 @@
           "sound": "magic"
         }
       ]
+    },
+    "cor": {
+      "name": "Cor de bataille",
+      "cd": 20,
+      "color": [255, 170, 80],
+      "desc": "+{v}% de dégâts pendant 6 s.",
+      "base": 30,
+      "icon": "shout",
+      "effects": [
+        {
+          "type": "buff",
+          "id": "cor",
+          "duration": 6,
+          "value": "v"
+        },
+        {
+          "type": "fx",
+          "ring": [20, 180, 0.5],
+          "shake": 4,
+          "sound": "roar"
+        }
+      ]
+    },
+    "fiole_sang": {
+      "name": "Fiole de sang",
+      "cd": 22,
+      "color": [220, 40, 50],
+      "desc": "+{v}% de vitesse d'attaque pendant 6 s.",
+      "base": 40,
+      "icon": "drop",
+      "effects": [
+        {
+          "type": "buff",
+          "id": "sang",
+          "duration": 6,
+          "value": "v"
+        },
+        {
+          "type": "fx",
+          "particles": 24,
+          "sound": "potion"
+        }
+      ]
+    },
+    "ecu": {
+      "name": "Écu sacré",
+      "cd": 26,
+      "color": [255, 236, 170],
+      "desc": "Rend 15% de vie et réduit les dégâts subis de {v}% pendant 5 s.",
+      "base": 30,
+      "icon": "shield",
+      "effects": [
+        {
+          "type": "heal",
+          "pct": 15
+        },
+        {
+          "type": "buff",
+          "id": "ecu",
+          "duration": 5,
+          "value": "v"
+        },
+        {
+          "type": "fx",
+          "ring": [60, 10, 0.4],
+          "sound": "levelup"
+        }
+      ]
+    },
+    "meteorite": {
+      "name": "Éclat de météorite",
+      "cd": 16,
+      "color": [255, 120, 40],
+      "desc": "Un météore s'abat sur le curseur ({v}% dégâts d'arme) et embrase le sol.",
+      "base": 260,
+      "icon": "meteor",
+      "effects": [
+        {
+          "type": "blast",
+          "at": "target",
+          "range": 480,
+          "radius": 110,
+          "delay": 0.8,
+          "knock": 80,
+          "style": "meteor",
+          "mult_abs": "v%",
+          "sound": "fire",
+          "then": [
+            {
+              "type": "zone",
+              "at": "target",
+              "kind": "fire",
+              "radius": 90,
+              "duration": 3.0,
+              "tick": 0.5,
+              "mult_abs": 0.3
+            }
+          ]
+        }
+      ]
+    },
+    "chaine": {
+      "name": "Chaînes du geôlier",
+      "cd": 14,
+      "color": [170, 90, 230],
+      "desc": "Maudit les ennemis autour du curseur : +{v}% de dégâts subis, ralentis 6 s.",
+      "base": 30,
+      "icon": "curse",
+      "effects": [
+        {
+          "type": "curse",
+          "at": "target",
+          "range": 420,
+          "radius": 160,
+          "duration": 6,
+          "amp": 30,
+          "slow": 3.0,
+          "sound": "ice"
+        }
+      ]
+    },
+    "rune_piege": {
+      "name": "Rune explosive",
+      "cd": 10,
+      "color": [120, 220, 255],
+      "desc": "Pose une rune qui explose au contact ({v}% dégâts d'arme).",
+      "base": 240,
+      "icon": "trap",
+      "effects": [
+        {
+          "type": "trap",
+          "range": 300,
+          "radius": 120,
+          "knock": 80,
+          "mult_abs": "v%",
+          "sound": "click"
+        }
+      ]
+    },
+    "phylactere": {
+      "name": "Phylactère d'ossements",
+      "cd": 28,
+      "color": [140, 255, 170],
+      "desc": "Lève 2 squelettes alliés pendant 15 s ({v}% dégâts d'arme).",
+      "base": 45,
+      "icon": "skull",
+      "effects": [
+        {
+          "type": "summon",
+          "minion": "skeleton",
+          "count": 2,
+          "cap": 4,
+          "duration": 15,
+          "mult_abs": "v%",
+          "sound": "magic"
+        }
+      ]
+    },
+    "tempete": {
+      "name": "Tambour de tempête",
+      "cd": 18,
+      "color": [150, 200, 255],
+      "desc": "Onde de choc autour de vous ({v}% dégâts d'arme), repousse et étourdit.",
+      "base": 160,
+      "icon": "quake",
+      "effects": [
+        {
+          "type": "nova",
+          "radius": 200,
+          "knock": 140,
+          "stun": 1.0,
+          "mult_abs": "v%",
+          "ring_color": [170, 210, 255],
+          "sound": "explosion",
+          "shake": 6
+        }
+      ]
+    },
+    "dague_ombre": {
+      "name": "Dague de l'ombre",
+      "cd": 9,
+      "color": [170, 110, 255],
+      "desc": "Apparaît derrière l'ennemi le plus proche du curseur et le frappe ({v}% dégâts d'arme).",
+      "base": 250,
+      "icon": "shadow",
+      "effects": [
+        {
+          "type": "shadowstep",
+          "range": 420,
+          "crit_bonus": 40,
+          "mult_abs": "v%",
+          "sound": "hit",
+          "fail_text": "Aucune cible"
+        }
+      ]
     }
   }
 }

@@ -6,7 +6,7 @@ import random
 
 import pygame
 
-from . import looks, save, sfx, ui, updates
+from . import looks, save, sfx, ui, updater, updates
 from .data import CLASSES, SPELLS, ATTR_NAMES, ATTRS
 from .entities import Player
 from .r3d import models
@@ -86,7 +86,10 @@ def draw_logo(surf, cx, cy, a=255, width=620):
 class TitleScene(Scene):
     def __init__(self, game, skip_intro=False):
         super().__init__(game)
+        sfx.music("title")
         self.static_mesh = None
+        updater.check()
+        self.upd_t = 0.0
         self.saves = save.list_saves()
         self.phase = "menu" if skip_intro else "press"
         self.t = 0.0
@@ -105,12 +108,61 @@ class TitleScene(Scene):
     def start(self, data):
         from .hub import HubScene
         p = Player(data)
-        self.game.change_scene(HubScene(self.game, p, f"Bon retour, {p.name}"))
+        self.game.load_scene(lambda: HubScene(self.game, p, f"Bon retour, {p.name}"), "Cendreval")
+
+    # ------------------------------------------------------------------ mise à jour
+    def update_box(self):
+        return pygame.Rect(SCREEN_W // 2 - 260, 24, 520, 64)
+
+    def update_click(self, pos=None):
+        st = updater.state["status"]
+        if st == "available" and not updater.is_dev_checkout() and (pos is None or self.update_box().collidepoint(pos)):
+            sfx.play("seal", 0.6)
+            updater.apply()
+            return True
+        return False
+
+    def draw_update(self, surf):
+        st = updater.state
+        s = st["status"]
+        if s not in ("available", "downloading", "installing", "done", "failed"):
+            return
+        r = self.update_box()
+        k = 0.5 + 0.5 * math.sin(self.t * 3)
+        ui.botw_box(surf, r, 215, SHEIKAH if s == "available" else UI_LINE, radius=10, fill=(10, 26, 34))
+        latest = st["latest"] or "?"
+        if s == "available":
+            title = f"Mise à jour {latest} disponible (version actuelle {updater.current_version()})"
+            sub = ("Dépôt git : récupérez-la avec « git pull »." if updater.is_dev_checkout()
+                   else "Cliquez ici ou appuyez sur U pour l'installer — vos sauvegardes sont conservées.")
+            ui.draw_text(surf, title, (r.centerx, r.y + 20), 17, (170, 235, 255), "bold", anchor="center")
+            ui.draw_text(surf, sub, (r.centerx, r.y + 44), 13, (214, 218, 218), anchor="center",
+                         alpha=int(160 + 95 * k))
+        elif s in ("downloading", "installing"):
+            label = "Téléchargement" if s == "downloading" else "Installation"
+            ui.draw_text(surf, f"{label} de la version {latest}…", (r.centerx, r.y + 20), 17, WHITE, "bold",
+                         anchor="center")
+            bar = pygame.Rect(r.x + 30, r.y + 40, r.w - 60, 8)
+            ui.rect(surf, (0, 0, 0, 200), bar, 0, 4)
+            ui.rect(surf, SHEIKAH, (bar.x, bar.y, max(6, bar.w * st["progress"]), bar.h), 0, 4)
+        elif s == "done":
+            ui.draw_text(surf, f"Version {latest} installée : redémarrage…", (r.centerx, r.y + 32), 18,
+                         (150, 255, 170), "bold", anchor="center")
+        else:
+            ui.draw_text(surf, "La mise à jour a échoué : l'ancienne version est conservée.", (r.centerx, r.y + 20),
+                         16, (255, 150, 130), "bold", anchor="center")
+            ui.draw_text(surf, (st["error"] or "")[:90], (r.centerx, r.y + 44), 12, (214, 218, 218), anchor="center")
 
     def item_rects(self):
         return [pygame.Rect(SCREEN_W // 2 - 150, 392 + i * 54, 300, 44) for i in range(len(self.items))]
 
     def handle_event(self, e):
+        if updater.state["status"] in ("downloading", "installing", "done"):
+            return                     # le jeu attend la fin de la mise à jour
+        if e.type == pygame.MOUSEBUTTONDOWN and e.button == 1 and self.update_click(e.pos):
+            return
+        if e.type == pygame.KEYDOWN and e.key == pygame.K_u and self.update_click():
+            return
         if self.phase == "press":
             if e.type in (pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN) and self.t > 0.6:
                 self.phase = "menu"
@@ -141,6 +193,10 @@ class TitleScene(Scene):
         self.t += dt
         if self.phase == "menu":
             self.menu_t = min(1.0, self.menu_t + dt * 2.5)
+        if updater.state["status"] == "done":
+            self.upd_t += dt
+            if self.upd_t > 1.6:
+                updater.restart()
 
     def draw_ui(self, surf):
         draw_background(surf, self.t)
@@ -175,7 +231,8 @@ class TitleScene(Scene):
                         f"étage {d.get('max_floor', 1)}")
                 ui.draw_text(surf, info, (SCREEN_W / 2, SCREEN_H - 34), 14, (214, 208, 190), anchor="center",
                              alpha=int(220 * e))
-        for i, line in enumerate((f"Ver. {updates.current_version()}", TITLE, "© 2026 Saku Game")):
+        self.draw_update(surf)
+        for i, line in enumerate((f"Ver. {updater.current_version()}", TITLE, "© 2026 Saku Game")):
             ui.draw_text(surf, line, (SCREEN_W - 30, SCREEN_H - 70 + i * 19), 13, (226, 222, 204), anchor="topright",
                          alpha=190)
 
@@ -253,7 +310,7 @@ class LoadScene(Scene):
                 from .hub import HubScene
                 sfx.play("click")
                 p = Player(d)
-                self.game.change_scene(HubScene(self.game, p, f"Bon retour, {p.name}"))
+                self.game.load_scene(lambda: HubScene(self.game, p, f"Bon retour, {p.name}"), "Cendreval")
                 return
         if e.type == pygame.KEYDOWN and e.key == pygame.K_ESCAPE:
             self.game.change_scene(TitleScene(self.game, skip_intro=True))
@@ -363,7 +420,8 @@ class CreateScene(Scene):
         save.save_data(data)
         from .hub import HubScene
         p = Player(data)
-        self.game.change_scene(HubScene(self.game, p, f"Bienvenue, {p.name}. La Tour vous attend."))
+        self.game.load_scene(lambda: HubScene(self.game, p, f"Bienvenue, {p.name}. La Tour vous attend."),
+                             "Cendreval", "La ville au pied de Cendrespire")
 
     def handle_event(self, e):
         if self.go.handle(e) or self.back.handle(e):
@@ -497,3 +555,115 @@ class CreateScene(Scene):
             ui.draw_text(surf, self.error, (SCREEN_W - 40, SCREEN_H - 100), 15, RED, "bold", anchor="bottomright")
         self.go.draw(surf)
         self.back.draw(surf)
+
+
+# =========================================================================== écran de démarrage et chargements
+SPLASH_FILE = "sakugame.png"
+TIPS = [
+    "Cliquez sur un ennemi pour l'attaquer : votre héros s'en approche tout seul.",
+    "La roulade (Espace) rend invulnérable pendant un court instant.",
+    "Les murs fissurés cachent des salles secrètes : trésors et autels d'anima.",
+    "Les plaques à pointes rougeoient juste avant de jaillir.",
+    "Un seul exemplaire de chaque artefact peut être équipé.",
+    "La forgeronne améliore vos objets jusqu'à +5.",
+    "Les gardiens changent de tactique quand ils sont enragés, à la moitié de leur vie.",
+    "Les pylônes de la Sentinelle doivent être détruits pour percer son bouclier.",
+    "Brisez le sceau du gardien en éliminant les créatures de l'étage.",
+    "Réglez le volume de la musique dans Système > Options.",
+    "Vingt étages vous séparent du Sommet de Cendrespire.",
+]
+
+
+class SplashScene(Scene):
+    """Logo Sakugame au lancement (fondu), puis l'écran titre. Toute touche ou clic passe l'animation."""
+    DUR = 3.2
+
+    def __init__(self, game):
+        super().__init__(game)
+        self.static_mesh = None
+        self.t = 0.0
+        self.done = False
+        try:
+            img = pygame.image.load(os.path.join(ASSETS_DIR, SPLASH_FILE))
+            self.logo = img.convert() if pygame.display.get_surface() else img
+        except (pygame.error, FileNotFoundError):
+            self.logo = None
+        self.scaled = None
+
+    def finish(self):
+        if not self.done:
+            self.done = True
+            self.game.change_scene(TitleScene(self.game))
+
+    def handle_event(self, e):
+        if e.type in (pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN) and self.t > 0.3:
+            self.finish()
+
+    def update(self, dt):
+        self.t += dt
+        if self.t >= self.DUR or self.logo is None:
+            self.finish()
+
+    def draw_ui(self, surf):
+        W, H = surf.get_size()
+        surf.fill((0, 0, 0, 255))
+        if self.logo is None:
+            return
+        size = int(min(W, H) * 0.62)
+        if self.scaled is None or self.scaled.get_width() != size:
+            self.scaled = pygame.transform.smoothscale(self.logo, (size, size))
+        a = max(0.0, min(1.0, self.t / 0.8, (self.DUR - self.t) / 0.7))
+        img = self.scaled.copy()
+        img.set_alpha(int(255 * a))
+        surf.blit(img, (W // 2 - size // 2, H // 2 - size // 2))
+
+
+class LoadingScene(Scene):
+    """Écran de chargement : illustration, lieu de destination, conseil, barre animée. La scène suivante est
+    construite pendant que cet écran est affiché, puis on y passe."""
+    MIN_TIME = 0.9
+
+    def __init__(self, game, factory, title="", subtitle=""):
+        super().__init__(game)
+        self.static_mesh = None
+        self.factory, self.title, self.subtitle = factory, title, subtitle
+        self.t = 0.0
+        self.frames = 0
+        self.result = None
+        self.tip = random.choice(TIPS)
+
+    def handle_event(self, e):
+        pass
+
+    def update(self, dt):
+        self.t += dt
+        self.frames += 1
+        if self.result is None and self.frames >= 3:        # l'écran a été affiché : on construit la scène
+            self.result = self.factory()
+        if self.result is not None and self.t >= self.MIN_TIME:
+            self.game.change_scene(self.result)
+            self.result = False
+
+    def draw_ui(self, surf):
+        draw_background(surf, self.t + 40)
+        ui.veil(surf, (4, 8, 12), 175)
+        cy = SCREEN_H / 2 - 40
+        if self.subtitle:
+            ui.draw_text(surf, self.subtitle, (SCREEN_W / 2, cy - 38), 17, (214, 208, 190), anchor="center")
+        r = ui.draw_text(surf, self.title or "Chargement", (SCREEN_W / 2, cy), 42, WHITE, "title", anchor="center")
+        for d in (-1, 1):
+            x0 = SCREEN_W / 2 + d * (r.w / 2 + 18)
+            ui.line(surf, (214, 190, 132), (x0, cy + 2), (x0 + d * 150, cy + 2), 1)
+            ui.circle(surf, (214, 190, 132), (x0, cy + 2), 2.5)
+        bar = pygame.Rect(SCREEN_W / 2 - 180, cy + 52, 360, 4)
+        ui.rect(surf, (255, 255, 255, 40), bar, 0, 2)
+        w = 90
+        x = bar.x + (bar.w - w) * (0.5 + 0.5 * math.sin(self.t * 3.2))
+        ui.rect(surf, (214, 190, 132), (x, bar.y, w, bar.h), 0, 2)
+        ui.draw_wrapped(surf, self.tip, SCREEN_W / 2, SCREEN_H - 110, 760, 16, (214, 218, 218), anchor="midtop")
+        # braises qui tournent (indicateur d'activité)
+        for i in range(8):
+            a = self.t * 3 + i * math.tau / 8
+            ui.circle(surf, (255, 140 + i * 10, 60, int(60 + 24 * i)),
+                      (SCREEN_W - 70 + math.cos(a) * 18, SCREEN_H - 60 + math.sin(a) * 18), 3)
+

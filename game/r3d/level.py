@@ -4,7 +4,7 @@ import random
 
 from ..dungeon import WALL, FLOOR, BARRIER
 from ..settings import TILE
-from . import camp, objmodels
+from . import camp, city, dungeon_kit, objmodels
 from .meshes import MeshBuilder
 
 # Ambiances : couleurs du sol / des murs, torches, lumière
@@ -28,14 +28,91 @@ THEMES = {
     "camp": dict(floor=(86, 132, 62), alt=(118, 96, 64), wall=(122, 116, 106), top=(90, 140, 64), torch=(255, 160, 80),
                  sky=(0.36, 0.38, 0.5), ground=(0.16, 0.16, 0.14), sun=(0.42, 0.44, 0.58)),
 }
+# mobilier par ambiance : (famille, modèle, poids) — familles : props (Mini Dungeon), grave (Graveyard Kit)
+_P = {
+    "prison": [("props", "barrel", 3), ("props", "table", 1), ("props", "chair", 2), ("props", "wood-support", 2),
+               ("props", "pot", 2), ("props", "stones", 1)],
+    "bones": [("grave", "coffin-old", 2), ("grave", "urn-round", 3), ("grave", "candle-multiple", 3),
+              ("grave", "debris", 2), ("grave", "gravestone-broken", 1)],
+    "forge": [("props", "barrel", 3), ("props", "wood-structure", 2), ("grave", "fire-basket", 3),
+              ("props", "rocks", 2), ("props", "stones", 2)],
+    "temple": [("grave", "altar-stone", 1), ("props", "column", 3), ("props", "banner", 2),
+               ("grave", "candle-multiple", 3), ("grave", "pillar-obelisk", 1)],
+    "crypt": [("grave", "gravestone-round", 3), ("grave", "gravestone-cross", 2), ("grave", "coffin", 2),
+              ("grave", "lantern-candle", 2), ("grave", "cross-column", 1)],
+    "cave": [("props", "rocks", 4), ("props", "stones", 3), ("grave", "rocks-tall", 2), ("grave", "debris", 2)],
+    "hall": [("props", "banner", 3), ("props", "column", 2), ("grave", "fire-basket", 2), ("props", "table", 1),
+             ("props", "chair", 1)],
+    "throne": [("props", "column", 3), ("props", "banner", 3), ("grave", "fire-basket", 2),
+               ("grave", "pillar-obelisk", 1)],
+    "mine": [("props", "wood-support", 4), ("props", "wood-structure", 2), ("props", "barrel", 2),
+             ("props", "rocks", 2), ("grave", "debris-wood", 2)],
+    "library": [("props", "table", 3), ("props", "chair", 3), ("grave", "candle", 3), ("props", "pot", 1),
+                ("grave", "bench-damaged", 1)],
+    "garden": [("grave", "gravestone-decorative", 2), ("grave", "urn-round", 2), ("props", "rocks", 2),
+               ("grave", "bench-damaged", 1), ("grave", "rocks-tall", 1)],
+    "necro": [("grave", "gravestone-wide", 2), ("grave", "pillar-obelisk", 2), ("grave", "coffin", 2),
+              ("grave", "candle-multiple", 2), ("grave", "column-large", 1)],
+}
+
+
+def _theme(floor, alt, wall, top, torch, sky, ground, sun, props, density=0.07, **kw):
+    return dict(floor=floor, alt=alt, wall=wall, top=top, torch=torch, sky=sky, ground=ground, sun=sun,
+                props=_P[props], prop_density=density, **kw)
+
+
+THEMES.update({
+    "geoles": _theme((92, 88, 84), (74, 82, 66), (100, 94, 90), (66, 62, 60), (255, 150, 70),
+                     (0.34, 0.34, 0.44), (0.17, 0.15, 0.15), (0.32, 0.35, 0.46), "prison"),
+    "ossuaire": _theme((128, 116, 96), (150, 142, 120), (124, 112, 94), (90, 80, 66), (255, 170, 90),
+                       (0.41, 0.37, 0.34), (0.19, 0.17, 0.14), (0.35, 0.34, 0.32), "bones"),
+    "forges": _theme((70, 60, 56), (96, 50, 36), (84, 66, 60), (54, 44, 42), (255, 120, 50),
+                     (0.37, 0.24, 0.20), (0.24, 0.10, 0.07), (0.41, 0.22, 0.16), "forge", lava=True),
+    "sanctuaire": _theme((88, 78, 104), (110, 96, 130), (100, 88, 122), (66, 58, 82), (190, 120, 255),
+                         (0.34, 0.29, 0.46), (0.17, 0.14, 0.20), (0.32, 0.27, 0.46), "temple"),
+    "cryptes": _theme((124, 144, 164), (160, 184, 204), (150, 170, 192), (206, 222, 236), (140, 200, 255),
+                      (0.44, 0.51, 0.61), (0.20, 0.24, 0.31), (0.41, 0.49, 0.62), "crypt"),
+    "fosse": _theme((66, 92, 84), (80, 116, 88), (76, 100, 92), (50, 68, 62), (120, 255, 170),
+                    (0.27, 0.41, 0.37), (0.12, 0.19, 0.17), (0.27, 0.41, 0.38), "cave"),
+    "ecarlates": _theme((112, 64, 64), (134, 80, 76), (122, 72, 70), (80, 44, 44), (255, 90, 70),
+                        (0.44, 0.24, 0.24), (0.20, 0.10, 0.10), (0.43, 0.24, 0.24), "hall"),
+    "trone": _theme((54, 52, 60), (96, 84, 52), (72, 66, 64), (150, 124, 60), (255, 200, 90),
+                    (0.31, 0.29, 0.34), (0.14, 0.14, 0.15), (0.32, 0.30, 0.35), "throne"),
+    "mines": _theme((96, 78, 60), (118, 92, 66), (104, 86, 70), (70, 56, 44), (255, 170, 80),
+                    (0.38, 0.32, 0.26), (0.18, 0.14, 0.10), (0.36, 0.30, 0.24), "mine", 0.09),
+    "bibliotheque": _theme((104, 76, 60), (130, 96, 70), (96, 78, 96), (70, 54, 66), (255, 196, 120),
+                           (0.40, 0.33, 0.36), (0.18, 0.14, 0.13), (0.38, 0.32, 0.34), "library", 0.1),
+    "jardins": _theme((70, 96, 58), (92, 120, 64), (86, 104, 78), (58, 80, 50), (200, 255, 140),
+                      (0.33, 0.43, 0.30), (0.13, 0.18, 0.11), (0.33, 0.44, 0.30), "garden", 0.08),
+    "catacombes": _theme((140, 128, 108), (116, 104, 88), (132, 120, 100), (96, 86, 72), (255, 180, 110),
+                         (0.42, 0.38, 0.33), (0.19, 0.17, 0.14), (0.36, 0.34, 0.30), "bones", 0.1),
+    "engloutie": _theme((58, 96, 108), (70, 120, 128), (72, 108, 120), (44, 70, 80), (110, 220, 255),
+                        (0.26, 0.40, 0.46), (0.10, 0.18, 0.21), (0.25, 0.40, 0.48), "cave"),
+    "magma": _theme((50, 40, 40), (110, 44, 28), (64, 48, 46), (40, 30, 30), (255, 110, 40),
+                    (0.40, 0.20, 0.14), (0.28, 0.08, 0.04), (0.46, 0.20, 0.12), "forge", lava=True),
+    "reliquaire": _theme((196, 188, 168), (214, 196, 140), (206, 198, 180), (170, 150, 96), (255, 220, 140),
+                         (0.52, 0.50, 0.46), (0.24, 0.22, 0.18), (0.50, 0.47, 0.40), "temple"),
+    "neant": _theme((52, 44, 70), (72, 56, 104), (62, 52, 84), (36, 30, 52), (170, 110, 255),
+                    (0.28, 0.24, 0.40), (0.11, 0.09, 0.16), (0.28, 0.22, 0.42), "necro"),
+    "necropole": _theme((168, 146, 104), (190, 164, 110), (176, 156, 116), (130, 110, 76), (255, 190, 100),
+                        (0.48, 0.42, 0.32), (0.22, 0.18, 0.12), (0.46, 0.40, 0.30), "necro"),
+    "cristal": _theme((110, 150, 170), (140, 200, 220), (120, 166, 186), (180, 226, 240), (150, 240, 255),
+                      (0.46, 0.58, 0.66), (0.20, 0.27, 0.32), (0.44, 0.58, 0.68), "cave"),
+    "arene": _theme((150, 100, 70), (170, 116, 80), (140, 96, 76), (100, 64, 50), (255, 130, 60),
+                    (0.46, 0.30, 0.24), (0.22, 0.12, 0.08), (0.46, 0.30, 0.22), "hall"),
+    "sommet": _theme((70, 66, 70), (110, 60, 44), (86, 80, 84), (60, 56, 60), (255, 110, 60),
+                     (0.36, 0.30, 0.32), (0.20, 0.10, 0.08), (0.40, 0.26, 0.24), "throne", lava=True),
+})
 # décor au sol remplacé par des modèles importés (famille de assets/models/models.json)
 MODEL_DECOR = {"herbe": "grass", "fleur": "flower", "buisson": "bush", "champignon": "mushroom", "souche": "stump",
                "rocher": "rock"}
-FLOOR_THEMES = ["geoles", "ossuaire", "forges", "sanctuaire", "cryptes", "fosse", "ecarlates", "trone"]
-
+MAX_FLOOR = 20
+FLOOR_THEMES = ["geoles", "ossuaire", "forges", "sanctuaire", "cryptes", "fosse", "ecarlates", "trone", "mines",
+                "bibliotheque", "jardins", "catacombes", "engloutie", "magma", "reliquaire", "neant", "necropole",
+                "cristal", "arene", "sommet"]
 
 def floor_theme(floor):
-    return FLOOR_THEMES[(floor - 1) % len(FLOOR_THEMES)]
+    return FLOOR_THEMES[(min(floor, MAX_FLOOR) - 1) % len(FLOOR_THEMES)]
 
 
 def _jit(c, v, rng):
@@ -67,81 +144,97 @@ def build(d, theme_name, rng=None, hub=False):
     def is_floor(x, y):
         return 0 <= x < d.w and 0 <= y < d.h and tiles[y][x] != WALL
 
-    house_cells = camp.house_tiles() if hub and objmodels.family("town") else set()
+    house_cells = (getattr(d, "house_cells", set()) | getattr(d, "rampart", set())) if hub else set()
 
     # dessous sombre (visible dans les joints entre les dalles)
     mb.box(-2, -0.3, -2, d.w + 2, -0.1, d.h + 2, (0.03, 0.03, 0.035))
-    for y in range(d.h):
-        for x in range(d.w):
-            if not is_floor(x, y):
+    use_kit = not hub and dungeon_kit.available()
+    if use_kit:
+        dungeon_kit.build(mb, geo, d, th, rng, is_floor)
+        for y in range(d.h):
+            for x in range(d.w):
+                if is_floor(x, y) and th.get("lava") and rng.random() < 0.05:
+                    geo.lava.append(((x + 0.5) * TILE, (y + 0.5) * TILE))
+    else:
+        for y in range(d.h):
+            for x in range(d.w):
+                if not is_floor(x, y):
+                    continue
+                alt = rng.random() < 0.12
+                c = _jit(th["alt"] if alt else th["floor"], 9, rng)
+                if hub:
+                    _camp_floor(mb, d, x, y, rng)
+                    mb.mat = 0
+                else:
+                    mb.mat = mb.STONE
+                    g = 0.03
+                    h = rng.uniform(-0.015, 0.0)
+                    mb.box(x + g, -0.12, y + g, x + 1 - g, h, y + 1 - g, c)
+                if th.get("lava") and rng.random() < 0.05:
+                    geo.lava.append(((x + 0.5) * TILE, (y + 0.5) * TILE))
+        mb.mat = 0
+        walls = []
+        for y in range(d.h):
+            for x in range(d.w):
+                if is_floor(x, y):
+                    continue
+                near = [(dx, dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1) if is_floor(x + dx, y + dy)]
+                if not near and not hub:
+                    continue
+                walls.append((x, y, near))
+        for x, y, near in walls:
+            mb.mat = mb.GRASS if hub else mb.BRICK
+            four = sum(1 for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)) if is_floor(x + dx, y + dy))
+            if four == 4 and not hub:
+                # pilier isolé : colonne ronde
+                c = _jit(th["wall"], 6, rng)
+                mb.add("cylinder", (x + 0.5, 1.0, y + 0.5), (0.36, 0, 0), (0, 1.0, 0), (0, 0, 0.36), c, 1.0)
+                mb.box(x + 0.08, 0, y + 0.08, x + 0.92, 0.25, y + 0.92, _f(th["top"]), 1.0)
+                mb.box(x + 0.08, 1.85, y + 0.08, x + 0.92, 2.1, y + 0.92, _f(th["top"]), 1.0)
                 continue
-            alt = rng.random() < 0.12
-            c = _jit(th["alt"] if alt else th["floor"], 9, rng)
+            if hub and d.tiles[y][x] == WALL and getattr(d, "tower_tiles", None) and (x, y) in d.tower_tiles:
+                mb.box(x, 0, y, x + 1, 0.1, y + 1, _jit((70, 96, 58), 6, rng))
+                continue
+            if hub and (x, y) in house_cells:
+                mb.box(x, 0, y, x + 1, 0.1, y + 1, _jit((70, 96, 58), 6, rng))
+                continue
             if hub:
-                _camp_floor(mb, d, x, y, rng)
-            else:
-                g = 0.03
-                h = rng.uniform(-0.015, 0.0)
-                mb.box(x + g, -0.12, y + g, x + 1 - g, h, y + 1 - g, c)
-            if th.get("lava") and rng.random() < 0.05:
-                geo.lava.append(((x + 0.5) * TILE, (y + 0.5) * TILE))
-    walls = []
-    for y in range(d.h):
-        for x in range(d.w):
-            if is_floor(x, y):
+                # clairière : talus herbeux bas couverts d'arbres
+                H = rng.uniform(0.3, 0.55)
+                mb.mat = mb.DIRT
+                mb.box(x, 0, y, x + 1, H, y + 1, _jit((104, 96, 84), 10, rng), 1.0)
+                mb.mat = mb.GRASS
+                mb.box(x - 0.02, H, y - 0.02, x + 1.02, H + 0.08, y + 1.02, _jit((64, 104, 52), 8, rng), 1.0)
+                mb.mat = 0
+                if rng.random() < 0.8:
+                    camp.tree(mb, x + rng.uniform(0.3, 0.7), H + 0.08, y + rng.uniform(0.3, 0.7), rng)
                 continue
-            near = [(dx, dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1) if is_floor(x + dx, y + dy)]
-            if not near and not hub:
-                continue
-            walls.append((x, y, near))
-    for x, y, near in walls:
-        four = sum(1 for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)) if is_floor(x + dx, y + dy))
-        if four == 4 and not hub:
-            # pilier isolé : colonne ronde
-            c = _jit(th["wall"], 6, rng)
-            mb.add("cylinder", (x + 0.5, 1.0, y + 0.5), (0.36, 0, 0), (0, 1.0, 0), (0, 0, 0.36), c, 1.0)
-            mb.box(x + 0.08, 0, y + 0.08, x + 0.92, 0.25, y + 0.92, _f(th["top"]), 1.0)
-            mb.box(x + 0.08, 1.85, y + 0.08, x + 0.92, 2.1, y + 0.92, _f(th["top"]), 1.0)
-            continue
-        if hub and d.tiles[y][x] == WALL and getattr(d, "tower_tiles", None) and (x, y) in d.tower_tiles:
-            mb.box(x, 0, y, x + 1, 0.1, y + 1, _jit((70, 96, 58), 6, rng))
-            continue
-        if hub and (x, y) in house_cells:
-            mb.box(x, 0, y, x + 1, 0.1, y + 1, _jit((70, 96, 58), 6, rng))
-            continue
-        if hub:
-            # clairière : talus herbeux bas couverts d'arbres
-            H = rng.uniform(0.3, 0.55)
-            mb.box(x, 0, y, x + 1, H, y + 1, _jit((104, 96, 84), 10, rng), 1.0)
-            mb.box(x - 0.02, H, y - 0.02, x + 1.02, H + 0.08, y + 1.02, _jit((64, 104, 52), 8, rng), 1.0)
-            if rng.random() < 0.8:
-                camp.tree(mb, x + rng.uniform(0.3, 0.7), H + 0.08, y + rng.uniform(0.3, 0.7), rng)
-            continue
-        H = rng.uniform(1.5, 1.9) if not hub else rng.uniform(1.0, 2.2)
-        c = _jit(th["wall"], 8, rng)
-        mb.box(x, 0, y, x + 1, H, y + 1, c, 1.0)
-        mb.box(x - 0.03, H, y - 0.03, x + 1.03, H + 0.12, y + 1.03, _jit(th["top"], 6, rng), 1.0)
-        # pierres en relief sur les faces visibles
-        for dx, dy in ((1, 0), (0, 1), (-1, 0), (0, -1)):
-            if is_floor(x + dx, y + dy) and rng.random() < 0.55:
-                for _ in range(rng.randint(1, 2)):
-                    u = rng.uniform(0.15, 0.85)
-                    v = rng.uniform(0.2, H - 0.3)
-                    sz = rng.uniform(0.12, 0.22)
-                    px = x + (u if dx == 0 else (1.0 if dx > 0 else 0.0))
-                    pz = y + (u if dy == 0 else (1.0 if dy > 0 else 0.0))
-                    mb.box(px - sz, v - sz * 0.6, pz - sz, px + sz, v + sz * 0.6, pz + sz,
-                           _jit(th["wall"], 14, rng), 1.0)
-        # torches
-        if (x, y) in d.torches:
+            H = rng.uniform(1.5, 1.9) if not hub else rng.uniform(1.0, 2.2)
+            c = _jit(th["wall"], 8, rng)
+            mb.box(x, 0, y, x + 1, H, y + 1, c, 1.0)
+            mb.box(x - 0.03, H, y - 0.03, x + 1.03, H + 0.12, y + 1.03, _jit(th["top"], 6, rng), 1.0)
+            # pierres en relief sur les faces visibles
             for dx, dy in ((1, 0), (0, 1), (-1, 0), (0, -1)):
-                if is_floor(x + dx, y + dy):
-                    px = x + 0.5 + dx * 0.55
-                    pz = y + 0.5 + dy * 0.55
-                    mb.box(px - 0.05, 0.9, pz - 0.05, px + 0.05, 1.2, pz + 0.05, (0.3, 0.22, 0.14), 1.0)
-                    mb.add("frustum", (px, 1.26, pz), (0.09, 0, 0), (0, 0.07, 0), (0, 0, 0.09), (0.2, 0.2, 0.22), 1.0)
-                    geo.torches.append((px * TILE, pz * TILE, 1.4 * TILE))
-                    break
+                if is_floor(x + dx, y + dy) and rng.random() < 0.55:
+                    for _ in range(rng.randint(1, 2)):
+                        u = rng.uniform(0.15, 0.85)
+                        v = rng.uniform(0.2, H - 0.3)
+                        sz = rng.uniform(0.12, 0.22)
+                        px = x + (u if dx == 0 else (1.0 if dx > 0 else 0.0))
+                        pz = y + (u if dy == 0 else (1.0 if dy > 0 else 0.0))
+                        mb.box(px - sz, v - sz * 0.6, pz - sz, px + sz, v + sz * 0.6, pz + sz,
+                               _jit(th["wall"], 14, rng), 1.0)
+            # torches
+            if (x, y) in d.torches:
+                for dx, dy in ((1, 0), (0, 1), (-1, 0), (0, -1)):
+                    if is_floor(x + dx, y + dy):
+                        px = x + 0.5 + dx * 0.55
+                        pz = y + 0.5 + dy * 0.55
+                        mb.box(px - 0.05, 0.9, pz - 0.05, px + 0.05, 1.2, pz + 0.05, (0.3, 0.22, 0.14), 1.0)
+                        mb.add("frustum", (px, 1.26, pz), (0.09, 0, 0), (0, 0.07, 0), (0, 0, 0.09), (0.2, 0.2, 0.22), 1.0)
+                        geo.torches.append((px * TILE, pz * TILE, 1.4 * TILE))
+                        break
+    mb.mat = 0
     # décor au sol
     for kind, x, y in d.decor:
         cx, cz = x + rng.uniform(0.25, 0.75), y + rng.uniform(0.25, 0.75)
@@ -195,13 +288,14 @@ def build(d, theme_name, rng=None, hub=False):
             mb.add("sphere", (cx, s * 0.5, cz), (s, 0, 0), (0, s * 0.7, 0), (0, 0, s * 1.1), _jit((120, 116, 110), 10, rng))
     if hub:
         camp.forest(mb, d, rng, is_floor)
-        camp.build(mb, geo, d, rng, TILE)
+        city.build(mb, geo, d, rng, TILE)
     geo.mesh = mb.build()
     return geo
 
 
 def _camp_floor(mb, d, x, y, rng):
     """Sol du campement : herbe aux teintes douces, chemins de terre, place pavée autour du feu."""
+    mb.mat = mb.STONE
     if (x, y) in getattr(d, "plaza", ()):
         mb.box(x, -0.12, y, x + 1, -0.01, y + 1, (0.2, 0.18, 0.15))
         for i in range(2):
@@ -213,7 +307,9 @@ def _camp_floor(mb, d, x, y, rng):
         return
     if (x, y) in getattr(d, "paths", ()):
         # herbe dessous, puis un disque de terre : les disques voisins se chevauchent en un chemin aux bords ronds
+        mb.mat = mb.GRASS
         mb.box(x, -0.12, y, x + 1, 0, y + 1, _jit((84, 128, 58), 4, rng))
+        mb.mat = mb.DIRT
         r = rng.uniform(0.66, 0.78)
         mb.add("cylinder", (x + 0.5 + rng.uniform(-0.08, 0.08), 0.004, y + 0.5 + rng.uniform(-0.08, 0.08)), (r, 0, 0),
                (0, 0.004, 0), (0, 0, r), _f((118, 96, 68)))
@@ -222,6 +318,7 @@ def _camp_floor(mb, d, x, y, rng):
             px, pz = x + rng.uniform(0.2, 0.8), y + rng.uniform(0.2, 0.8)
             mb.add("sphere", (px, 0.0, pz), (s, 0, 0), (0, s * 0.5, 0), (0, 0, s * 1.2), _jit((120, 114, 104), 12, rng))
         return
+    mb.mat = mb.GRASS
     n = 0.5 + 0.5 * math.sin(x * 0.45 + y * 0.2) * math.cos(y * 0.37 - x * 0.13)
     base = tuple(a + (b - a) * n for a, b in zip((72, 120, 52), (108, 150, 66)))
     mb.box(x, -0.12, y, x + 1, 0, y + 1, _jit(base, 4, rng))

@@ -466,10 +466,6 @@ def draw_minimap(surf, world):
     ui.circle(surf, (0, 0, 0), box.center, box.w / 2 + 3, 3)
     ui.circle(surf, UI_LINE, box.center, box.w / 2, 2)
     _arrow(surf, box.centerx, box.centery, math.atan2(*reversed(_rot(math.cos(p.facing), math.sin(p.facing)))), 9)
-    n = (box.centerx, box.y - 2)
-    ui.circle(surf, (16, 18, 20), n, 10)
-    ui.circle(surf, UI_LINE, n, 10, 1)
-    ui.draw_text(surf, "N", n, 12, WHITE, "bold", anchor="center", shadow=False)
     title, sub = world.hud_title()
     if title:
         ui.draw_text(surf, title, (box.right, box.y - 18), 14, WHITE, "bold", anchor="bottomright")

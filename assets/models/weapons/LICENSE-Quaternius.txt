@@ -1,0 +1,6 @@
+Armes et boucliers : Quaternius (quaternius.com), domaine public (CC0 1.0), récupérés via poly.pizza.
+  sword.glb https://poly.pizza/m/9lLmH8Et4K · sword2.glb https://poly.pizza/m/ajOJ2NLz5m
+  axe_double.glb https://poly.pizza/m/uHXdfMmO8g · staff.glb https://poly.pizza/m/PnGRvO4Lwd
+  bow.glb https://poly.pizza/m/QnpqjLSKFU · dagger2.glb https://poly.pizza/m/kSMpR711Y2
+  scythe.glb https://poly.pizza/m/yE9TKCewO8 · shield_celtic.glb https://poly.pizza/m/neNWPt8WAx
+  shield.glb https://poly.pizza/m/srN1KGAO7f · hammer.glb https://poly.pizza/m/UIXvQ73DS1

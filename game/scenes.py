@@ -373,9 +373,22 @@ class CreateScene(Scene):
         self.go = ui.Button((SCREEN_W - 340, SCREEN_H - 84, 300, 50), "Suivant : apparence", self.forward, 20)
         self.back = ui.Button((640, SCREEN_H - 84, 200, 50), "Retour", self.backward, 18)
         self.rand = ui.Button((640, 540, 200, 42), "Aléatoire", self.randomize, 17)
+        self.tutorial = True           # tutoriel guidé à l'arrivée en ville
+        self.tut_rect = pygame.Rect(SCREEN_W - 340, SCREEN_H - 126, 300, 30)
 
     def presence(self):
         return "Crée un personnage", None
+
+    def draw_tutorial_toggle(self, surf):
+        r = self.tut_rect
+        hov = r.collidepoint(ui.mouse_pos())
+        box = pygame.Rect(r.x + 4, r.centery - 10, 20, 20)
+        ui.botw_box(surf, box, 190, SHEIKAH if hov or self.tutorial else (110, 112, 110), radius=5, fill=(8, 24, 30))
+        if self.tutorial:
+            ui.line(surf, SHEIKAH, (box.x + 4, box.centery), (box.x + 8, box.bottom - 5), 3)
+            ui.line(surf, SHEIKAH, (box.x + 8, box.bottom - 5), (box.right - 4, box.y + 5), 3)
+        ui.draw_text(surf, "Tutoriel guidé à l'arrivée en ville", (box.right + 10, r.centery), 15,
+                     WHITE if hov else SOFT, anchor="midleft")
 
     def name_ok(self):
         name = self.name.strip()
@@ -422,6 +435,8 @@ class CreateScene(Scene):
         name = self.name.strip()
         data = save.new_character(name, self.cls)
         data["look"] = dict(self.look)
+        if self.tutorial:
+            data["tutorial"] = 0
         save.save_data(data)
         from .hub import HubScene
         p = Player(data)
@@ -430,6 +445,10 @@ class CreateScene(Scene):
 
     def handle_event(self, e):
         if self.go.handle(e) or self.back.handle(e):
+            return
+        if e.type == pygame.MOUSEBUTTONDOWN and e.button == 1 and self.tut_rect.collidepoint(e.pos):
+            self.tutorial = not self.tutorial
+            sfx.play("click")
             return
         if self.step == 1:
             self.handle_look(e)
@@ -510,6 +529,7 @@ class CreateScene(Scene):
         if self.step == 1:
             self.editor.draw(surf, self.t)
             self.rand.draw(surf)
+            self.draw_tutorial_toggle(surf)
             self.go.draw(surf)
             self.back.draw(surf)
             return
@@ -557,7 +577,8 @@ class CreateScene(Scene):
                      (box.x + 22, box.bottom - 46), 13, SOFT)
         ui.draw_text(surf, "et de 3 emplacements d'artefacts (R, T, G).", (box.x + 22, box.bottom - 26), 13, SOFT)
         if self.error:
-            ui.draw_text(surf, self.error, (SCREEN_W - 40, SCREEN_H - 100), 15, RED, "bold", anchor="bottomright")
+            ui.draw_text(surf, self.error, (SCREEN_W - 40, SCREEN_H - 134), 15, RED, "bold", anchor="bottomright")
+        self.draw_tutorial_toggle(surf)
         self.go.draw(surf)
         self.back.draw(surf)
 

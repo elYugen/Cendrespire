@@ -9,6 +9,7 @@ from .entities import NPC, Portal, Prop
 from .items import generate_item, generate_artifact
 from .panels import MerchantPanel, ForgePanel, PortalPanel, QuestPanel
 from .r3d import models, objmodels
+from .tutorial import Tutorial
 from .wardrobe import WardrobePanel
 from .settings import TILE, WHITE
 from .world import World
@@ -48,6 +49,7 @@ class HubScene(World):
         stock += [generate_artifact(lvl, random.choice(["commun", "magique", "rare"])) for _ in range(2)]
         self.shop_stock = stock
         self._last_hit = 0.0
+        self.tutorial = Tutorial(self) if player.tutorial is not None else None
         self.save()
         sfx.music("hub")
         self.show_banner(T.NAME, message or "La ville au pied de Cendrespire", WHITE, 5)
@@ -74,6 +76,8 @@ class HubScene(World):
 
     def talk_to(self, npc, label, action):
         p = self.player
+        if self.tutorial:
+            self.tutorial.flags.add("talk")
         quests.event(self, "talk", npc=npc.npc_id)
         if quests.to_turn_in(p, npc.npc_id) or quests.offers(p, npc.npc_id):
             self.close_panels()
@@ -92,6 +96,28 @@ class HubScene(World):
 
     def hud_title(self):
         return T.NAME, ""
+
+    # ------------------------------------------------------------------ tutoriel
+    def handle_event(self, e):
+        if self.tutorial and not self.modal and self.tutorial.handle_event(e):
+            self.click_block = True
+            return
+        super().handle_event(e)
+
+    def ui_contains(self, pos):
+        return bool(self.tutorial and self.tutorial.contains(pos)) or super().ui_contains(pos)
+
+    def update(self, dt):
+        super().update(dt)
+        if self.tutorial:
+            self.tutorial.update(dt)
+            if self.player.tutorial is None:
+                self.tutorial = None
+
+    def draw_ui(self, surf):
+        super().draw_ui(surf)
+        if self.tutorial and not self.modal and not self.big_map:
+            self.tutorial.draw(surf)
 
     def presence(self):
         hero, small = self.hero_presence()

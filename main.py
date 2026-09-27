@@ -52,9 +52,28 @@ if content.ERROR is not None and __name__ == "__main__":
 
 from game import discord, sfx  # noqa: E402
 from game.r3d.renderer import Renderer, Frame  # noqa: E402
-from game.settings import SCREEN_W, SCREEN_H, FPS, TITLE, VIEW  # noqa: E402
+from game.settings import SCREEN_W, SCREEN_H, FPS, TITLE, VIEW, WINDOW_SIZE  # noqa: E402
 
 MOUSE_EVENTS = (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP, pygame.MOUSEMOTION)
+
+
+def window_size():
+    """Taille de la fenêtre au lancement et mode d'affichage (None, "full" ou "max") :
+    - écran assez grand : fenêtre 1920x1080 ;
+    - écran 1080p : plein écran sans bordure, à la résolution native (une fenêtre y perdrait la barre de titre
+      et la barre des tâches) ;
+    - écran plus petit : la plus grande fenêtre 16:9 qui tient, agrandie au maximum."""
+    try:
+        dw, dh = pygame.display.get_desktop_sizes()[0]
+    except (pygame.error, IndexError):
+        return WINDOW_SIZE, None
+    ww, wh = WINDOW_SIZE
+    if dw >= ww and dh >= wh + 80:
+        return WINDOW_SIZE, None
+    if dw >= ww and dh >= wh:
+        return WINDOW_SIZE, "full"
+    k = min((dw * 0.9) / ww, (dh * 0.85) / wh)
+    return (int(ww * k), int(wh * k)), "max"
 
 
 def load_icon():
@@ -74,8 +93,11 @@ def load_icon():
 
 
 class Game:
-    def __init__(self, headless=False, size=(SCREEN_W, SCREEN_H)):
+    def __init__(self, headless=False, size=None):
         pygame.init()
+        mode = None
+        if size is None:
+            size, mode = ((SCREEN_W, SCREEN_H), None) if headless else window_size()
         sfx.init()
         self.headless = headless
         if headless:
@@ -95,7 +117,13 @@ class Game:
             if icon:
                 self.window.set_icon(icon)
             self.ctx = moderngl.create_context()
+            # pixels par point (2 sur écran Retina) : mesuré avant tout agrandissement de la fenêtre, tant que
+            # le framebuffer d'OpenGL et la fenêtre ont encore la même taille
             self.ratio = self.ctx.screen.size[0] / self.window.size[0]
+            if mode == "full":
+                self.window.set_fullscreen(True)
+            elif mode == "max":
+                self.window.maximize()
             self.screen = self.ctx.screen
             self.screen_size = self.ctx.screen.size
             pygame.key.start_text_input()
@@ -145,6 +173,10 @@ class Game:
             self.window.set_fullscreen(True)
         else:
             self.window.set_windowed()
+            size, mode = window_size()
+            if mode:                       # écran trop petit pour une fenêtre 1080p : fenêtre agrandie
+                self.window.size = (size[0] * 3 // 4, size[1] * 3 // 4)
+                self.window.maximize()
         self.refresh_view()
 
     def change_scene(self, scene):

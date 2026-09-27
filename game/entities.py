@@ -41,6 +41,7 @@ class Player:
         self.deaths = data.get("deaths", 0)
         from . import quests
         self.quests = quests.clean(data.get("quests"))
+        self.tutorial = data.get("tutorial")      # étape du tutoriel en cours (None : pas de tutoriel)
         self.created_at = data.get("created_at", 0)
         # état en jeu
         self.x = self.y = 0.0
@@ -94,7 +95,8 @@ class Player:
                 "points": self.points, "gold": self.gold, "max_floor": self.max_floor,
                 "cleared": sorted(self.cleared), "equipment": self.equipment, "inventory": self.inventory,
                 "kills": self.kills, "deaths": self.deaths, "created_at": self.created_at, "look": dict(self.look),
-                "talents": dict(self.talents), "quests": self.quests}
+                "talents": dict(self.talents), "quests": self.quests,
+                "tutorial": self.tutorial}
 
     @property
     def spec(self):

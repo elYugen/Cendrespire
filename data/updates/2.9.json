@@ -1,0 +1,17 @@
+{
+  "version": "2.9",
+  "date": "2026-09-27",
+  "title": "Premiers pas à Cendreval",
+  "sections": [
+    {"name": "Tutoriel", "notes": [
+      "Nouvelle option « Tutoriel guidé » à la création du personnage (activée par défaut).",
+      "À l'arrivée en ville, un guide présente une action à la fois : se déplacer, attaquer, esquiver, sorts et potion, menu, habitants et quêtes, carte, puis la Tour.",
+      "Chaque étape se valide d'elle-même dès que vous l'avez faite ; le tutoriel reprend où vous l'aviez laissé et peut être passé à tout moment."
+    ]},
+    {"name": "Affichage", "notes": [
+      "Le jeu s'affiche désormais en 1920 x 1080 (1080p) : sur un écran 1080p, il s'ouvre en plein écran à la résolution native ; sur un écran plus grand, dans une fenêtre 1920 x 1080 ; sur un écran plus petit, dans une fenêtre agrandie au maximum.",
+      "Corrigé : quand la fenêtre était agrandie au lancement, l'image était calculée en plus basse résolution puis étirée (rendu flou).",
+      "F11 bascule toujours entre plein écran et fenêtre."
+    ]}
+  ]
+}

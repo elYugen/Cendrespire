@@ -5,6 +5,7 @@ import sys
 # Résolution « de conception » : toute l'interface est positionnée dans cet espace,
 # puis dessinée à la résolution réelle de l'écran (Retina compris) pour rester nette.
 SCREEN_W, SCREEN_H = 1280, 720
+WINDOW_SIZE = (1920, 1080)       # taille de la fenêtre au lancement (1080p), réduite si l'écran est plus petit
 FPS = 60
 TILE = 40
 TITLE = "Cendrespire"

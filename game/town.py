@@ -14,15 +14,17 @@ dungeon.build_hub() en tire la grille praticable, r3d/city.py le décor 3D et hu
    │══════════════ rue basse ════════════════════│
    │ maisons            avenue           maisons  │
    └──────────────── porte sud ─────────────────┘
+   La rue du marché sort par la porte est vers la zone d'entraînement (mannequin, cibles, râteliers).
 """
 import math
 
 NAME = "Cendreval"
-W, H = 46, 46
+W, H = 60, 46                              # la zone d'entraînement s'étend à l'est des remparts
 
 # ---------------------------------------------------------------- remparts et portes
 WALL_X0, WALL_X1, WALL_Y0, WALL_Y1 = 2, 44, 9, 43
 GATE_X0, GATE_X1 = 21, 25                  # ouverture des portes nord et sud (colonnes incluses)
+EAST_GATE_Y0, EAST_GATE_Y1 = 25, 27        # porte est, au bout de la rue du marché (rangées incluses)
 
 # ---------------------------------------------------------------- tour et portail
 TOWER = (23.0, 1.0)                        # centre de Cendrespire (au-delà de l'esplanade)
@@ -35,6 +37,7 @@ STREETS = [
     (16, 3, 30, 8),         # esplanade de la tour
     (3, 16, 43, 17),        # rue haute
     (3, 25, 43, 27),        # rue du marché
+    (44, 25, 47, 27),       # chemin de la porte est vers la zone d'entraînement
     (3, 35, 43, 36),        # rue basse
     (7, 18, 17, 24),        # place du marché
     (29, 18, 38, 24),       # cour de la forge
@@ -89,9 +92,16 @@ CARTS = [(18.4, 34.0, 0.4), (30.6, 17.2, 1.6)]
 BENCHES = [(19.2, 26.0, math.pi / 2), (26.8, 26.0, -math.pi / 2)]
 BANNERS = [(20.2, 9.6), (25.8, 9.6), (20.2, 42.4), (25.8, 42.4)]
 
+# ---------------------------------------------------------------- zone d'entraînement (hors les murs, à l'est)
+TRAINING = (48, 19, 57, 33)                # cour d'entraînement (cases, bornes incluses)
+DUMMY = (54.0, 26.0)                       # mannequin immortel
+TARGETS = [(56.2, 21.0), (56.2, 31.0)]     # cibles de paille (décor)
+RACKS = [(48.7, 20.3), (48.7, 31.7)]       # râteliers d'armes
+TRAINING_SIGN = (48.4, 24.3)
+
 # ---------------------------------------------------------------- personnages
 SPAWN = (23.0, 32.3)
-MERCHANT = (8.9, 21.2, 0.0)
+MERCHANT = (11.0, 21.2, 0.0)               # devant son étal, face à la place (et non plus caché derrière)
 SMITH = (33.7, 21.4, 0.0)
 TAILOR = (9.2, 31.0, -math.pi / 2)
 # habitants : id (quêtes), position et orientation de départ, nom, modèle animé, palette, réplique et, pour ceux
@@ -123,6 +133,10 @@ VILLAGERS = [
          palette={"Blue": (70, 80, 60), "Gold": "hide"},
          line="Je fais ma ronde, jour et nuit. Rien ne sort de la tour sans que je le voie.",
          route=[(8.0, 16.1), (38.0, 16.1)]),
+    dict(id="brunhild", pos=(50.6, 23.6), facing=0.4, name="Brunhild la Maîtresse d'armes", model="knight",
+         palette={"Blue": (110, 40, 36), "Gold": "hide"},
+         line="Frappez ce mannequin autant qu'il vous plaira : lui ne rend jamais les coups. Regardez vos dégâts "
+              "par seconde au-dessus de sa tête."),
 ]
 SHOPKEEPERS = {"gorvan": "Gorvan le Marchand", "hilda": "Hilda la Forgeronne", "ysolde": "Ysolde la Couturière"}
 NPC_IDS = set(SHOPKEEPERS) | {v["id"] for v in VILLAGERS}
@@ -151,7 +165,8 @@ def rampart_cells():
                 cells.add((x, y))
     for y in range(WALL_Y0, WALL_Y1 + 1):
         cells.add((WALL_X0, y))
-        cells.add((WALL_X1, y))
+        if not EAST_GATE_Y0 <= y <= EAST_GATE_Y1:
+            cells.add((WALL_X1, y))
     return cells
 
 
@@ -164,10 +179,16 @@ def street_cells():
     return cells
 
 
+def training_cells():
+    x0, y0, x1, y1 = TRAINING
+    return {(x, y) for x in range(x0, x1 + 1) for y in range(y0, y1 + 1)}
+
+
 def walkable_cells():
-    """Intérieur des remparts, esplanade et route du sud, moins les maisons, les remparts et la tour."""
+    """Intérieur des remparts, esplanade, route du sud et zone d'entraînement, moins les maisons, les remparts
+    et la tour."""
     inside = {(x, y) for x in range(WALL_X0 + 1, WALL_X1) for y in range(WALL_Y0 + 1, WALL_Y1)}
-    return (inside | street_cells()) - house_cells() - rampart_cells() - TOWER_CELLS
+    return (inside | street_cells() | training_cells()) - house_cells() - rampart_cells() - TOWER_CELLS
 
 
 def obstacles():
@@ -179,4 +200,6 @@ def obstacles():
     obs += [(x, y, 0.5) for x, y in TAVERN_TABLES]
     obs += [(x, y, 0.3) for x, y in GARDEN_TREES]
     obs += [(x, y, 0.6) for x, y, _ in CARTS]
+    obs += [(*DUMMY, 0.45), (*TRAINING_SIGN, 0.25)] + [(x, y, 0.55) for x, y in TARGETS]
+    obs += [(x, y, 0.45) for x, y in RACKS]
     return obs

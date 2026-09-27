@@ -2,13 +2,14 @@
 import math
 import random
 
-from . import quests, sfx
+from . import quests, sfx, ui
 from . import town as T
 from .dungeon import build_hub
 from .entities import NPC, Portal, Prop
 from .items import generate_item, generate_artifact
 from .panels import MerchantPanel, ForgePanel, PortalPanel, QuestPanel
 from .r3d import models, objmodels
+from .training import TrainingDummy
 from .tutorial import Tutorial
 from .wardrobe import WardrobePanel
 from .settings import TILE, WHITE
@@ -41,6 +42,8 @@ class HubScene(World):
         self.interactables.append(Portal(px * TILE, (pz + (0.05 if grand else 0.3)) * TILE, "Entrer dans la Tour",
                                          self.open_portal, (150, 110, 255), grand=grand))
         self.add_villagers()
+        self.dummy = TrainingDummy(T.DUMMY[0] * TILE, T.DUMMY[1] * TILE)
+        self.monsters.append(self.dummy)
         if not objmodels.family("camp"):      # décor procédural si les modèles importés manquent
             self.interactables.append(Prop(T.ANVIL[0] * TILE, T.ANVIL[1] * TILE, models.anvil))
         self.obstacles = [(x * TILE, y * TILE, r * TILE) for x, y, r in T.obstacles()]
@@ -95,7 +98,7 @@ class HubScene(World):
         return quests.marker(self.player, getattr(o, "npc_id", None))
 
     def hud_title(self):
-        return T.NAME, ""
+        return "", ""           # pas de nom au-dessus de la minicarte en ville
 
     # ------------------------------------------------------------------ tutoriel
     def handle_event(self, e):
@@ -116,6 +119,12 @@ class HubScene(World):
 
     def draw_ui(self, surf):
         super().draw_ui(surf)
+        dm = self.dummy
+        if dm.hits and not self.modal and not self.big_map:
+            pt = self.project(dm.x, dm.y, dm.height() + 58)
+            if pt:
+                ui.draw_text(surf, f"{dm.dps():.0f} dégâts / s", pt, 16, (255, 214, 110), "bold",
+                             anchor="midbottom")
         if self.tutorial and not self.modal and not self.big_map:
             self.tutorial.draw(surf)
 

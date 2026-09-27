@@ -100,10 +100,57 @@ def ramparts(mb, rng):
         for a, b in _runs({c for c in cells if T.WALL_Y0 < c[1] < T.WALL_Y1}, "x", fixed):
             _wall_segment(mb, fixed, a, fixed, b, rng)
     for x, z in ((T.WALL_X0, T.WALL_Y0), (T.WALL_X1, T.WALL_Y0), (T.WALL_X0, T.WALL_Y1), (T.WALL_X1, T.WALL_Y1),
-                 (T.WALL_X0, 26), (T.WALL_X1, 26)):
+                 (T.WALL_X0, 26)):
         _tower(mb, x + 0.5, z + 0.5)
     _gate(mb, T.WALL_Y0)
     _gate(mb, T.WALL_Y1)
+    _east_gate(mb)
+
+
+def _east_gate(mb):
+    """Porte est (vers la zone d'entraînement) : deux tours et un linteau au-dessus de la rue du marché."""
+    x, z0, z1 = T.WALL_X1, T.EAST_GATE_Y0, T.EAST_GATE_Y1 + 1
+    _tower(mb, x + 0.5, z0 - 0.5, 0.85, 3.0)
+    _tower(mb, x + 0.5, z1 + 0.5, 0.85, 3.0)
+    mb.mat = mb.BRICK
+    mb.box(x + 0.15, 2.3, z0 - 0.2, x + 0.85, 3.0, z1 + 0.2, WALL_STONE, 1.0)
+    mb.mat = 0
+    mb.box(x + 0.1, 3.0, z0 - 0.25, x + 0.9, 3.1, z1 + 0.25, shade(WALL_STONE, 0.8), 1.0)
+    for i in range(7):
+        zz = z0 + 0.1 + i * (z1 - z0 - 0.2) / 6
+        mb.box(x + 0.4, 1.95, zz - 0.04, x + 0.5, 2.3, zz + 0.04, DARK_WOOD, 1.0)
+
+
+def training(mb, rng):
+    """Cour d'entraînement : palissade, mannequin (dessiné à part : il réagit aux coups), cibles, râteliers."""
+    x0, z0, x1, z1 = T.TRAINING
+    x1, z1 = x1 + 1, z1 + 1
+    gate = (T.EAST_GATE_Y0, T.EAST_GATE_Y1 + 1)
+
+    def fence(ax, az, bx, bz):
+        n = max(1, int(round(max(abs(bx - ax), abs(bz - az)))))
+        for i in range(n + 1):
+            k = i / n
+            camp.post(mb, ax + (bx - ax) * k, az + (bz - az) * k, 0.75, 0.06)
+        for h in (0.32, 0.62):
+            if az == bz:
+                mb.box(ax, h, az - 0.035, bx, h + 0.07, az + 0.035, shade(DARK_WOOD, 1.15))
+            else:
+                mb.box(ax - 0.035, h, az, ax + 0.035, h + 0.07, bz, shade(DARK_WOOD, 1.15))
+    fence(x0, z0, x1, z0)
+    fence(x0, z1, x1, z1)
+    fence(x1, z0, x1, z1)
+    fence(x0, z0, x0, gate[0])            # côté ouest : ouvert face à la porte est
+    fence(x0, gate[1], x0, z1)
+    for x, z in T.TARGETS:                # cibles de paille
+        mb.add("cylinder", (x, 0.45, z), (0.5, 0, 0), (0, 0.45, 0), (0, 0, 0.5), (0.8, 0.68, 0.38), 1.0)
+        for r, col in ((0.42, (0.92, 0.9, 0.84)), (0.28, (0.72, 0.2, 0.18)), (0.12, (0.92, 0.9, 0.84))):
+            mb.add("cylinder", (x - 0.5, 0.5, z), (0.012, 0, 0), (0, r, 0), (0, 0, r), col, 1.0)
+    for x, z in T.RACKS:
+        camp.weapon_rack(mb, x, z)
+    camp.signpost(mb, *T.TRAINING_SIGN)
+    camp.banner(mb, x0 + 0.3, z0 + 0.3, (0.62, 0.12, 0.12))
+    camp.banner(mb, x0 + 0.3, z1 - 0.3, (0.62, 0.12, 0.12))
 
 
 def fountain(mb):
@@ -211,3 +258,4 @@ def build(mb, geo, d, rng, tile):
     tavern(mb, rng)
     streets(mb, geo, tile, rng)
     esplanade(mb, geo, tile)
+    training(mb, rng)

@@ -12,7 +12,6 @@ from . import town
 
 QUESTS = CONTENT["quests"]
 NPC_NAMES = dict(town.SHOPKEEPERS, **{v["id"]: v["name"] for v in town.VILLAGERS})
-MAX_TRACKED = 4
 
 
 def clean(data):
@@ -118,13 +117,6 @@ def marker(p, npc_id):
     if in_progress(p, npc_id):
         return "?", (170, 170, 170)
     return None
-
-
-def tracked(p):
-    """Quêtes affichées à l'écran : celles à rendre d'abord, puis les quêtes en cours."""
-    ready = [q for q in p.quests if p.quests[q]["state"] == "ready"]
-    active = [q for q in p.quests if p.quests[q]["state"] == "active"]
-    return (ready + active)[:MAX_TRACKED]
 
 
 # ------------------------------------------------------------------ actions

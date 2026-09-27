@@ -231,7 +231,7 @@ def build_hub():
     d.house_cells = T.house_cells()
     d.rampart = T.rampart_cells()
     d.plaza = T.street_cells() & walk          # pavés
-    d.paths = set()
+    d.paths = T.training_cells() & walk         # terre battue de la cour d'entraînement
     rng = random.Random(3)
     near_obs = {(int(x), int(y)) for x, y, _r in T.obstacles()}
     for y in range(T.H):

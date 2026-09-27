@@ -12,7 +12,7 @@ from .entities import Loot
 from .fx import Particles, RingFX, Blast, Lightning
 from .items import generate_item, item_value, buy_price, ench_spent, ART_SLOTS
 from .panels import (InventoryPanel, MenuScreen, MerchantPanel, ForgePanel, AnimaPanel, DeathPanel, PAGE_CHAR,
-                     PAGE_INV, PAGE_SYS, PAGE_TAL)
+                     PAGE_INV, PAGE_QUEST, PAGE_SYS, PAGE_TAL)
 from .r3d import level, models
 from .r3d.camera import Camera3D
 from .r3d.renderer import Env
@@ -342,6 +342,9 @@ class World(Scene):
         if m.curse > 0:
             dmg *= 1 + getattr(m, "curse_amp", 0.3)
         dmg *= getattr(m, "dmg_taken", 1.0)       # Deathstrake sous l'Écu sacré
+        if getattr(m, "immortal", False):         # mannequin d'entraînement : compte les dégâts, ne meurt pas
+            m.on_hit(self, dmg, crit)
+            return
         m.hp -= dmg
         m.flash = 0.1
         if not m.aggro:
@@ -675,9 +678,9 @@ class World(Scene):
                 else:
                     self.open_pause()
                 return
-            if e.key in (pygame.K_i, pygame.K_c, pygame.K_n):
+            if e.key in (pygame.K_i, pygame.K_c, pygame.K_n, pygame.K_j):
                 self.close_panels()
-                page = {pygame.K_i: PAGE_INV, pygame.K_c: PAGE_CHAR, pygame.K_n: PAGE_TAL}[e.key]
+                page = {pygame.K_i: PAGE_INV, pygame.K_c: PAGE_CHAR, pygame.K_n: PAGE_TAL, pygame.K_j: PAGE_QUEST}[e.key]
                 self.modal = MenuScreen(self, page)
                 sfx.play("click")
                 return

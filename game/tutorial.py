@@ -41,7 +41,7 @@ STEPS = [
     ("Sorts, potion et artefacts", "Clic droit et 1 à 4 lancent vos sorts, F boit la potion de soin, R, T et G "
      "activent vos artefacts. Essayez un sort.", ["Clic droit", "1", "F"],
      lambda w, t: any(v > 0 for v in w.player.cds.values()) or w.player.potion_cd > 0),
-    ("Le menu", "I ouvre l'inventaire, C le personnage, N les talents. Gagnez des niveaux pour débloquer points "
+    ("Le menu", "I ouvre l'inventaire, C le personnage, N les talents, J le journal de quêtes. Gagnez des niveaux pour débloquer points "
      "de caractéristique et talents.", ["I", "C", "N"], _menu),
     ("Les habitants", "Approchez-vous d'un habitant et appuyez sur E pour lui parler. Un « ! » doré au-dessus de "
      "sa tête : il a une quête pour vous.", ["E"], lambda w, t: "talk" in t.flags),

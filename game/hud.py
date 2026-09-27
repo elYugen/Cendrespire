@@ -152,83 +152,108 @@ def slot_box(surf, rect, border=UI_LINE, alpha=150):
     ui.botw_box(surf, rect, alpha, border, radius=10)
 
 
-def draw_skill(surf, rect, color, sid, key, cd_frac, cd_left, locked, lacking, level_req=0, attack_cls=None):
-    slot_box(surf, rect, UI_LINE if not locked else (110, 110, 105))
+MANA_COL = (90, 150, 255)
+
+
+def _slot_frame(surf, rect, accent, ready_flash=0.0, dim=False, alpha=205):
+    """Case de compétence : fond sombre, reflet coloré, liseré de la couleur du sort."""
+    ui.rect(surf, (6, 12, 16, alpha), rect, 0, 11)
+    if not dim:
+        inner = rect.inflate(-6, -6)
+        ui.rect(surf, (*accent, 34), inner, 0, 8)
+        ui.line(surf, ui.lighter(accent, 1.15), (inner.x + 7, inner.y + 1), (inner.right - 8, inner.y + 1), 2)
+    border = (96, 98, 96) if dim else ui.darker(accent, 0.85)
+    ui.rect(surf, border, rect, 2 if not dim else 1, 11)
+    if ready_flash > 0:                   # recharge terminée : éclat lumineux
+        ui.glow(surf, rect.centerx, rect.centery, rect.w * (0.7 + 0.3 * (1 - ready_flash)), ui.darker(accent, 0.6))
+        ui.rect(surf, (255, 255, 255, int(200 * ready_flash)), rect.inflate(4, 4), 2, 13)
+
+
+def _ready_flash(world, key, cd):
+    """0..1 pendant 0,45 s après la fin d'une recharge."""
+    prev = world.__dict__.setdefault("_slot_cd", {})
+    ready = world.__dict__.setdefault("_slot_ready", {})
+    if prev.get(key, 0) > 0 >= cd:
+        ready[key] = world.time
+    prev[key] = cd
+    k = 1 - (world.time - ready.get(key, -9)) / 0.45
+    return max(0.0, k)
+
+
+def draw_skill(surf, world, rect, color, sid, key, cd_frac, cd_left, locked, lacking, level_req=0, attack_cls=None,
+               mana=None):
     c = rect.center
+    flash = 0.0 if locked else _ready_flash(world, sid or "attack", cd_left)
+    _slot_frame(surf, rect, color, flash, dim=locked)
     if locked:
-        icons.spell_icon(surf, sid, c, rect.w * 0.34, color, locked=True, attack_cls=attack_cls)
-        ui.draw_text(surf, f"Niv {level_req}", (c[0], c[1] + 1), 12, TEXT_DIM, "bold", anchor="center")
+        icons.spell_icon(surf, sid, c, rect.w * 0.3, color, locked=True, attack_cls=attack_cls)
+        ui.rect(surf, (0, 0, 0, 120), rect.inflate(-4, -4), 0, 9)
+        ui.draw_text(surf, f"Niv {level_req}", c, 12, (190, 192, 188), "bold", anchor="center")
     else:
         icons.spell_icon(surf, sid, c, rect.w * 0.36, color, attack_cls=attack_cls)
         if lacking:
-            ui.rect(surf, (30, 60, 170, 120), rect, 0, 10)
-        _cooldown(surf, rect, cd_frac)
+            ui.rect(surf, (20, 50, 160, 110), rect.inflate(-4, -4), 0, 9)
+        _cooldown(surf, rect.inflate(-4, -4), cd_frac, 9)
         if cd_left > 0.95:
-            ui.draw_text(surf, f"{cd_left:.0f}", c, 17, WHITE, "bold", anchor="center")
-    ui.key_badge(surf, key, (rect.centerx, rect.bottom), 11)
+            ui.draw_text(surf, f"{cd_left:.0f}", c, 18, WHITE, "bold", anchor="center")
+        if mana:                          # coût en mana, coin haut droit
+            ui.draw_text(surf, str(mana), (rect.right - 5, rect.y + 3), 10, (255, 120, 110) if lacking else
+                         (160, 200, 255), "bold", anchor="topright")
+    ui.key_badge(surf, key, (rect.centerx, rect.bottom), 10, WHITE if not locked else (150, 150, 146))
 
 
 def draw_slots(surf, world):
+    """Barre des compétences (en haut à droite) : attaque, 4 sorts, roulade, et jauge de mana."""
     p = world.player
-    size, gap = 52, 10
-    right = SCREEN_W - 22
-    y0 = 20
     atk = p.cls["attack"]
-    entries = [("attack", None)] + [("spell", sid) for sid in p.spells]
-    x0 = right - len(entries) * size - (len(entries) - 1) * gap
-    for i, (kind, sid) in enumerate(entries):
-        rc = pygame.Rect(x0 + i * (size + gap), y0, size, size)
-        if kind == "attack":
-            draw_skill(surf, rc, atk.get("color", p.cls["color"]), None, "LMB",
-                       p.atk_cd / max(0.01, p.atk_total), 0, False, False, attack_cls=p.cls_id)
-        else:
-            sp = SPELLS[sid]
-            tot = p.cd_total.get(sid, 1) or 1
-            cd = p.cds.get(sid, 0)
-            draw_skill(surf, rc, sp["color"], sid, str(i), cd / tot, cd,
-                       not p.spell_unlocked(sid), p.mana < sp["mana"], sp["level"])
-        world.skill_rects.append((rc, (kind, sid)))
-    # rangée 2 : artefacts, potion, roulade
-    s2, g2 = 44, 12
-    y1 = y0 + size + 18
-    row = [("roll", None)]
-    x1 = right - len(row) * s2 - (len(row) - 1) * g2
-    for i, (kind, key) in enumerate(row):
-        rc = pygame.Rect(x1 + i * (s2 + g2), y1, s2, s2)
-        if kind == "art":
-            it = p.equipment.get(key)
-            slot_box(surf, rc, RARITY_COLORS[it["rarity"]] if it else (100, 100, 98), 150 if it else 90)
-            if it:
-                a = ARTIFACTS[it["art"]]
-                ui.draw_artifact_icon(surf, it["art"], rc, a["color"])
-                cd = p.art_cds.get(key, 0)
-                _cooldown(surf, rc, cd / (p.art_total.get(key, 1) or 1))
-                if cd > 0.95:
-                    ui.draw_text(surf, f"{cd:.0f}", rc.center, 15, WHITE, "bold", anchor="center")
-            ui.key_badge(surf, ARTIFACT_KEYS[i], (rc.centerx, rc.bottom), 10)
-        elif kind == "potion":
-            slot_box(surf, rc)
-            fx, fy = rc.centerx, rc.centery + 3
-            ui.circle(surf, (210, 34, 46), (fx, fy + 3), 11)
-            ui.rect(surf, (210, 34, 46), (fx - 4, fy - 11, 8, 8))
-            ui.rect(surf, (230, 220, 200), (fx - 5, fy - 14, 10, 4))
-            ui.circle(surf, (255, 170, 170), (fx - 4, fy), 3)
-            _cooldown(surf, rc, p.potion_cd / max(0.01, p.potion_total))
-            if p.potion_cd > 0.95:
-                ui.draw_text(surf, f"{p.potion_cd:.0f}", rc.center, 15, WHITE, "bold", anchor="center")
-            ui.key_badge(surf, "F", (rc.centerx, rc.bottom), 10)
-        else:
-            slot_box(surf, rc)
-            c = rc.center
-            ui.arc(surf, (180, 230, 190), pygame.Rect(c[0] - 12, c[1] - 12, 24, 24), 0.6, 5.4, 3)
-            ui.polygon(surf, (180, 230, 190), [(c[0] + 12, c[1] - 2), (c[0] + 6, c[1] - 12), (c[0] + 16, c[1] - 10)])
-            _cooldown(surf, rc, p.roll_cd / max(0.01, p.roll_total))
-            ui.key_badge(surf, "Espace", (rc.centerx, rc.bottom), 10)
-        world.skill_rects.append((rc, (kind, key)))
+    big, size, roll, gap, pad = 58, 50, 42, 8, 11
+    right, top = SCREEN_W - 18, 14
+    width = pad * 2 + big + 4 * (size + gap) + 18 + roll
+    panel = pygame.Rect(right - width, top, width, pad + big + 30)
+    ui.rect(surf, (0, 0, 0, 120), panel, 0, 14)
+    ui.rect(surf, (120, 124, 120, 90), panel, 1, 14)
+    base = top + pad + big                # bas commun des cases
+    x = panel.x + pad
+    rc = pygame.Rect(x, base - big, big, big)
+    draw_skill(surf, world, rc, atk.get("color", p.cls["color"]), None, "Clic",
+               p.atk_cd / max(0.01, p.atk_total), 0, False, False, attack_cls=p.cls_id)
+    world.skill_rects.append((rc, ("attack", None)))
+    x += big + gap
+    for i, sid in enumerate(p.spells):
+        sp = SPELLS[sid]
+        rc = pygame.Rect(x, base - size, size, size)
+        tot = p.cd_total.get(sid, 1) or 1
+        cd = p.cds.get(sid, 0)
+        draw_skill(surf, world, rc, sp["color"], sid, str(i + 1), cd / tot, cd, not p.spell_unlocked(sid),
+                   p.mana < sp["mana"], sp["level"], mana=sp["mana"])
+        world.skill_rects.append((rc, ("spell", sid)))
+        x += size + gap
+    # séparateur puis roulade
+    ui.line(surf, (110, 114, 110), (x + 3, base - big + 8), (x + 3, base - 6), 1)
+    x += 18 - gap
+    rc = pygame.Rect(x, base - roll, roll, roll)
+    col = (160, 225, 180)
+    _slot_frame(surf, rc, col, _ready_flash(world, "roll", p.roll_cd))
+    cx, cy = rc.center
+    ui.arc(surf, col, pygame.Rect(cx - 11, cy - 11, 22, 22), 0.6, 5.4, 3)
+    ui.polygon(surf, col, [(cx + 11, cy - 2), (cx + 5, cy - 11), (cx + 15, cy - 9)])
+    _cooldown(surf, rc.inflate(-4, -4), p.roll_cd / max(0.01, p.roll_total), 9)
+    ui.key_badge(surf, "Espace", (rc.centerx, rc.bottom), 10)
+    world.skill_rects.append((rc, ("roll", None)))
+    # jauge de mana
+    txt = f"{int(p.mana)} / {int(p.stats['max_mana'])}"
+    ui.draw_text(surf, txt, (panel.x + pad, base + 20), 10, (170, 200, 255), "bold", anchor="midleft")
+    tx = panel.x + pad + ui.text_size(txt, 10, "bold")[0] + 8
+    bar = pygame.Rect(tx, base + 17, panel.right - pad - tx, 6)
+    frac = max(0.0, min(1.0, p.mana / max(1, p.stats["max_mana"])))
+    ui.rect(surf, (0, 0, 0, 190), bar.inflate(2, 2), 0, 4)
+    if frac > 0:
+        ui.rect(surf, MANA_COL, (bar.x, bar.y, max(3, bar.w * frac), bar.h), 0, 3)
+        ui.line(surf, (170, 210, 255), (bar.x + 2, bar.y + 1), (bar.x + max(3, bar.w * frac) - 2, bar.y + 1), 1)
     # or : apparaît brièvement quand il change (comme les rubis)
     if world.gold_shown > 0 or world.show_inv:
         a = min(1.0, world.gold_shown / 0.5) if not world.show_inv else 1.0
-        r = pygame.Rect(right - 130, y1 + s2 + 20, 130, 28)
+        r = pygame.Rect(right - 130, panel.bottom + 12, 130, 28)
         ui.botw_box(surf, r, int(150 * a), None, radius=14)
         ui.circle(surf, (240, 196, 70), (r.x + 16, r.centery), 8)
         ui.circle(surf, (255, 230, 140), (r.x + 14, r.centery - 2), 3)
@@ -317,33 +342,9 @@ def draw_hud(surf, world):
     draw_effects(surf, world, 18, y + 2)
     draw_slots(surf, world)
     draw_minimap(surf, world)
-    draw_quests(surf, world)
     draw_top(surf, world)
     draw_notifs(surf, world)
     draw_messages(surf, world)
-
-
-def draw_quests(surf, world):
-    """Suivi des quêtes, à droite sous la barre de sorts."""
-    from . import quests
-    p = world.player
-    right, y = SCREEN_W - 22, 164
-    for qid in quests.tracked(p):
-        q = quests.QUESTS[qid]
-        ui.draw_text(surf, q["name"], (right, y), 15, GOLD_BRIGHT, "bold", anchor="topright")
-        y += 20
-        if p.quests[qid]["state"] == "ready":
-            who = quests.NPC_NAMES[quests.turn_in_npc(qid)]
-            ui.draw_text(surf, f"Retournez voir {who}", (right, y), 13, (150, 230, 140), anchor="topright")
-            y += 18
-        else:
-            for text, done, need in quests.objectives(p, qid):
-                ok = done >= need
-                prog = f"  {min(done, need)}/{need}" if need > 1 else ""
-                ui.draw_text(surf, text + prog, (right, y), 13, (150, 230, 140) if ok else (214, 210, 200),
-                             anchor="topright")
-                y += 18
-        y += 8
 
 
 def draw_hud_tooltips(surf, world):
@@ -502,8 +503,13 @@ def draw_minimap(surf, world):
     ui.circle(surf, UI_LINE, box.center, box.w / 2, 2)
     _arrow(surf, box.centerx, box.centery, math.atan2(*reversed(_rot(math.cos(p.facing), math.sin(p.facing)))), 9)
     title, sub = world.hud_title()
+    y = box.y - 12
+    if sub:                       # objectif en cours (sceau du gardien...) sous le nom de l'étage
+        for line in reversed(ui.wrap(sub, 13, 300)[:2]):
+            ui.draw_text(surf, line, (box.right, y), 13, (236, 214, 150), anchor="bottomright")
+            y -= 18
     if title:
-        ui.draw_text(surf, title, (box.right, box.y - 18), 14, WHITE, "bold", anchor="bottomright")
+        ui.draw_text(surf, title, (box.right, y - 2), 14, WHITE, "bold", anchor="bottomright")
 
 
 def draw_gauges(surf, world):

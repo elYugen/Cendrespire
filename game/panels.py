@@ -79,8 +79,8 @@ class Panel:
 
 
 # =========================================================================== menu plein écran
-PAGE_CHAR, PAGE_TAL, PAGE_INV, PAGE_SYS = 0, 1, 2, 3
-PAGES = ["Personnage", "Talents", "Inventaire", "Système"]
+PAGE_CHAR, PAGE_TAL, PAGE_INV, PAGE_QUEST, PAGE_SYS = 0, 1, 2, 3, 4
+PAGES = ["Personnage", "Talents", "Inventaire", "Quêtes", "Système"]
 CATEGORIES = [("Armes", {"arme"}, "sword"), ("Armures", {"casque", "torse", "gants", "bottes"}, "armor"),
               ("Bijoux", {"amulette", "anneau"}, "ring"), ("Artefacts", {"artefact"}, "star")]
 GRID_COLS, GRID_ROWS, CELL, STEP = 5, 4, 84, 98
@@ -151,6 +151,19 @@ def chip(surf, x, y, text, col, icon=None, border=None):
     return r.right + 8
 
 
+def equipped_tag(surf, cx, y):
+    """Étiquette « Équipé » (coche + texte) posée à cheval sur le bord haut d'une case d'objet."""
+    tw, th = ui.text_size("Équipé", 12, "bold")
+    r = pygame.Rect(0, 0, tw + 28, 20)
+    r.center = (cx, y)
+    ui.rect(surf, (10, 14, 16), r, 0, 8)
+    ui.rect(surf, UP, r, 1, 8)
+    x0, y0 = r.x + 8, r.centery
+    ui.line(surf, UP, (x0, y0), (x0 + 3, y0 + 4), 2)
+    ui.line(surf, UP, (x0 + 3, y0 + 4), (x0 + 9, y0 - 4), 2)
+    ui.draw_text(surf, "Équipé", (r.x + 22, r.centery), 12, WHITE, "bold", anchor="midleft", shadow=False)
+
+
 def badge_left(surf, key, x, y, size=12, color=WHITE):
     """Pastille de touche dont le bord gauche est en x."""
     w, h = ui.text_size(key, size, "bold")
@@ -158,7 +171,7 @@ def badge_left(surf, key, x, y, size=12, color=WHITE):
 
 
 class MenuScreen(Panel):
-    """Menu façon Zelda BotW (jeu en pause), quatre pages : Personnage · Talents · Inventaire · Système.
+    """Menu façon Zelda BotW (jeu en pause), cinq pages : Personnage · Talents · Inventaire · Quêtes · Système.
     La page Système remplace l'ancien menu pause : Échap ouvre directement cette page."""
     modal = True
     fullscreen = True
@@ -195,6 +208,9 @@ class MenuScreen(Panel):
         self.notes_scroll = 0.0
         self.notes = updates.load()
         self.sys_rects = [pygame.Rect(150, 160 + i * 58, 420, 48) for i in range(len(self.sys_entries))]
+        self.quest_sel = None          # quête affichée en détail (page Quêtes)
+        self.quest_scroll = 0
+        self.quest_rects = []
 
     def portrait_spot(self):
         """Position (conception) et zoom du héros en 3D selon la page ; None : le monde reste visible derrière."""
@@ -395,8 +411,8 @@ class MenuScreen(Panel):
                 return True
             if e.key == pygame.K_ESCAPE:
                 w.close_modal()
-            elif e.key in (pygame.K_i, pygame.K_c, pygame.K_n):
-                page = {pygame.K_i: PAGE_INV, pygame.K_c: PAGE_CHAR, pygame.K_n: PAGE_TAL}[e.key]
+            elif e.key in (pygame.K_i, pygame.K_c, pygame.K_n, pygame.K_j):
+                page = {pygame.K_i: PAGE_INV, pygame.K_c: PAGE_CHAR, pygame.K_n: PAGE_TAL, pygame.K_j: PAGE_QUEST}[e.key]
                 if self.page == page:
                     w.close_modal()
                 else:
@@ -409,6 +425,8 @@ class MenuScreen(Panel):
                 self.inv_key(e)
             elif self.page == PAGE_SYS:
                 self.sys_key(e)
+            elif self.page == PAGE_QUEST:
+                self.quest_key(e)
             return True
         if e.type == pygame.MOUSEBUTTONUP and e.button == 1:
             self.drag = None
@@ -421,6 +439,8 @@ class MenuScreen(Panel):
         elif e.type == pygame.MOUSEMOTION and self.drag is not None:
             self.rot += (e.pos[0] - self.drag) * 0.012
             self.drag = e.pos[0]
+        elif e.type == pygame.MOUSEWHEEL and self.page == PAGE_QUEST:
+            self.quest_scroll = max(0, self.quest_scroll - e.y)
         elif e.type == pygame.MOUSEWHEEL and self.page == PAGE_SYS and not self.sys_sub:
             self.notes_scroll = max(0.0, self.notes_scroll - e.y * 40)
         elif e.type == pygame.MOUSEWHEEL and self.page == PAGE_INV:
@@ -440,6 +460,12 @@ class MenuScreen(Panel):
             self.char_click(e)
         elif self.page == PAGE_TAL:
             self.talent_click(e)
+        elif self.page == PAGE_QUEST:
+            if e.button == 1:
+                for qid, rc in self.quest_rects:
+                    if rc.collidepoint(e.pos):
+                        self.quest_sel = qid
+                        sfx.play("click")
         elif self.sys_sub == "options" and e.button == 1:
             for i in range(len(self.OPTION_ROWS)):
                 if self.option_bar(i).inflate(20, 24).collidepoint(e.pos):
@@ -562,7 +588,7 @@ class MenuScreen(Panel):
         mouse = ui.mouse_pos()
         if self.page == PAGE_SYS:
             ui.veil(surf, (0, 0, 0), 150)
-        elif self.page == PAGE_TAL:
+        elif self.page in (PAGE_TAL, PAGE_QUEST):
             ui.veil(surf, (4, 8, 12), 225)
         self.draw_frame(surf)
         if self.page == PAGE_INV:
@@ -571,6 +597,8 @@ class MenuScreen(Panel):
             self.draw_character(surf, mouse)
         elif self.page == PAGE_TAL:
             self.draw_talents(surf, mouse)
+        elif self.page == PAGE_QUEST:
+            self.draw_quests(surf, mouse)
         else:
             self.draw_system(surf, mouse)
         self.draw_tooltips(surf)
@@ -606,6 +634,8 @@ class MenuScreen(Panel):
             hints = [("Répartir", "Clic"), ("+5", "Maj + clic"), ("Pivoter", "Glisser"), ("Retour", "Échap")]
         elif self.page == PAGE_TAL:
             hints = [("Apprendre", "Clic"), ("Retirer", "Clic droit"), ("Retour", "Échap")]
+        elif self.page == PAGE_QUEST:
+            hints = [("Détails", "Clic"), ("Faire défiler", "Molette"), ("Retour", "Échap")]
         else:
             hints = [("Choisir", "Entrée"), ("Retour", "Échap")]
         x = SCREEN_W - 40
@@ -663,8 +693,7 @@ class MenuScreen(Panel):
         p = self.world.player
         kind, key, it = ent
         equipped = kind == "equip"
-        ui.botw_box(surf, rc, 205 if equipped else 150, SHEIKAH if equipped else FRAME, radius=4,
-                    fill=(16, 78, 110) if equipped else (0, 0, 0))
+        ui.botw_box(surf, rc, 150, FRAME, radius=4)
         col = RARITY_COLORS[it["rarity"]]
         if it["rarity"] != "commun":
             ui.rect(surf, (*col, 34), rc.inflate(-4, -4), 0, 3)
@@ -682,6 +711,8 @@ class MenuScreen(Panel):
             ui.key_badge(surf, ARTIFACT_KEYS[ART_SLOTS.index(key)], (rc.right - 12, rc.bottom - 12), 11, SHEIKAH)
         if not p.can_equip(it):
             ui.line(surf, DOWN, (rc.x + 8, rc.bottom - 8), (rc.right - 8, rc.y + 8), 2)
+        if equipped:
+            equipped_tag(surf, rc.centerx, rc.y)
 
     def draw_stats(self, surf, ent):
         """Attaque / défense / vie à côté du héros, avec la variation si l'on équipe l'objet visé."""
@@ -1139,6 +1170,122 @@ class MenuScreen(Panel):
         ui.draw_tooltip_lines(surf, lines, ui.mouse_pos(), col)
 
     # ------------------------------------------------------------------ système (ancien menu pause)
+    # ------------------------------------------------------------------ quêtes
+    def quest_groups(self):
+        """[(titre de section, couleur, [qid])] : à rendre, en cours, terminées."""
+        from . import quests
+        st = {q: s["state"] for q, s in self.world.player.quests.items()}
+        return [("À rendre", (150, 230, 140), [q for q in quests.QUESTS if st.get(q) == "ready"]),
+                ("En cours", GOLD_BRIGHT, [q for q in quests.QUESTS if st.get(q) == "active"]),
+                ("Terminées", (150, 154, 150), [q for q in quests.QUESTS if st.get(q) == "done"])]
+
+    def quest_order(self):
+        return [q for _t, _c, qs in self.quest_groups() for q in qs]
+
+    def quest_key(self, e):
+        order = self.quest_order()
+        if order and (e.key in (pygame.K_UP, pygame.K_DOWN) or e.scancode in (26, 22)):
+            d = -1 if (e.key == pygame.K_UP or e.scancode == 26) else 1
+            i = order.index(self.quest_sel) if self.quest_sel in order else -d
+            self.quest_sel = order[(i + d) % len(order)]
+            sfx.play("click")
+
+    def draw_quests(self, surf, mouse):
+        from . import quests
+        p = self.world.player
+        order = self.quest_order()
+        if self.quest_sel not in order:
+            self.quest_sel = order[0] if order else None
+        # liste à gauche, par état
+        box = pygame.Rect(90, 140, 430, 490)
+        ui.botw_box(surf, box, 120, FRAME, radius=6)
+        self.quest_rects = []
+        if not order:
+            ui.draw_wrapped(surf, "Aucune quête pour l'instant. Parlez aux habitants de Cendreval : un « ! » doré "
+                            "au-dessus de leur tête signale une quête à prendre.", box.x + 24, box.y + 24,
+                            box.w - 48, 16, SOFT)
+        rows = []
+        for title, col, qs in self.quest_groups():
+            if qs:
+                rows.append(("head", title, col))
+                rows += [("quest", q, col) for q in qs]
+        visible = 12
+        self.quest_scroll = max(0, min(self.quest_scroll, len(rows) - visible))
+        y = box.y + 14
+        for kind, a, col in rows[self.quest_scroll:self.quest_scroll + visible]:
+            if kind == "head":
+                head = a.upper()
+                ui.draw_text(surf, head, (box.x + 22, y + 10), 12, col, "bold", anchor="midleft")
+                ui.line(surf, (90, 94, 92), (box.x + 32 + ui.text_size(head, 12, "bold")[0], y + 10),
+                        (box.right - 22, y + 10))
+                y += 30
+                continue
+            rc = pygame.Rect(box.x + 12, y, box.w - 24, 34)
+            sel, hov = a == self.quest_sel, rc.collidepoint(mouse)
+            if sel or hov:
+                ui.botw_box(surf, rc, 190 if sel else 120, WHITE if sel else FRAME, radius=4,
+                            fill=(20, 40, 50) if sel else (0, 0, 0))
+            q = quests.QUESTS[a]
+            ui.circle(surf, col, (rc.x + 16, rc.centery), 4)
+            ui.draw_text(surf, q["name"], (rc.x + 30, rc.centery), 17, WHITE if sel else SOFT, "title",
+                         anchor="midleft")
+            ui.draw_text(surf, quests.NPC_NAMES[q["giver"]], (rc.right - 12, rc.centery), 12, TEXT_DIM,
+                         anchor="midright")
+            if sel:
+                ui.selection_frame(surf, rc, self.t, WHITE)
+            self.quest_rects.append((a, rc))
+            y += 38
+        if len(rows) > visible:
+            ui.draw_text(surf, "Molette : faire défiler", (box.centerx, box.bottom - 16), 12, TEXT_DIM,
+                         anchor="center")
+        # détail de la quête choisie, à droite
+        det = pygame.Rect(560, 140, 630, 490)
+        ui.botw_box(surf, det, 150, FRAME, radius=6)
+        qid = self.quest_sel
+        if not qid:
+            return
+        q = quests.QUESTS[qid]
+        state = p.quests[qid]["state"]
+        tag, tcol = {"ready": ("TERMINÉE : À RENDRE", (150, 230, 140)), "active": ("EN COURS", GOLD_BRIGHT),
+                     "done": ("TERMINÉE", (150, 154, 150))}[state]
+        x, y = det.x + 32, det.y + 26
+        ui.draw_text(surf, tag, (x, y), 12, tcol, "bold")
+        ui.draw_text(surf, q["name"], (x, y + 18), 28, WHITE, "title")
+        giver = quests.NPC_NAMES[q["giver"]]
+        back = quests.NPC_NAMES[quests.turn_in_npc(qid)]
+        ui.draw_text(surf, f"Donnée par {giver}" + (f" · à rendre à {back}" if back != giver else ""),
+                     (x, y + 56), 14, TEXT_DIM)
+        y = ui.draw_wrapped(surf, q["desc"], x, y + 88, det.w - 64, 16, SOFT) + 18
+        ui.separator(surf, x, det.right - 32, y)
+        y += 16
+        ui.draw_text(surf, "Objectifs", (x, y), 15, SHEIKAH, "bold")
+        y += 28
+        for text, done, need in quests.objectives(p, qid):
+            ok = done >= need or state == "done"
+            ui.circle(surf, UP if ok else (110, 114, 112), (x + 8, y + 9), 6, 0 if ok else 2)
+            ui.draw_text(surf, text, (x + 24, y), 16, UP if ok else TEXT)
+            if need > 1:
+                shown = need if state == "done" else min(done, need)
+                bar = pygame.Rect(det.right - 212, y + 5, 120, 8)
+                ui.rect(surf, (0, 0, 0, 180), bar.inflate(2, 2), 0, 4)
+                ui.rect(surf, UP if ok else GOLD_BRIGHT, (bar.x, bar.y, max(1, bar.w * shown / need), bar.h), 0, 4)
+                ui.draw_text(surf, f"{shown} / {need}", (det.right - 32, y), 15, UP if ok else SOFT,
+                             anchor="topright")
+            y += 30
+        if state == "ready":
+            ui.draw_text(surf, f"Retournez voir {back} pour recevoir votre récompense.", (x, y + 4), 15,
+                         (150, 230, 140), "bold")
+        rw = quests.reward_text(qid)
+        if rw:
+            yy = det.bottom - 118
+            ui.separator(surf, x, det.right - 32, yy)
+            ui.draw_text(surf, "Récompense reçue" if state == "done" else "Récompense", (x, yy + 16), 15, SHEIKAH,
+                         "bold")
+            coin_icon(surf, x + 10, yy + 54, 8)
+            ui.draw_text(surf, rw, (x + 26, yy + 54), 17, GOLD, anchor="midleft")
+        if state == "active" and q.get("progress"):
+            ui.draw_wrapped(surf, f"« {q['progress']} »", x, det.bottom - 42, det.w - 64, 14, TEXT_DIM)
+
     def draw_system(self, surf, mouse):
         for i, ((label, desc, _), rc) in enumerate(zip(self.sys_entries, self.sys_rects)):
             sel = i == self.sys_cursor
@@ -1254,7 +1401,7 @@ class MenuScreen(Panel):
             ("ZQSD / WASD / flèches", "Se déplacer au clavier"),
             ("1 2 3 4 · clic droit", "Sorts (clic droit = sort 1)"), ("Espace", "Roulade d'esquive"),
             ("R · T · G", "Artefacts"), ("F", "Potion (à recharge)"), ("E · clic", "Interagir / parler / briser un mur fissuré"),
-            ("I · C · N", "Inventaire · Personnage · Talents"), ("Tab", "Grande carte · page suivante (menu)"),
+            ("I · C · N · J", "Inventaire · Personnage · Talents · Quêtes"), ("Tab", "Grande carte · page suivante (menu)"),
             ("← →", "Changer de page du menu"),
             ("Échap", "Menu Système / fermer"), ("F11", "Plein écran"),
         ]

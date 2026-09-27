@@ -163,7 +163,7 @@ Ajoutez une entrée dans `classes.json` (copier une classe existante est le plus
 
 ## Quêtes (`quests.json`)
 
-Chaque quête est donnée par un habitant de Cendreval (`giver`). Un « ! » doré au-dessus de sa tête signale une quête à prendre, un « ? » doré une quête terminée à lui rendre (un « ? » gris : quête en cours). Les quêtes en cours s'affichent à droite de l'écran.
+Chaque quête est donnée par un habitant de Cendreval (`giver`). Un « ! » doré au-dessus de sa tête signale une quête à prendre, un « ? » doré une quête terminée à lui rendre (un « ? » gris : quête en cours). Les quêtes (en cours, à rendre, terminées) se consultent dans l'onglet « Quêtes » du menu (Échap, ou touche J).
 
 ```json
 "os_sans_repos": {

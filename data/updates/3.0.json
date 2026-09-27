@@ -12,6 +12,18 @@
       "Geôlier : traquez le Geôlier du sceau et reprenez la clé qu'il garde.",
       "Fragments, brasiers, clé et Geôlier apparaissent sur la minicarte une fois leur zone explorée."
     ]},
+    {"name": "Cendreval", "notes": [
+      "Nouvelle zone d'entraînement à l'est de la ville, par la nouvelle porte au bout de la rue du marché.",
+      "Son mannequin immortel ne bouge pas, ne riposte pas et affiche vos dégâts par seconde : idéal pour comparer équipements et talents.",
+      "Brunhild la Maîtresse d'armes veille sur la cour.",
+      "Gorvan le Marchand se tient désormais devant son étal au lieu d'être caché derrière."
+    ]},
+    {"name": "Interface", "notes": [
+      "Barre de compétences redessinée : liseré de la couleur du sort, coût en mana, éclat quand un sort est de nouveau prêt, jauge de mana.",
+      "Les quêtes quittent l'écran de jeu pour un onglet « Quêtes » dans le menu (Échap, ou touche J) : quêtes à rendre, en cours et terminées, objectifs et récompenses.",
+      "Le nom de la ville n'apparaît plus au-dessus de la minicarte ; dans la tour, l'objectif du sceau s'affiche sous le nom de l'étage.",
+      "Inventaire : les objets équipés portent une étiquette « Équipé » au lieu d'une case colorée."
+    ]},
     {"name": "Nouveaux modèles de monstres", "notes": [
       "Goules, diablotins, cultistes et brutes démoniaques ont de nouveaux modèles 3D animés (course, attaque).",
       "Arachne devient une araignée géante et Varkul la Liche un crâne spectral.",

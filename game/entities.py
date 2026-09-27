@@ -3,7 +3,7 @@ import math
 import random
 from collections import defaultdict
 
-from . import looks, sfx
+from . import looks, sfx, talents
 from .data import (CLASSES, SPELLS, MONSTERS, ATTRS, ELITE_AFFIXES, MAX_LEVEL, POINTS_PER_LEVEL, ANIMA_POWERS,
                    POTION_CD, POTION_HEAL, ROLL_CD, ROLL_DUR, ROLL_DIST, xp_needed, floor_scaling)
 from .fx import RingFX
@@ -25,6 +25,9 @@ class Player:
         self.xp = data.get("xp", 0)
         self.alloc = {a: data.get("alloc", {}).get(a, 0) for a in ATTRS}
         self.points = data.get("points", 0)
+        self.talents = talents.clean(data.get("talents"), self.cls_id)
+        self.tal = {}
+        self.stand_used = False
         self.gold = data.get("gold", 0)
         self.max_floor = data.get("max_floor", 1)
         self.cleared = set(data.get("cleared", []))
@@ -81,7 +84,8 @@ class Player:
         return {"name": self.name, "cls": self.cls_id, "level": self.level, "xp": self.xp, "alloc": self.alloc,
                 "points": self.points, "gold": self.gold, "max_floor": self.max_floor,
                 "cleared": sorted(self.cleared), "equipment": self.equipment, "inventory": self.inventory,
-                "kills": self.kills, "deaths": self.deaths, "created_at": self.created_at, "look": dict(self.look)}
+                "kills": self.kills, "deaths": self.deaths, "created_at": self.created_at, "look": dict(self.look),
+                "talents": dict(self.talents)}
 
     @property
     def spec(self):
@@ -100,6 +104,19 @@ class Player:
     def ench_points(self):
         return self.ench_points_total - sum(ench_spent(it) for it in self.all_items())
 
+    # ------------------------------------------------------------------ talents
+    @property
+    def talent_points_total(self):
+        return talents.points_total(self.level)
+
+    @property
+    def talent_points(self):
+        return self.talent_points_total - talents.spent(self.talents)
+
+    def t(self, key):
+        """Valeur totale d'un effet de talent (0 si absent)."""
+        return self.tal.get(key, 0)
+
     def full_restore(self):
         self.hp = self.stats["max_hp"]
         self.mana = self.stats["max_mana"]
@@ -108,6 +125,7 @@ class Player:
     def reset_run(self):
         self.anima = {}
         self.second_used = False
+        self.stand_used = False
         self.buffs = {}
         self.cds = {}
         self.art_cds = {}
@@ -139,27 +157,32 @@ class Player:
             for k, v in ench_stats(it).items():
                 ench[k] += v
         av = self.av
+        self.tal = tal = talents.effects(self.talents)
+        tv = tal.get
         s = {k: c["attrs"][k] + self.alloc[k] + gear[k] for k in ATTRS}
         s["max_hp"] = ((c["hp"] + c["hp_lvl"] * (self.level - 1) + s["vit"] * 5 + gear["vie"])
-                       * (1 + av("vigueur") / 100) * (1 + ench["vitalite"] / 100))
-        s["max_mana"] = c["mana"] + c["mana_lvl"] * (self.level - 1) + s["int"] * 1.5 + gear["mana"]
-        s["armor"] = armor + gear["armure"] + s["force"] * 0.5
+                       * (1 + av("vigueur") / 100) * (1 + ench["vitalite"] / 100) * (1 + tv("max_hp_pct", 0) / 100))
+        s["max_mana"] = ((c["mana"] + c["mana_lvl"] * (self.level - 1) + s["int"] * 1.5 + gear["mana"])
+                         * (1 + tv("mana_pct", 0) / 100))
+        s["armor"] = (armor + gear["armure"] + s["force"] * 0.5) * (1 + tv("armor_pct", 0) / 100)
         s["dmg_min"], s["dmg_max"] = dmin, dmax
-        s["dmg_pct"] = gear["dmg_pct"] + av("rage") + ench["tranchant"]
+        s["dmg_pct"] = gear["dmg_pct"] + av("rage") + ench["tranchant"] + tv("dmg_pct", 0)
         s["dmg_mult"] = (1 + s[c["primary"]] / 100) * (1 + s["dmg_pct"] / 100)
-        s["crit"] = min(60, 5 + s["dex"] * 0.05 + gear["crit"] + av("precision") + ench["acuite"])
-        s["atk_speed"] = gear["atk_speed"] + av("frenesie") + ench["vivacite"]
-        s["lifesteal"] = gear["lifesteal"] + av("soif")
-        s["mana_regen"] = (c["mana_regen"] + gear["mana_regen"]) * (1 + av("flux") / 100)
-        s["move_speed"] = gear["move_speed"] + av("ombre") + ench["celerite"]
-        s["cdr"] = min(50, gear["cdr"] + av("esprit") + ench["recharge"])
-        s["gold_find"] = gear["gold_find"] + av("cupidite")
+        s["crit"] = min(60, 5 + s["dex"] * 0.05 + gear["crit"] + av("precision") + ench["acuite"] + tv("crit", 0))
+        s["crit_mult"] = 1.75 + tv("crit_dmg", 0) / 100
+        s["atk_speed"] = gear["atk_speed"] + av("frenesie") + ench["vivacite"] + tv("atk_speed", 0)
+        s["lifesteal"] = gear["lifesteal"] + av("soif") + tv("lifesteal", 0)
+        s["mana_regen"] = ((c["mana_regen"] + gear["mana_regen"]) * (1 + av("flux") / 100)
+                           * (1 + tv("mana_regen_pct", 0) / 100))
+        s["move_speed"] = gear["move_speed"] + av("ombre") + ench["celerite"] + tv("move_speed", 0)
+        s["cdr"] = min(50, gear["cdr"] + av("esprit") + ench["recharge"] + tv("cdr", 0))
+        s["gold_find"] = gear["gold_find"] + av("cupidite") + tv("gold_find", 0)
         s["speed"] = c["speed"] * (1 + s["move_speed"] / 100)
-        s["dr_bonus"] = av("carapace") / 100 + ench["rempart"] / 100
+        s["dr_bonus"] = av("carapace") / 100 + ench["rempart"] / 100 + tv("dr", 0) / 100
         s["ench"] = dict(ench)
         self.stats = s
         self.potion_total = POTION_CD * (1 - ench["potion_vive"] / 100)
-        self.roll_total = ROLL_CD * (1 - ench["agilite"] / 100)
+        self.roll_total = ROLL_CD * (1 - ench["agilite"] / 100) * (1 - tv("roll_cd", 0) / 100)
         self.hp = min(self.hp, s["max_hp"])
         self.mana = min(self.mana, s["max_mana"])
 
@@ -171,21 +194,29 @@ class Player:
         dr = armor / (armor + 220) + self.stats["dr_bonus"]
         if "talisman" in self.buffs:
             dr += self.buffs_val.get("talisman", 0) / 100
+        if "egide" in self.buffs:
+            dr += 0.35
+        if self.t("low_hp_dr") and self.hp < self.stats["max_hp"] * 0.35:
+            dr += self.t("low_hp_dr") / 100
         return min(0.85, dr)
 
     def dps_estimate(self):
         s = self.stats
-        avg = (s["dmg_min"] + s["dmg_max"]) / 2 * s["dmg_mult"] * (1 + s["crit"] / 100 * 0.75)
-        return avg * self.cls["attack"]["mult"] / (self.cls["attack"]["cd"] / (1 + s["atk_speed"] / 100))
+        avg = (s["dmg_min"] + s["dmg_max"]) / 2 * s["dmg_mult"] * (1 + s["crit"] / 100 * (s["crit_mult"] - 1))
+        mult = self.cls["attack"]["mult"] * (1 + self.t("basic_pct") / 100)
+        return avg * mult / (self.cls["attack"]["cd"] / (1 + s["atk_speed"] / 100))
 
-    def roll_damage(self, mult):
+    def roll_damage(self, mult, crit_bonus=0.0):
         s = self.stats
         d = random.uniform(s["dmg_min"], s["dmg_max"]) * mult * s["dmg_mult"]
         if "cri" in self.buffs:
             d *= 1.35
-        crit = random.random() * 100 < s["crit"]
+        if self.t("berserk"):
+            missing = 1 - max(0.0, self.hp) / s["max_hp"]
+            d *= 1 + self.t("berserk") / 100 * missing
+        crit = random.random() * 100 < s["crit"] + crit_bonus
         if crit:
-            d *= 1.75
+            d *= s["crit_mult"]
         return d, crit
 
     def heal(self, amount):
@@ -211,8 +242,15 @@ class Player:
         world.particles.emit(self.x, self.y, (150, 12, 12), n=6, speed=90, life=0.5, size=3, glow=False,
                              gravity=500, up=180, z=24)
         sfx.play("hurt", 0.6)
-        if attacker is not None and melee and self.ench("epines"):
-            world.damage_monster(attacker, dmg * self.ench("epines") / 100, False)
+        thorns = self.ench("epines") + self.t("thorns")
+        if attacker is not None and melee and thorns:
+            world.damage_monster(attacker, dmg * thorns / 100, False)
+        if (self.t("last_stand") and not self.stand_used and 0 < self.hp < self.stats["max_hp"] * 0.2):
+            self.stand_used = True
+            self.heal(self.stats["max_hp"] * 0.4)
+            self.invuln = 2.0
+            world.show_banner("Second souffle !", "", (255, 220, 120), 2.0)
+            world.effects.append(RingFX(self.x, self.y, 10, 140, 0.5, (255, 220, 120), 6))
         if self.ench("riposte") and random.random() * 100 < self.ench("riposte"):
             from .fx import Blast
             world.effects.append(Blast(self.x, self.y, 120, 0, 1.0, (255, 120, 40), knock=60, sound="fire"))
@@ -347,6 +385,8 @@ class Monster:
         self.burn = 0.0
         self.burn_dps = 0.0
         self.burn_tick = 0.0
+        self.burn_col = (255, 120, 40)
+        self.curse = 0.0
         self.facing = random.random() * math.tau
         self.phase = random.random() * 10
         self.moving = False
@@ -370,12 +410,13 @@ class Monster:
         self.slow = max(0.0, self.slow - dt)
         self.spawn_t += dt
         self.moving = False
+        self.curse = max(0.0, self.curse - dt)
         if self.burn > 0:
             self.burn -= dt
             self.burn_tick -= dt
             if self.burn_tick <= 0:
                 self.burn_tick = 0.5
-                world.particles.emit(self.x, self.y, (255, 120, 40), n=4, speed=30, life=0.5, size=3, up=60, z=20)
+                world.particles.emit(self.x, self.y, self.burn_col, n=4, speed=30, life=0.5, size=3, up=60, z=20)
                 world.damage_monster(self, self.burn_dps * 0.5, False, quiet=True)
                 if self.dead:
                     return
@@ -515,11 +556,14 @@ class Monster:
         sc = self.r / 14 * 0.95
         tint = (255, 70, 50) if self.state == "windup" else ((150, 210, 255) if self.slow > 0 else None)
         if self.burn > 0:
-            tint = (255, 150, 60)
+            tint = tuple(min(255, c + 40) for c in self.burn_col)
         rise = min(1.0, self.spawn_t / 0.35) if self.minion else 1.0
         z = -40 * sc * (1 - rise)
         models.humanoid(fr, self.x, self.y, z, self.facing, self.phase, models.MONSTER_SPECS[self.spec_id], sc=sc,
                         flash=self.flash > 0, tint_col=tint, moving=self.moving)
+        if self.curse > 0:
+            fr.decal(self.x, self.y, self.r * 1.7, self.r * 1.7, (170, 90, 230), 0.55, kind=1, inner=0.7, rot=t)
+            fr.glow(self.x, self.y, self.height() + 10 + 3 * math.sin(t * 5), 12, (190, 110, 255), 0.8)
         if self.elite:
             k = 0.5 + 0.5 * math.sin(t * 4 + self.phase)
             fr.decal(self.x, self.y, self.r * 1.9, self.r * 1.9, (255, 200, 70), 0.35 + 0.25 * k, kind=1, inner=0.78)

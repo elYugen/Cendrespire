@@ -175,7 +175,7 @@ class TitleScene(Scene):
                         f"étage {d.get('max_floor', 1)}")
                 ui.draw_text(surf, info, (SCREEN_W / 2, SCREEN_H - 34), 14, (214, 208, 190), anchor="center",
                              alpha=int(220 * e))
-        for i, line in enumerate(("Ver. 2.0", TITLE, "© 2026 elyugen")):
+        for i, line in enumerate(("Ver. 2.0", TITLE, "© 2026 Saku Game")):
             ui.draw_text(surf, line, (SCREEN_W - 30, SCREEN_H - 70 + i * 19), 13, (226, 222, 204), anchor="topright",
                          alpha=190)
 
@@ -301,7 +301,8 @@ class CreateScene(Scene):
         self.t = 0.0
         self.error = ""
         self.cam = Camera3D(yaw=45, pitch=10, dist=5.6, fov=32)
-        self.class_rects = {cid: pygame.Rect(640 + i * 206, 190, 196, 64) for i, cid in enumerate(CLASSES)}
+        self.class_rects = {cid: pygame.Rect(640 + (i % 3) * 206, 186 + (i // 3) * 62, 196, 54)
+                            for i, cid in enumerate(CLASSES)}
         self.name_rect = pygame.Rect(640, 110, 402, 44)
         # étape 0 : nom et classe ; étape 1 : apparence
         self.step = 0
@@ -467,11 +468,12 @@ class CreateScene(Scene):
             ui.circle(surf, ui.darker(cc["color"], 0.5), (rc.x + 30, rc.centery), 18)
             ui.circle(surf, cc["color"], (rc.x + 30, rc.centery), 18, 2)
             ui.draw_text(surf, cc["name"][0], (rc.x + 30, rc.centery), 18, WHITE, "title_bold", anchor="center")
-            ui.draw_text(surf, cc["name"], (rc.x + 58, rc.centery), 18, WHITE if sel else SOFT, "title", anchor="midleft")
+            ui.draw_text(surf, cc["name"], (rc.x + 58, rc.centery), 17 if len(cc["name"]) > 10 else 18,
+                         WHITE if sel else SOFT, "title", anchor="midleft")
             if sel:
                 ui.selection_frame(surf, rc, self.t, cc["color"])
         # description, caractéristiques, sorts
-        box = ui.botw_box(surf, (640, 276, 602, 340), 150, (100, 102, 100), radius=14)
+        box = ui.botw_box(surf, (640, 318, 602, 300), 150, (100, 102, 100), radius=14)
         y = ui.draw_wrapped(surf, c["desc"], box.x + 22, box.y + 16, box.w - 44, 16, SOFT)
         y += 10
         for i, a in enumerate(ATTRS):

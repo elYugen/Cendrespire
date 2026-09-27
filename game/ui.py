@@ -12,8 +12,7 @@ import pygame.freetype as ft
 from . import gfx, sfx
 from .gfx import darker, lighter
 from .items import item_lines
-from .settings import (VIEW, SCREEN_W, SCREEN_H, TEXT, TEXT_DIM, WHITE, SHEIKAH, UI_LINE, RARITY_COLORS, FONT_FILES,
-                       FONT_FALLBACK)
+from .settings import (VIEW, SCREEN_W, SCREEN_H, TEXT, TEXT_DIM, WHITE, SHEIKAH, UI_LINE, RARITY_COLORS, FONT_FILES)
 
 BOTW_LINE = UI_LINE
 BOTW_CYAN = SHEIKAH
@@ -59,7 +58,7 @@ def font(size, kind="text"):
         try:
             f = ft.Font(path, px, font_index=idx)
         except Exception:
-            f = ft.SysFont(FONT_FALLBACK.get(kind, "arial"), px)
+            f = ft.Font(None, px)   # police intégrée à pygame, en dernier recours
         f.origin = True
         f.antialiased = True
         f.kerning = True
@@ -379,6 +378,20 @@ def draw_item_icon(surf, item, r, bg=True):
             pts = [Q(.55, .12), Q(.88, .22), Q(.8, .48), Q(.6, .36)]
             polygon(surf, metal, pts)
             polygon(surf, metal_d, pts, 1)
+        elif wc == "paladin":
+            line(surf, (236, 226, 190), Q(.3, .78), Q(.78, .2), lw + 1)
+            line(surf, (200, 160, 70), Q(.2, .6), Q(.48, .88), lw + 1)
+            line(surf, (120, 84, 50), Q(.22, .86), Q(.33, .75), lw + 2)
+            circle(surf, gem, Q(.34, .74), w * .06)
+        elif wc == "necromancien":
+            line(surf, (70, 60, 56), Q(.22, .9), Q(.62, .16), lw + 1)
+            arc(surf, (210, 214, 222), pygame.Rect(Q(.2, .08), (w * .6, h * .42)), 0.2, 2.9, lw + 1)
+            circle(surf, (140, 255, 170), Q(.62, .16), w * .06)
+        elif wc == "assassin":
+            for dx in (0, .22):
+                line(surf, (220, 222, 236), Q(.2 + dx, .72), Q(.52 + dx, .14), lw)
+                line(surf, (100, 76, 120), Q(.12 + dx, .66), Q(.3 + dx, .8), lw)
+                line(surf, (70, 50, 60), Q(.1 + dx, .9), Q(.2 + dx, .72), lw + 1)
         elif wc == "sorcier":
             line(surf, wood, Q(.28, .88), Q(.64, .28), lw + 1)
             circle(surf, gem, Q(.68, .22), w * .13)

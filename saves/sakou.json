@@ -1,20 +1,21 @@
 {
  "name": "Sakou",
  "cls": "barbare",
- "level": 7,
- "xp": 404,
+ "level": 8,
+ "xp": 30,
  "alloc": {
   "force": 11,
   "dex": 1,
   "int": 0,
-  "vit": 18
+  "vit": 23
  },
  "points": 0,
- "gold": 517,
- "max_floor": 3,
+ "gold": 587,
+ "max_floor": 4,
  "cleared": [
   1,
-  2
+  2,
+  3
  ],
  "equipment": {
   "arme": {
@@ -107,7 +108,7 @@
    "slot": "torse",
    "rarity": "magique",
    "ilvl": 1,
-   "upgrade": 2,
+   "upgrade": 3,
    "affixes": {
     "force": 4
    },
@@ -127,16 +128,29 @@
    ]
   },
   "gants": {
-   "uid": 10902855239554,
+   "uid": 18234595398480,
    "slot": "gants",
-   "rarity": "commun",
+   "rarity": "magique",
    "ilvl": 2,
    "upgrade": 0,
-   "affixes": {},
+   "affixes": {
+    "armure": 9,
+    "mana": 10
+   },
    "base": "Mitaines cloutées",
    "armor": 4,
-   "name": "Mitaines cloutées",
-   "ench": []
+   "name": "Mitaines cloutées du Rempart",
+   "ench": [
+    {
+     "choices": [
+      "rempart",
+      "riposte",
+      "vitalite"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
   },
   "bottes": {
    "uid": 71006788815633,
@@ -188,22 +202,34 @@
    "ench": []
   },
   "anneau": {
-   "uid": 182844609378070,
+   "uid": 101508374401801,
    "slot": "anneau",
-   "rarity": "magique",
-   "ilvl": 1,
-   "upgrade": 1,
+   "rarity": "rare",
+   "ilvl": 3,
+   "upgrade": 0,
    "affixes": {
-    "int": 3
+    "lifesteal": 1,
+    "mana_regen": 1,
+    "crit": 2,
+    "dex": 7
    },
    "base": "Anneau",
-   "name": "Anneau du Sage",
+   "name": "Colère des Damnés",
    "ench": [
     {
      "choices": [
-      "epines",
-      "agilite",
-      "ame_soin"
+      "potion_vive",
+      "celerite",
+      "esquive"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "celerite",
+      "esquive",
+      "potion_vive"
      ],
      "id": null,
      "lvl": 0
@@ -235,15 +261,15 @@
    "ench": []
   },
   "artefact3": {
-   "uid": 212885098627680,
+   "uid": 153297071498013,
    "slot": "artefact",
-   "art": "bottes",
-   "rarity": "magique",
-   "ilvl": 2,
+   "art": "lanterne",
+   "rarity": "legendaire",
+   "ilvl": 3,
    "upgrade": 1,
    "affixes": {},
    "base": "Artefact",
-   "name": "Bottes de célérité",
+   "name": "Lanterne des âmes",
    "ench": []
   }
  },
@@ -337,29 +363,16 @@
    "ench": []
   },
   {
-   "uid": 18234595398480,
+   "uid": 10902855239554,
    "slot": "gants",
-   "rarity": "magique",
+   "rarity": "commun",
    "ilvl": 2,
-   "upgrade": 0,
-   "affixes": {
-    "armure": 9,
-    "mana": 10
-   },
+   "upgrade": 1,
+   "affixes": {},
    "base": "Mitaines cloutées",
    "armor": 4,
-   "name": "Mitaines cloutées du Rempart",
-   "ench": [
-    {
-     "choices": [
-      "rempart",
-      "riposte",
-      "vitalite"
-     ],
-     "id": null,
-     "lvl": 0
-    }
-   ]
+   "name": "Mitaines cloutées",
+   "ench": []
   },
   {
    "uid": 51947688945232,
@@ -372,45 +385,6 @@
    "base": "Artefact",
    "name": "Pierre d'orage",
    "ench": []
-  },
-  {
-   "uid": 68699388790414,
-   "slot": "arme",
-   "rarity": "rare",
-   "ilvl": 2,
-   "upgrade": 0,
-   "affixes": {
-    "crit": 2,
-    "vit": 5,
-    "dex": 5
-   },
-   "wclass": "barbare",
-   "base": "Épée longue",
-   "dmg": [
-    11,
-    19
-   ],
-   "name": "Faim des Ossements",
-   "ench": [
-    {
-     "choices": [
-      "tranchant",
-      "vivacite",
-      "echo"
-     ],
-     "id": null,
-     "lvl": 0
-    },
-    {
-     "choices": [
-      "vivacite",
-      "acuite",
-      "vampirisme"
-     ],
-     "id": null,
-     "lvl": 0
-    }
-   ]
   },
   {
    "uid": 264964993409701,
@@ -526,22 +500,341 @@
      "lvl": 0
     }
    ]
+  },
+  {
+   "uid": 137994679474009,
+   "slot": "amulette",
+   "rarity": "magique",
+   "ilvl": 3,
+   "upgrade": 0,
+   "affixes": {
+    "int": 4
+   },
+   "base": "Amulette",
+   "name": "Amulette du Sage",
+   "ench": [
+    {
+     "choices": [
+      "potion_vive",
+      "recharge",
+      "esquive"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 158147714380704,
+   "slot": "amulette",
+   "rarity": "commun",
+   "ilvl": 3,
+   "upgrade": 0,
+   "affixes": {
+    "int": 4
+   },
+   "base": "Amulette",
+   "name": "Amulette",
+   "ench": []
+  },
+  {
+   "uid": 113825275789493,
+   "slot": "torse",
+   "rarity": "magique",
+   "ilvl": 3,
+   "upgrade": 0,
+   "affixes": {
+    "int": 7,
+    "armure": 8
+   },
+   "base": "Cotte de mailles",
+   "armor": 16,
+   "name": "Cotte de mailles du Sage",
+   "ench": [
+    {
+     "choices": [
+      "riposte",
+      "agilite",
+      "esquive"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 93901887083878,
+   "slot": "artefact",
+   "art": "fiole",
+   "rarity": "commun",
+   "ilvl": 3,
+   "upgrade": 0,
+   "affixes": {},
+   "base": "Artefact",
+   "name": "Fiole d'essence",
+   "ench": []
+  },
+  {
+   "uid": 75872796314830,
+   "slot": "casque",
+   "rarity": "magique",
+   "ilvl": 3,
+   "upgrade": 0,
+   "affixes": {
+    "armure": 13,
+    "force": 6
+   },
+   "base": "Heaume",
+   "armor": 11,
+   "name": "Heaume du Rempart",
+   "ench": [
+    {
+     "choices": [
+      "potion_vive",
+      "ame_soin",
+      "rempart"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 130438776706907,
+   "slot": "arme",
+   "rarity": "commun",
+   "ilvl": 3,
+   "upgrade": 0,
+   "affixes": {},
+   "wclass": "sorcier",
+   "base": "Bâton",
+   "dmg": [
+    13,
+    20
+   ],
+   "name": "Bâton",
+   "ench": []
+  },
+  {
+   "uid": 182844609378070,
+   "slot": "anneau",
+   "rarity": "magique",
+   "ilvl": 1,
+   "upgrade": 1,
+   "affixes": {
+    "int": 3
+   },
+   "base": "Anneau",
+   "name": "Anneau du Sage",
+   "ench": [
+    {
+     "choices": [
+      "epines",
+      "agilite",
+      "ame_soin"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 180240858279148,
+   "slot": "arme",
+   "rarity": "magique",
+   "ilvl": 3,
+   "upgrade": 0,
+   "affixes": {
+    "gold_find": 11,
+    "dmg_pct": 7
+   },
+   "wclass": "sorcier",
+   "base": "Bâton",
+   "dmg": [
+    15,
+    27
+   ],
+   "name": "Bâton de Fortune",
+   "ench": [
+    {
+     "choices": [
+      "tempete",
+      "entrave",
+      "embrasement"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 215603570469489,
+   "slot": "casque",
+   "rarity": "rare",
+   "ilvl": 3,
+   "upgrade": 0,
+   "affixes": {
+    "dmg_pct": 4,
+    "vie": 38,
+    "crit": 2
+   },
+   "base": "Couronne de fer",
+   "armor": 11,
+   "name": "Colère de Givre",
+   "ench": [
+    {
+     "choices": [
+      "ame_soin",
+      "riposte",
+      "potion_vive"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "celerite",
+      "potion_vive",
+      "ame_soin"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 70951883690492,
+   "slot": "amulette",
+   "rarity": "magique",
+   "ilvl": 3,
+   "upgrade": 0,
+   "affixes": {
+    "vit": 6
+   },
+   "base": "Amulette",
+   "name": "Amulette du Colosse",
+   "ench": [
+    {
+     "choices": [
+      "ame_soin",
+      "agilite",
+      "celerite"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 122013702825312,
+   "slot": "gants",
+   "rarity": "commun",
+   "ilvl": 3,
+   "upgrade": 0,
+   "affixes": {},
+   "base": "Gantelets",
+   "armor": 7,
+   "name": "Gantelets",
+   "ench": []
+  },
+  {
+   "uid": 134855522368858,
+   "slot": "amulette",
+   "rarity": "magique",
+   "ilvl": 3,
+   "upgrade": 0,
+   "affixes": {
+    "lifesteal": 1
+   },
+   "base": "Pendentif",
+   "name": "Pendentif du Vampire",
+   "ench": [
+    {
+     "choices": [
+      "celerite",
+      "riposte",
+      "epines"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 137137418536477,
+   "slot": "artefact",
+   "art": "crane",
+   "rarity": "magique",
+   "ilvl": 3,
+   "upgrade": 0,
+   "affixes": {},
+   "base": "Artefact",
+   "name": "Crâne infernal",
+   "ench": []
+  },
+  {
+   "uid": 278738939821293,
+   "slot": "bottes",
+   "rarity": "rare",
+   "ilvl": 3,
+   "upgrade": 0,
+   "affixes": {
+    "dmg_pct": 6,
+    "mana_regen": 1,
+    "armure": 10
+   },
+   "base": "Grèves",
+   "armor": 8,
+   "name": "Fléau des Cendres",
+   "ench": [
+    {
+     "choices": [
+      "riposte",
+      "ame_soin",
+      "vitalite"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "rempart",
+      "riposte",
+      "agilite"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 212885098627680,
+   "slot": "artefact",
+   "art": "bottes",
+   "rarity": "magique",
+   "ilvl": 2,
+   "upgrade": 1,
+   "affixes": {},
+   "base": "Artefact",
+   "name": "Bottes de célérité",
+   "ench": []
   }
  ],
- "kills": 210,
+ "kills": 239,
  "deaths": 2,
  "created_at": 1790432904.3347578,
  "look": {
   "skin": 0,
-  "build": 0,
-  "hair": 4,
-  "hair_col": 4,
+  "build": 1,
+  "hair": 3,
+  "hair_col": 6,
   "beard": 1,
-  "eyes": 3,
-  "marks": 3,
-  "main": 8,
-  "second": 4,
+  "eyes": 4,
+  "marks": 2,
+  "main": 2,
+  "second": 12,
   "headgear": 0
  },
- "saved_at": 1790454939.8366292
+ "talents": {},
+ "saved_at": 1790493545.089361
 }

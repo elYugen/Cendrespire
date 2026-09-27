@@ -23,7 +23,8 @@ OUTFITS = [("Cuir", (128, 82, 52)), ("Terre", (86, 62, 44)), ("Azur", (64, 72, 1
 BUILDS = [("Svelte", 0.88), ("Normale", 1.0), ("Robuste", 1.14)]
 MARKS = ["Aucune", "Peinture de guerre", "Cicatrice", "Tatouage runique"]
 HEADGEAR = ["Masqué", "Visible"]
-HEADGEAR_NAMES = {"barbare": "Casque cornu", "sorcier": "Chapeau de mage", "chasseur": "Capuche"}
+HEADGEAR_NAMES = {"barbare": "Casque cornu", "sorcier": "Chapeau de mage", "chasseur": "Capuche",
+                  "paladin": "Heaume", "necromancien": "Capuche d'ombre", "assassin": "Capuche et masque"}
 
 # (clé, libellé, liste de valeurs) : ordre d'affichage de l'éditeur
 OPTIONS = [
@@ -37,6 +38,10 @@ DEFAULTS = {
     "barbare": dict(skin=2, build=2, hair=1, hair_col=3, beard=2, eyes=0, marks=0, main=0, second=1, headgear=1),
     "sorcier": dict(skin=1, build=1, hair=2, hair_col=5, beard=2, eyes=3, marks=0, main=2, second=3, headgear=1),
     "chasseur": dict(skin=2, build=1, hair=3, hair_col=2, beard=0, eyes=1, marks=0, main=4, second=5, headgear=1),
+    "paladin": dict(skin=1, build=2, hair=1, hair_col=4, beard=1, eyes=0, marks=0, main=9, second=7, headgear=1),
+    "necromancien": dict(skin=6, build=0, hair=2, hair_col=6, beard=0, eyes=6, marks=3, main=12, second=11,
+                         headgear=1),
+    "assassin": dict(skin=3, build=0, hair=3, hair_col=0, beard=0, eyes=5, marks=1, main=12, second=6, headgear=1),
 }
 
 
@@ -90,6 +95,22 @@ def hero_spec(cls_id, look):
                     boots=(60, 48, 40), orb=base["orb"])
         if look["headgear"]:
             spec["hat"] = second
+    elif cls_id == "paladin":
+        spec.update(body=base["body"], legs=base["legs"], arms="body", boots=base["boots"], tabard=main, cape=second,
+                    pauldrons=base["pauldrons"], shield=second, shield_rim=base["shield_rim"], blade=base["blade"],
+                    gloves=(170, 172, 184), bracers=base["pauldrons"])
+        if look["headgear"]:
+            spec["helmet"] = base["helmet"]
+    elif cls_id == "necromancien":
+        spec.update(body=main, robe=True, arms="body", trim=second, collar=second, sash=base["belt"],
+                    boots=(40, 36, 36), orb=base["orb"], gloves=(60, 56, 56))
+        if look["headgear"]:
+            spec["hood"] = main
+    elif cls_id == "assassin":
+        spec.update(body=main, legs=base["legs"], arms="body", boots=base["boots"], cape=second, gloves=(40, 36, 44),
+                    strap=(100, 76, 50), bracers=(70, 60, 80))
+        if look["headgear"]:
+            spec.update(hood=main, mask=base["mask"])
     else:
         spec.update(body=main, legs=(94, 68, 46), arms="body", boots=(72, 50, 34), cape=second, quiver=base["quiver"],
                     gloves=(84, 60, 40), strap=(96, 66, 40), bracers=(84, 60, 40))

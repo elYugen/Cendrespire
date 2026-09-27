@@ -12,7 +12,7 @@ from .entities import Loot
 from .fx import Particles, RingFX, Blast, Lightning
 from .items import generate_item, item_value, buy_price, ench_spent, ART_SLOTS
 from .panels import (InventoryPanel, MenuScreen, MerchantPanel, ForgePanel, AnimaPanel, DeathPanel, PAGE_CHAR,
-                     PAGE_INV, PAGE_SYS)
+                     PAGE_INV, PAGE_SYS, PAGE_TAL)
 from .r3d import level, models
 from .r3d.camera import Camera3D
 from .r3d.renderer import Env
@@ -235,9 +235,16 @@ class World(Scene):
         return ((best[0] + 0.5) * TILE, (best[1] + 0.5) * TILE)
 
     # ------------------------------------------------------------------ combat
-    def player_hit(self, m, mult, knock=0, ang=None, stun=0.0, slow=0.0, proc=True):
+    def player_hit(self, m, mult, knock=0, ang=None, stun=0.0, slow=0.0, proc=True, crit_bonus=0.0):
         p = self.player
-        dmg, crit = p.roll_damage(mult)
+        # talents conditionnels : exécution, premier sang
+        if p.t("execute") and m.hp < m.max_hp * 0.3:
+            mult *= 1 + p.t("execute") / 100
+        if p.t("first_strike") and m.hp >= m.max_hp:
+            mult *= 1 + p.t("first_strike") / 100
+        dmg, crit = p.roll_damage(mult, crit_bonus)
+        if crit and p.t("crit_heal"):
+            p.heal(p.stats["max_hp"] * p.t("crit_heal") / 100)
         n = p.av("givre")
         if n and random.random() * 100 < n:
             slow = max(slow, 2.0)
@@ -253,7 +260,8 @@ class World(Scene):
             self.schedule(0.12, lambda w, m=m: (not m.dead) and w.player_hit(m, mult * 0.6, proc=False))
         if p.ench("embrasement") and random.random() * 100 < p.ench("embrasement") and not m.dead:
             m.burn = 3.0
-            m.burn_dps = p.roll_damage(0.35)[0]
+            m.burn_dps = p.roll_damage(0.35)[0] * (1 + p.t("dot_pct") / 100)
+            m.burn_col = (255, 120, 40)
         if p.ench("tempete") and random.random() * 100 < p.ench("tempete"):
             self.effects.append(Lightning(m.x, m.y))
             for o in list(self.monsters):
@@ -281,6 +289,8 @@ class World(Scene):
     def damage_monster(self, m, dmg, crit, knock=0, ang=None, stun=0.0, slow=0.0, quiet=False):
         if m.dead:
             return
+        if m.curse > 0:
+            dmg *= 1 + getattr(m, "curse_amp", 0.3)
         m.hp -= dmg
         m.flash = 0.1
         if not m.aggro:
@@ -320,7 +330,12 @@ class World(Scene):
             self.blood.append((m.x + random.uniform(-6, 6), m.y + random.uniform(-6, 6), m.r * random.uniform(1, 1.6)))
         if p.av("nova_mort"):
             self.effects.append(Blast(m.x, m.y, 90, 0.05, p.av("nova_mort") / 100, (170, 60, 220), sound="magic"))
-        heal = p.av("ferveur") + p.ench("vampirisme") + p.ench("ame_soin")
+        heal = p.av("ferveur") + p.ench("vampirisme") + p.ench("ame_soin") + p.t("kill_heal")
+        if p.t("mana_on_kill"):
+            p.mana = min(p.stats["max_mana"], p.mana + p.t("mana_on_kill"))
+        if p.t("kill_cdr"):
+            for sid in p.cds:
+                p.cds[sid] = max(0.0, p.cds[sid] - p.t("kill_cdr"))
         if heal:
             p.heal(p.stats["max_hp"] * heal / 100)
         if m.boss:
@@ -363,6 +378,29 @@ class World(Scene):
             if SPELLS[sid]["level"] == p.level:
                 self.message(f"Nouveau sort débloqué : {SPELLS[sid]['name']} !", GOLD_BRIGHT, 8)
         sfx.play("levelup")
+        from . import talents
+        if talents.points_total(p.level) > talents.points_total(p.level - 1):
+            self.message(f"Nouveau point de talent ! (touche N)", (255, 214, 110), 8)
+
+    def reset_talents(self):
+        """Oubli des talents : uniquement au campement, contre de l'or."""
+        from . import talents
+        p = self.player
+        if self.is_tower:
+            self.message("Les talents se réinitialisent au campement.", RED)
+            return False
+        cost = talents.reset_cost(p.level)
+        if not p.talents:
+            return False
+        if p.gold < cost:
+            self.message(f"Il faut {cost} or pour réinitialiser les talents.", RED)
+            return False
+        p.gold -= cost
+        p.talents.clear()
+        p.recompute()
+        self.message("Talents réinitialisés.", GOLD_BRIGHT)
+        sfx.play("seal", 0.6)
+        return True
 
     def on_player_death(self):
         p = self.player
@@ -574,9 +612,10 @@ class World(Scene):
                 else:
                     self.open_pause()
                 return
-            if e.key in (pygame.K_i, pygame.K_c):
+            if e.key in (pygame.K_i, pygame.K_c, pygame.K_n):
                 self.close_panels()
-                self.modal = MenuScreen(self, PAGE_INV if e.key == pygame.K_i else PAGE_CHAR)
+                page = {pygame.K_i: PAGE_INV, pygame.K_c: PAGE_CHAR, pygame.K_n: PAGE_TAL}[e.key]
+                self.modal = MenuScreen(self, page)
                 sfx.play("click")
                 return
             if e.key == pygame.K_TAB:
@@ -732,6 +771,8 @@ class World(Scene):
             p.walk += dt * 30
             if k >= 1:
                 p.dash = None
+                if D.get("on_end"):
+                    D["on_end"](self)
             return
         k = self.keys
         mx = (1 if any(s in k for s in SC_RIGHT) else 0) - (1 if any(s in k for s in SC_LEFT) else 0)

@@ -10,7 +10,7 @@ import math
 
 import pygame
 
-from . import ui
+from . import icons, ui
 from .data import SPELLS, ANIMA_POWERS, ARTIFACTS, ARTIFACT_KEYS, anima_desc, xp_needed
 from .items import ART_SLOTS
 from .settings import SCREEN_W, SCREEN_H, VIEW, TEXT, TEXT_DIM, GOLD_BRIGHT, WHITE, SHEIKAH, UI_LINE, RARITY_COLORS
@@ -31,12 +31,12 @@ def minimap_rect():
 _heart_cache = {}
 
 
-def _heart_shape(surf, s, color, inset):
-    r = s * 0.27 - inset * 0.7
-    pygame.draw.circle(surf, color, (s * 0.3, s * 0.36), r)
-    pygame.draw.circle(surf, color, (s * 0.7, s * 0.36), r)
-    pygame.draw.polygon(surf, color, [(s * 0.05 + inset, s * 0.44), (s * 0.95 - inset, s * 0.44),
-                                      (s * 0.5, s * 0.93 - inset * 1.3)])
+def _heart_shape(surf, s, color):
+    """Cœur plein (deux lobes + pointe), sans contour : style flat de Zelda BotW."""
+    r = s * 0.28
+    pygame.draw.circle(surf, color, (s * 0.29, s * 0.35), r)
+    pygame.draw.circle(surf, color, (s * 0.71, s * 0.35), r)
+    pygame.draw.polygon(surf, color, [(s * 0.03, s * 0.43), (s * 0.97, s * 0.43), (s * 0.5, s * 0.94)])
 
 
 def heart_surfs(size_px):
@@ -44,12 +44,9 @@ def heart_surfs(size_px):
     if key not in _heart_cache:
         big = size_px * 4   # sur-échantillonné puis réduit : bords lisses
         full = pygame.Surface((big, big), pygame.SRCALPHA)
-        _heart_shape(full, big, (250, 247, 238), 0)
-        _heart_shape(full, big, (226, 38, 54), big * 0.07)
-        pygame.draw.ellipse(full, (255, 176, 176), (big * 0.2, big * 0.22, big * 0.2, big * 0.13))
+        _heart_shape(full, big, (232, 44, 60))
         empty = pygame.Surface((big, big), pygame.SRCALPHA)
-        _heart_shape(empty, big, (220, 216, 206, 215), 0)
-        _heart_shape(empty, big, (22, 16, 16, 200), big * 0.07)
+        _heart_shape(empty, big, (24, 26, 30, 150))
         _heart_cache[key] = (pygame.transform.smoothscale(full, (size_px, size_px)),
                              pygame.transform.smoothscale(empty, (size_px, size_px)))
     return _heart_cache[key]
@@ -155,15 +152,14 @@ def slot_box(surf, rect, border=UI_LINE, alpha=150):
     ui.botw_box(surf, rect, alpha, border, radius=10)
 
 
-def draw_skill(surf, rect, color, label, key, cd_frac, cd_left, locked, lacking, level_req=0):
+def draw_skill(surf, rect, color, sid, key, cd_frac, cd_left, locked, lacking, level_req=0, attack_cls=None):
     slot_box(surf, rect, UI_LINE if not locked else (110, 110, 105))
     c = rect.center
     if locked:
-        ui.draw_text(surf, f"Niv {level_req}", c, 13, TEXT_DIM, anchor="center", shadow=False)
+        icons.spell_icon(surf, sid, c, rect.w * 0.34, color, locked=True, attack_cls=attack_cls)
+        ui.draw_text(surf, f"Niv {level_req}", (c[0], c[1] + 1), 12, TEXT_DIM, "bold", anchor="center")
     else:
-        ui.circle(surf, ui.darker(color, 0.4), c, rect.w * 0.34)
-        ui.circle(surf, ui.lighter(color, 1.2), c, rect.w * 0.34, 2)
-        ui.draw_text(surf, label, c, 17, WHITE, "title_bold", anchor="center")
+        icons.spell_icon(surf, sid, c, rect.w * 0.36, color, attack_cls=attack_cls)
         if lacking:
             ui.rect(surf, (30, 60, 170, 120), rect, 0, 10)
         _cooldown(surf, rect, cd_frac)
@@ -184,13 +180,13 @@ def draw_slots(surf, world):
     for i, (kind, sid) in enumerate(entries):
         rc = pygame.Rect(x0 + i * (size + gap), y0, size, size)
         if kind == "attack":
-            draw_skill(surf, rc, atk.get("color", p.cls["color"]), spell_label(atk["name"]), "LMB",
-                       p.atk_cd / max(0.01, atk["cd"]), 0, False, False)
+            draw_skill(surf, rc, atk.get("color", p.cls["color"]), None, "LMB",
+                       p.atk_cd / max(0.01, atk["cd"]), 0, False, False, attack_cls=p.cls_id)
         else:
             sp = SPELLS[sid]
             tot = p.cd_total.get(sid, 1) or 1
             cd = p.cds.get(sid, 0)
-            draw_skill(surf, rc, sp["color"], spell_label(sp["name"]), str(i), cd / tot, cd,
+            draw_skill(surf, rc, sp["color"], sid, str(i), cd / tot, cd,
                        not p.spell_unlocked(sid), p.mana < sp["mana"], sp["level"])
         world.skill_rects.append((rc, (kind, sid)))
     # rangée 2 : artefacts, potion, roulade
@@ -274,11 +270,13 @@ def draw_hud(surf, world):
     y += 26
     hints = []
     if p.points:
-        hints.append((f"+{p.points} points de caractéristique", (140, 235, 140)))
+        hints.append((f"+{p.points} points de caractéristique", (140, 235, 140), "C"))
     if p.ench_points > 0:
-        hints.append((f"+{p.ench_points} point(s) d'enchantement", (200, 150, 255)))
-    for txt, col in hints:
-        ui.draw_text(surf, txt + "  [C / I]", (22, y), 13, col, "bold")
+        hints.append((f"+{p.ench_points} point(s) d'enchantement", (200, 150, 255), "I"))
+    if p.talent_points > 0:
+        hints.append((f"+{p.talent_points} point(s) de talent", (255, 214, 110), "N"))
+    for txt, col, *key in hints:
+        ui.draw_text(surf, txt + f"  [{key[0] if key else 'C'}]", (22, y), 13, col, "bold")
         y += 19
     draw_effects(surf, world, 18, y + 2)
     draw_slots(surf, world)

@@ -41,15 +41,15 @@ class View:
 
 VIEW = View()
 
-# Polices façon Zelda BotW : Avenir Next (texte) et Optima (titres), avec repli générique.
+# Police embarquée (Lato, licence OFL, assets/fonts) : rendu identique sur toutes les machines,
+# sans dépendre des polices du système.
+_FONTS_DIR = os.path.join(ASSETS_DIR, "fonts")
 FONT_FILES = {
-    "text": ("/System/Library/Fonts/Avenir Next.ttc", 5),
-    "bold": ("/System/Library/Fonts/Avenir Next.ttc", 2),
-    "title": ("/System/Library/Fonts/Optima.ttc", 0),
-    "title_bold": ("/System/Library/Fonts/Optima.ttc", 1),
+    "text": (os.path.join(_FONTS_DIR, "Lato-Regular.ttf"), 0),
+    "bold": (os.path.join(_FONTS_DIR, "Lato-Bold.ttf"), 0),
+    "title": (os.path.join(_FONTS_DIR, "Lato-Regular.ttf"), 0),
+    "title_bold": (os.path.join(_FONTS_DIR, "Lato-Bold.ttf"), 0),
 }
-FONT_FALLBACK = {"text": "segoeui,helveticaneue,arial", "bold": "segoeuisemibold,helveticaneue,arial",
-                 "title": "optima,palatino,georgia,timesnewroman", "title_bold": "optima,palatino,georgia"}
 
 # Palette
 BLACK = (0, 0, 0)

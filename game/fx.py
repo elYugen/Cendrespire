@@ -217,6 +217,11 @@ class Zone(Effect):
                 p = world.player
                 if math.hypot(p.x - self.x, p.y - self.y) < self.r + p.r:
                     p.heal(p.stats["max_hp"] * self.mult / 100 * self.tick)
+            elif self.kind == "holy":
+                world.damage_circle(self.x, self.y, self.r, self.mult)
+                p = world.player
+                if math.hypot(p.x - self.x, p.y - self.y) < self.r + p.r:
+                    p.heal(p.stats["max_hp"] * 0.02)
             else:
                 world.damage_circle(self.x, self.y, self.r, self.mult, slow=0.3 if self.kind == "arrows" else 0)
         for _ in range(3 if self.kind == "arrows" else 2):
@@ -238,6 +243,12 @@ class Zone(Effect):
             fr.part("sphere", (self.x, self.y, 42 + 3 * math.sin(self.t * 4)), (7, 0, 0), (0, 0, 7), (0, 7, 0),
                     self.color, 1.0)
             fr.light(self.x, self.y, 40, self.r * 2.2, self.color, 1.0)
+        elif self.kind == "holy":
+            fr.light(self.x, self.y, 30, self.r * 2.2, (255, 220, 130), 1.1)
+            for i in range(6):
+                ang = self.t * 1.2 + i * math.tau / 6
+                fr.glow(self.x + math.cos(ang) * self.r * 0.8, self.y + math.sin(ang) * self.r * 0.8, 6, 14,
+                        self.color, 0.8)
         elif self.kind == "fire":
             fr.light(self.x, self.y, 20, self.r * 2, (255, 110, 40), 1.2 * k + 0.2)
 

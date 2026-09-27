@@ -88,6 +88,14 @@ PLAYER_SPECS = {
                     belt=(220, 184, 96), beard=(226, 226, 230), weapon="staff", orb=(200, 140, 255)),
     "chasseur": dict(body=(72, 104, 60), skin=(222, 178, 136), legs=(94, 68, 46), arms="body", boots=(72, 50, 34),
                      hood=(60, 88, 48), cape=(52, 76, 42), belt=(112, 78, 46), weapon="bow", quiver=(110, 76, 44)),
+    "paladin": dict(body=(190, 192, 204), skin=(226, 180, 140), legs=(150, 152, 164), arms="body",
+                    boots=(120, 110, 100), helmet=(206, 208, 218), pauldrons=(226, 196, 110), belt=(120, 84, 50),
+                    weapon="sword", blade=(255, 236, 170), shield=(40, 70, 150), shield_rim=(226, 196, 110),
+                    cape=(160, 40, 40)),
+    "necromancien": dict(body=(40, 44, 52), skin=(200, 196, 190), robe=True, arms="body", hood=(28, 30, 36),
+                         belt=(120, 200, 140), weapon="scythe", orb=(120, 255, 160)),
+    "assassin": dict(body=(46, 42, 60), skin=(214, 172, 136), legs=(40, 36, 50), arms="body", boots=(36, 32, 40),
+                     hood=(36, 32, 48), mask=(30, 28, 36), cape=(70, 40, 90), belt=(120, 90, 60), weapon="daggers"),
 }
 
 MONSTER_SPECS = {
@@ -432,6 +440,14 @@ def hero(fr, x, y, z0, facing, phase, spec, sc=1.0, flash=False, tint_col=None, 
     if spec.get("collar"):
         p.part("frustum", add(base, (0, 0, hip + 17.4 * sc)), mul(f, 4.6 * sc), mul(UP, 1.6 * sc),
                mul(s, 6.0 * sc * Wd), spec["collar"])
+    if spec.get("tabard"):
+        for d in (1, -1):
+            p.boxv(add(base, mul(f, d * 4.9 * sc), (0, 0, hip + 6.5 * sc)), mul(f, 0.45 * sc), mul(s, 3.6 * sc * Wd),
+                   mul(UP, 9.5 * sc), spec["tabard"])
+        p.boxv(add(base, mul(f, 5.4 * sc), (0, 0, hip + 10 * sc)), mul(f, 0.2 * sc), mul(s, 0.7 * sc), mul(UP, 3.2 * sc),
+               (240, 220, 150), 0.2)
+        p.boxv(add(base, mul(f, 5.4 * sc), (0, 0, hip + 11 * sc)), mul(f, 0.2 * sc), mul(s, 2.2 * sc), mul(UP, 0.7 * sc),
+               (240, 220, 150), 0.2)
     if spec.get("apron"):
         p.boxv(add(base, mul(f, 5.0 * sc), (0, 0, hip + 5 * sc)), mul(f, 0.6 * sc), mul(s, 5.2 * sc * Wd),
                mul(UP, 9 * sc), spec["apron"])
@@ -458,6 +474,8 @@ def hero(fr, x, y, z0, facing, phase, spec, sc=1.0, flash=False, tint_col=None, 
     hc = add(base, (0, 0, hip + 19.4 * sc + hr))
     p.ellipsoid(hc, f, s, hr * 0.97, hr * 0.93, hr * 1.04, skin)
     _face(p, spec, hc, hr, f, s, sc)
+    if spec.get("mask"):
+        p.ellipsoid(add(hc, mul(f, hr * 0.5), (0, 0, -hr * 0.42)), f, s, hr * 0.62, hr * 0.9, hr * 0.5, spec["mask"])
     _hair(p, spec, hc, hr, f, s, sc)
     _beard(p, spec, hc, hr, f, s, sc)
     if spec.get("helmet"):
@@ -523,6 +541,23 @@ def hero(fr, x, y, z0, facing, phase, spec, sc=1.0, flash=False, tint_col=None, 
             _weapon(p, fr, spec, hand, f, s, wdir, sc)
         if side == -1 and bow:
             _bow(p, hand, f, s, sc)
+        if side == -1 and spec.get("shield"):
+            _shield(p, spec, hand, f, s, sc)
+        if side == -1 and spec.get("weapon") == "daggers":
+            _weapon(p, fr, dict(weapon="dagger"), hand, f, s, norm(add(mul(UP, 0.5), mul(f, 0.9))), sc)
+
+
+def _shield(p, spec, hand, f, s, sc):
+    """Bouclier rond porté au bras gauche, face vers l'avant."""
+    c = add(hand, mul(f, 3.2 * sc), mul(s, -1.2 * sc), (0, 0, 2.0 * sc))
+    p.part("cylinder", c, mul(s, 7.4 * sc), mul(f, 0.9 * sc), mul(UP, 8.2 * sc), spec["shield"])
+    p.part("cylinder", add(c, mul(f, -0.1 * sc)), mul(s, 7.9 * sc), mul(f, 0.7 * sc), mul(UP, 8.7 * sc),
+           spec.get("shield_rim", (200, 200, 210)))
+    p.part("sphere", add(c, mul(f, 1.1 * sc)), mul(s, 2.0 * sc), mul(f, 1.2 * sc), mul(UP, 2.0 * sc),
+           spec.get("shield_rim", (200, 200, 210)), 0.2)
+    p.boxv(add(c, mul(f, 1.0 * sc)), mul(f, 0.3 * sc), mul(s, 0.8 * sc), mul(UP, 5.6 * sc), (240, 226, 170), 0.3)
+    p.boxv(add(c, mul(f, 1.0 * sc), (0, 0, 1.4 * sc)), mul(f, 0.3 * sc), mul(s, 4.0 * sc), mul(UP, 0.8 * sc),
+           (240, 226, 170), 0.3)
 
 
 def _weapon(p, fr, spec, hand, f, s, wdir, sc):
@@ -558,6 +593,21 @@ def _weapon(p, fr, spec, hand, f, s, wdir, sc):
         oc = add(hand, mul(wdir, 23 * sc))
         p.part("sphere", oc, (2.8 * sc, 0, 0), (0, 0, 2.8 * sc), (0, 2.8 * sc, 0), orb, 1.0)
         fr.glow(oc[0], oc[1], oc[2], 14 * sc, orb, 0.9)
+    elif kind in ("dagger", "daggers"):
+        p.boxv(add(hand, mul(wdir, 7 * sc)), mul(wdir, 5.5 * sc), mul(s, 0.9 * sc), mul(n, 0.35 * sc),
+               (220, 222, 236))
+        p.boxv(add(hand, mul(wdir, 1.4 * sc)), mul(wdir, 0.5 * sc), mul(s, 2.2 * sc), mul(n, 0.6 * sc), (90, 70, 110))
+    elif kind == "scythe":
+        top = add(hand, mul(wdir, 22 * sc))
+        p.rod(add(hand, mul(wdir, -12 * sc)), top, 1.0 * sc, (60, 52, 50), s)
+        orb = spec.get("orb", (140, 255, 170))
+        prev = top
+        for i in range(1, 5):
+            a = i / 4
+            pt = add(top, mul(n, -9 * sc * a), mul(wdir, -5 * sc * a * a))
+            p.rod(prev, pt, (1.5 - a * 0.9) * sc, (200, 206, 214), s, mesh="cone" if i == 4 else "cylinder")
+            prev = pt
+        fr.glow(top[0], top[1], top[2], 10 * sc, orb, 0.8)
     elif kind == "claws":
         for off in (-1.8, 0, 1.8):
             p.rod(add(hand, mul(s, off * sc)), add(hand, mul(f, 6 * sc), mul(s, off * sc)), 0.7 * sc, (236, 228, 210),

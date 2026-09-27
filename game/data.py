@@ -3,9 +3,9 @@
 ATTRS = ["force", "dex", "int", "vit"]
 ATTR_NAMES = {"force": "Force", "dex": "Dextérité", "int": "Intelligence", "vit": "Vitalité"}
 ATTR_DESC = {
-    "force": "Dégâts du Barbare, +0,5 armure par point",
-    "dex": "Dégâts du Chasseur, +0,05% de critique par point",
-    "int": "Dégâts du Sorcier, +1,5 mana par point",
+    "force": "Dégâts du Barbare et du Paladin, +0,5 armure par point",
+    "dex": "Dégâts du Chasseur et de l'Assassin, +0,05% de critique par point",
+    "int": "Dégâts du Sorcier et du Nécromancien, +1,5 mana par point",
     "vit": "+5 points de vie par point",
 }
 MAX_LEVEL = 60
@@ -72,6 +72,51 @@ CLASSES = {
         "spells": ["tir_multiple", "piege", "fleche_perforante", "pluie_fleches"],
         "weapons": ["Arc court", "Arc long", "Arbalète", "Arc composite"],
     },
+    "paladin": {
+        "name": "Paladin",
+        "title": "Chevalier de l'Aube",
+        "desc": "Guerrier saint en armure, épée et bouclier au poing. Il charge l'ennemi, consacre le sol "
+                "qui le soigne et fait tomber le jugement du ciel. Le plus résistant de tous.",
+        "color": (236, 196, 90),
+        "primary": "force",
+        "attrs": {"force": 18, "dex": 8, "int": 12, "vit": 18},
+        "hp": 150, "hp_lvl": 15, "mana": 80, "mana_lvl": 3, "mana_regen": 4.5,
+        "speed": 198,
+        "attack": {"kind": "melee", "name": "Coup sacré", "mult": 1.05, "range": 58, "arc": 110,
+                   "cd": 0.55, "mana_gain": 2, "color": (255, 226, 140)},
+        "spells": ["charge_bouclier", "consecration", "egide", "jugement"],
+        "weapons": ["Épée bâtarde", "Marteau de guerre", "Masse bénie", "Lame de l'Aube"],
+    },
+    "necromancien": {
+        "name": "Nécromancien",
+        "title": "Tisseur d'Os",
+        "desc": "Maître de la mort, il lève des squelettes pour combattre à sa place, maudit ses ennemis "
+                "et moissonne leur âme pour se soigner. Fragile, mais jamais seul.",
+        "color": (120, 220, 150),
+        "primary": "int",
+        "attrs": {"force": 7, "dex": 9, "int": 22, "vit": 13},
+        "hp": 105, "hp_lvl": 11, "mana": 120, "mana_lvl": 5, "mana_regen": 6.5,
+        "speed": 200,
+        "attack": {"kind": "projectile", "name": "Trait d'os", "mult": 0.85, "speed": 600,
+                   "cd": 0.45, "color": (170, 255, 190), "life": 0.9, "radius": 6},
+        "spells": ["lance_os", "squelettes", "malediction", "moisson"],
+        "weapons": ["Faux", "Faucille d'os", "Sceptre d'os", "Faux funéraire"],
+    },
+    "assassin": {
+        "name": "Assassin",
+        "title": "Lame du Crépuscule",
+        "desc": "Rapide et insaisissable, il frappe avec deux dagues, surgit dans le dos de ses proies, "
+                "empoisonne ses lames et danse au milieu des ennemis. Coups critiques dévastateurs.",
+        "color": (160, 120, 230),
+        "primary": "dex",
+        "attrs": {"force": 10, "dex": 22, "int": 8, "vit": 12},
+        "hp": 110, "hp_lvl": 11, "mana": 70, "mana_lvl": 3, "mana_regen": 6.0,
+        "speed": 236,
+        "attack": {"kind": "melee", "name": "Estafilade", "mult": 0.72, "range": 50, "arc": 95,
+                   "cd": 0.3, "mana_gain": 2, "color": (210, 200, 255)},
+        "spells": ["pas_ombre", "eventail", "venin", "danse_lames"],
+        "weapons": ["Dagues jumelles", "Kriss", "Lames de l'ombre", "Stylets"],
+    },
 }
 
 # --------------------------------------------------------------------------- sorts
@@ -104,6 +149,33 @@ SPELLS = {
                               desc="Une flèche lourde qui transperce tous les ennemis alignés (260%)."),
     "pluie_fleches": dict(name="Pluie de flèches", level=10, mana=40, cd=9, mult=0.6, color=(250, 230, 160),
                           desc="Une pluie de flèches s'abat sur la zone pendant 3 s (60% par salve)."),
+    # Paladin
+    "charge_bouclier": dict(name="Charge du bouclier", level=1, mana=16, cd=4, mult=1.8, color=(255, 220, 120),
+                            desc="Fonce vers le curseur bouclier en avant, repousse et étourdit (180%)."),
+    "consecration": dict(name="Consécration", level=3, mana=26, cd=9, mult=0.5, color=(255, 214, 110),
+                         desc="Consacre le sol pendant 5 s : blesse les ennemis (50% par impulsion) et vous soigne."),
+    "egide": dict(name="Égide divine", level=6, mana=20, cd=16, mult=0, color=(255, 240, 190),
+                  desc="Rend 20% de votre vie et réduit les dégâts subis de 35% pendant 6 s."),
+    "jugement": dict(name="Jugement céleste", level=10, mana=40, cd=10, mult=2.6, color=(255, 230, 120),
+                     desc="Des colonnes de lumière frappent jusqu'à 6 ennemis près du curseur (260%)."),
+    # Nécromancien
+    "lance_os": dict(name="Lance d'os", level=1, mana=14, cd=1.0, mult=2.2, color=(230, 226, 200),
+                     desc="Projette une lance d'os qui transperce tous les ennemis (220%)."),
+    "squelettes": dict(name="Armée des morts", level=3, mana=30, cd=12, mult=0.5, color=(140, 255, 170),
+                       desc="Lève 2 squelettes guerriers pendant 15 s (4 au maximum, 50% par coup)."),
+    "malediction": dict(name="Malédiction", level=6, mana=22, cd=8, mult=0, color=(170, 90, 230),
+                        desc="Maudit les ennemis de la zone 6 s : ils subissent +30% de dégâts et sont ralentis."),
+    "moisson": dict(name="Moisson d'âmes", level=10, mana=40, cd=10, mult=2.0, color=(120, 255, 160),
+                    desc="Arrache l'âme des ennemis proches (200%) ; chaque ennemi touché vous rend 4% de vie."),
+    # Assassin
+    "pas_ombre": dict(name="Pas de l'ombre", level=1, mana=14, cd=3, mult=2.5, color=(170, 130, 255),
+                      desc="Surgit dans le dos de l'ennemi le plus proche du curseur et le frappe (250%, +50% crit)."),
+    "eventail": dict(name="Éventail de dagues", level=3, mana=16, cd=2.5, mult=0.8, color=(220, 220, 235),
+                     desc="Lance 12 dagues tout autour de vous (80% chacune)."),
+    "venin": dict(name="Lames empoisonnées", level=6, mana=20, cd=14, mult=0, color=(120, 230, 90),
+                  desc="Pendant 8 s, vos attaques empoisonnent (40% de dégâts d'arme par seconde pendant 4 s)."),
+    "danse_lames": dict(name="Danse des lames", level=10, mana=35, cd=9, mult=0.9, color=(200, 170, 255),
+                        desc="Six frappes éclair autour de vous (90% chacune), invulnérable pendant la danse."),
 }
 
 # --------------------------------------------------------------------------- monstres

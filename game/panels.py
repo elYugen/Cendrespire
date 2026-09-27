@@ -79,8 +79,8 @@ class Panel:
 
 
 # =========================================================================== menu plein écran
-PAGE_CHAR, PAGE_INV, PAGE_SYS = 0, 1, 2
-PAGES = ["Personnage", "Inventaire", "Système"]
+PAGE_CHAR, PAGE_TAL, PAGE_INV, PAGE_SYS = 0, 1, 2, 3
+PAGES = ["Personnage", "Talents", "Inventaire", "Système"]
 CATEGORIES = [("Armes", {"arme"}, "sword"), ("Armures", {"casque", "torse", "gants", "bottes"}, "armor"),
               ("Bijoux", {"amulette", "anneau"}, "ring"), ("Artefacts", {"artefact"}, "star")]
 GRID_COLS, GRID_ROWS, CELL, STEP = 5, 4, 84, 98
@@ -158,7 +158,7 @@ def badge_left(surf, key, x, y, size=12, color=WHITE):
 
 
 class MenuScreen(Panel):
-    """Menu façon Zelda BotW (jeu en pause), trois pages : Personnage · Inventaire · Système.
+    """Menu façon Zelda BotW (jeu en pause), quatre pages : Personnage · Talents · Inventaire · Système.
     La page Système remplace l'ancien menu pause : Échap ouvre directement cette page."""
     modal = True
     fullscreen = True
@@ -183,6 +183,10 @@ class MenuScreen(Panel):
         self.nav_rects = (pygame.Rect(408, 36, 160, 50), pygame.Rect(712, 36, 160, 50))
         self.plus = {a: pygame.Rect(400, 334 + i * 42, 30, 30) for i, a in enumerate(ATTRS)}
         self.hover_attr = None
+        self.hover_info = None
+        self.hover_talent = None
+        self.flash_node = None
+        self.reset_rect = pygame.Rect(0, 0, 0, 0)
         self.ench_rects = []
         self.ench_hover = None
         self.sys_cursor = 0
@@ -194,7 +198,7 @@ class MenuScreen(Panel):
         if self.page == PAGE_INV:
             return 1010, 352, 1.3
         if self.page == PAGE_CHAR:
-            return 145, 226, 0.75
+            return 230, 400, 1.05
         return None
 
     def goto(self, page):
@@ -354,8 +358,8 @@ class MenuScreen(Panel):
                 return True
             if e.key == pygame.K_ESCAPE:
                 w.close_modal()
-            elif e.key in (pygame.K_i, pygame.K_c):
-                page = PAGE_INV if e.key == pygame.K_i else PAGE_CHAR
+            elif e.key in (pygame.K_i, pygame.K_c, pygame.K_n):
+                page = {pygame.K_i: PAGE_INV, pygame.K_c: PAGE_CHAR, pygame.K_n: PAGE_TAL}[e.key]
                 if self.page == page:
                     w.close_modal()
                 else:
@@ -389,6 +393,8 @@ class MenuScreen(Panel):
             self.inv_click(e)
         elif self.page == PAGE_CHAR:
             self.char_click(e)
+        elif self.page == PAGE_TAL:
+            self.talent_click(e)
         elif e.button == 1:
             for i, rc in enumerate(self.sys_rects):
                 if rc.collidepoint(e.pos):
@@ -472,6 +478,9 @@ class MenuScreen(Panel):
                     p.points -= n
                     p.recompute()
                     sfx.play("click")
+                    return
+        if e.button == 1 and pygame.Rect(40, 240, 380, 340).collidepoint(e.pos):
+            self.drag = e.pos[0]
 
     def sys_key(self, e):
         n = len(self.sys_entries)
@@ -499,11 +508,15 @@ class MenuScreen(Panel):
         mouse = ui.mouse_pos()
         if self.page == PAGE_SYS:
             ui.veil(surf, (0, 0, 0), 150)
+        elif self.page == PAGE_TAL:
+            ui.veil(surf, (4, 8, 12), 225)
         self.draw_frame(surf)
         if self.page == PAGE_INV:
             self.draw_inventory(surf, mouse)
         elif self.page == PAGE_CHAR:
             self.draw_character(surf, mouse)
+        elif self.page == PAGE_TAL:
+            self.draw_talents(surf, mouse)
         else:
             self.draw_system(surf, mouse)
         self.draw_tooltips(surf)
@@ -522,7 +535,8 @@ class MenuScreen(Panel):
         ui.draw_text(surf, PAGES[self.page], (SCREEN_W // 2, 52), 30, WHITE, "title", anchor="center")
         for i in range(len(PAGES)):
             act = i == self.page
-            ui.circle(surf, WHITE if act else (120, 124, 122), (SCREEN_W // 2 + (i - 1) * 9, 76), 2 if act else 1.5)
+            ui.circle(surf, WHITE if act else (120, 124, 122), (SCREEN_W // 2 + (i - (len(PAGES) - 1) / 2) * 9, 76),
+                      2 if act else 1.5)
         mouse = ui.mouse_pos()
         for d, rc in zip((-1, 1), self.nav_rects):
             hov = rc.collidepoint(mouse)
@@ -535,7 +549,9 @@ class MenuScreen(Panel):
         if self.page == PAGE_INV:
             hints = [("Actions", "Clic"), ("Équiper", "Clic droit"), ("Pivoter", "Glisser"), ("Retour", "Échap")]
         elif self.page == PAGE_CHAR:
-            hints = [("Répartir", "Clic"), ("+5", "Maj + clic"), ("Retour", "Échap")]
+            hints = [("Répartir", "Clic"), ("+5", "Maj + clic"), ("Pivoter", "Glisser"), ("Retour", "Échap")]
+        elif self.page == PAGE_TAL:
+            hints = [("Apprendre", "Clic"), ("Retirer", "Clic droit"), ("Retour", "Échap")]
         else:
             hints = [("Choisir", "Entrée"), ("Retour", "Échap")]
         x = SCREEN_W - 40
@@ -744,103 +760,329 @@ class MenuScreen(Panel):
             ui.draw_text(surf, label, (rc.x + 14, rc.centery), 16, col, anchor="midleft")
 
     # ------------------------------------------------------------------ personnage
+    ATTR_STYLE = {"force": ("fist", (236, 120, 84)), "dex": ("bolt", (130, 220, 120)),
+                  "int": ("orb", (140, 160, 255)), "vit": ("heart", (236, 90, 120))}
+
+    def attr_effect(self, a):
+        p = self.world.player
+        v = p.stats[a]
+        prim = a == p.cls["primary"]
+        if a == "force":
+            return (f"+{v:.0f}% dégâts · " if prim else "") + f"+{v * 0.5:.0f} armure"
+        if a == "dex":
+            return (f"+{v:.0f}% dégâts · " if prim else "") + f"+{v * 0.05:.1f}% critique".replace(".", ",")
+        if a == "int":
+            return (f"+{v:.0f}% dégâts · " if prim else "") + f"+{v * 1.5:.0f} mana"
+        return f"+{v * 5:.0f} points de vie"
+
     def draw_character(self, surf, mouse):
+        from . import icons
         p = self.world.player
         s = p.stats
-        col = ui.botw_box(surf, (40, 122, 420, 518), 120, FRAME, radius=4)
-        ui.draw_text(surf, p.name, (250, 136), 28, WHITE, "title")
-        ui.draw_text(surf, p.cls["title"], (252, 174), 15, SOFT)
-        ui.draw_text(surf, f"{p.cls['name']}  ·  Niveau {p.level}", (252, 196), 16, BOTW_YELLOW, "bold")
+        cc = p.cls["color"]
+        self.hover_info = None
+        # ---- colonne héros
+        left = ui.botw_box(surf, (40, 122, 380, 518), 90, FRAME, radius=4)
+        ui.glow(surf, 230, 470, 150, ui.darker(cc, 0.28))
+        med = (92, 182)
         need = xp_needed(p.level)
-        bar = pygame.Rect(252, 226, 180, 8)
-        ui.rect(surf, (0, 0, 0), bar.inflate(2, 2), 0, 4)
-        ui.rect(surf, (236, 200, 90), (bar.x, bar.y, max(1, bar.w * min(1, p.xp / need)), bar.h), 0, 4)
-        ui.draw_text(surf, f"{p.xp} / {need} XP", (bar.x, bar.bottom + 4), 12, SOFT, shadow=False)
-        ui.draw_text(surf, f"Points d'enchantement : {p.ench_points}", (252, 260), 13, ENCH_COL, "bold")
-        ui.draw_text(surf, "Caractéristiques", (64, 296), 19, WHITE, "title")
+        frac = min(1.0, p.xp / need)
+        ui.circle(surf, (8, 12, 14), med, 38)
+        ui.circle(surf, (60, 64, 64), med, 38, 5)
+        if frac > 0:
+            pts = [med] + [(med[0] + math.cos(-math.pi / 2 + math.tau * frac * i / 40) * 40,
+                            med[1] + math.sin(-math.pi / 2 + math.tau * frac * i / 40) * 40) for i in range(41)]
+            ui.polygon(surf, (236, 200, 90), pts)
+            ui.circle(surf, (8, 12, 14), med, 34)
+        ui.circle(surf, ui.lighter(cc, 1.1), med, 34, 1)
+        ui.draw_text(surf, "NIV.", (med[0], med[1] - 14), 10, SOFT, "bold", anchor="center", shadow=False)
+        ui.draw_text(surf, str(p.level), (med[0], med[1] + 7), 28, WHITE, "title", anchor="center")
+        if pygame.Rect(med[0] - 40, med[1] - 40, 80, 80).collidepoint(mouse):
+            self.hover_info = [("Niveau " + str(p.level), BOTW_YELLOW, 17),
+                               (f"Expérience : {p.xp} / {need}", WHITE, 14),
+                               (f"{int(frac * 100)}% vers le niveau {p.level + 1}", SOFT, 13)]
+        ui.draw_text(surf, p.name, (144, 150), 28, WHITE, "title")
+        ui.draw_text(surf, p.cls["title"], (146, 186), 14, SOFT)
+        chip_r = pygame.Rect(146, 208, ui.text_size(p.cls["name"], 13, "bold")[0] + 22, 22)
+        ui.botw_box(surf, chip_r, 200, cc, radius=11, fill=ui.darker(cc, 0.25))
+        ui.draw_text(surf, p.cls["name"], chip_r.center, 13, ui.lighter(cc, 1.3), "bold", anchor="center",
+                     shadow=False)
+        # records en bas de colonne
+        recs = [("pillar", f"Étage {p.max_floor}", "Étage le plus haut atteint"),
+                ("skull", f"{p.kills}", "Monstres vaincus"), ("heart", f"{p.deaths}", "Morts")]
+        x = 64
+        for kind, txt, tip in recs:
+            w = ui.text_size(txt, 14, "bold")[0] + 44
+            r = pygame.Rect(x, 596, w, 30)
+            ui.botw_box(surf, r, 150, (100, 104, 102), radius=15)
+            icons.glyph(surf, kind, (r.x + 16, r.centery), 8, SOFT)
+            ui.draw_text(surf, txt, (r.x + 30, r.centery), 14, WHITE, "bold", anchor="midleft", shadow=False)
+            if r.collidepoint(mouse):
+                self.hover_info = [(tip, WHITE, 15)]
+            x = r.right + 8
+        # ---- colonne attributs
+        ui.draw_text(surf, "Attributs", (446, 128), 22, WHITE, "title")
         if p.points:
-            k = 0.6 + 0.4 * math.sin(self.t * 4)
-            ui.draw_text(surf, f"{p.points} point(s) à répartir", (436, 300), 14,
-                         (int(110 * k + 60), 235, int(120 * k + 40)), "bold", anchor="topright")
+            k = 0.55 + 0.45 * math.sin(self.t * 4)
+            txt = f"{p.points} point(s) à répartir"
+            r = pygame.Rect(0, 0, ui.text_size(txt, 13, "bold")[0] + 24, 26)
+            r.topright = (826, 130)
+            ui.botw_box(surf, r, 190, (int(60 + 60 * k), 200, int(90 + 40 * k)), radius=13, fill=(14, 40, 20))
+            ui.draw_text(surf, txt, r.center, 13, (170, 250, 170), "bold", anchor="center", shadow=False)
         self.hover_attr = None
         for i, a in enumerate(ATTRS):
-            y = 334 + i * 42
-            row = pygame.Rect(60, y - 4, 380, 36)
+            kind, col = self.ATTR_STYLE[a]
+            row = pygame.Rect(440, 166 + i * 70, 386, 62)
             hov = row.collidepoint(mouse)
             if hov:
                 self.hover_attr = a
-            ui.botw_box(surf, row, 170 if hov else 120, WHITE if hov else (100, 102, 100), radius=4)
             prim = a == p.cls["primary"]
-            ui.draw_text(surf, ATTR_NAMES[a], (80, y + 3), 17, BOTW_YELLOW if prim else WHITE, "bold")
+            ui.botw_box(surf, row, 175 if hov else 125, col if hov else ((150, 140, 100) if prim else (96, 100, 98)),
+                        radius=6, fill=(18, 26, 30) if hov else (0, 0, 0))
+            ui.rect(surf, col, (row.x + 1, row.y + 8, 3, row.h - 16), 0, 2)
+            c = (row.x + 36, row.centery)
+            ui.circle(surf, ui.darker(col, 0.3), c, 20)
+            ui.circle(surf, col, c, 20, 2)
+            icons.glyph(surf, kind, c, 11, ui.lighter(col, 1.3))
+            ui.draw_text(surf, ATTR_NAMES[a], (row.x + 66, row.y + 10), 17, WHITE, "bold")
             if prim:
-                ui.draw_text(surf, "principale", (206, y + 7), 12, SOFT, shadow=False)
-            ui.draw_text(surf, str(int(s[a])), (380, y + 2), 19, WHITE, "bold", anchor="topright")
+                tw = ui.text_size(ATTR_NAMES[a], 17, "bold")[0]
+                ui.draw_text(surf, "PRINCIPALE", (row.x + 74 + tw, row.y + 14), 10, BOTW_YELLOW, "bold", shadow=False)
+            ui.draw_text(surf, self.attr_effect(a), (row.x + 66, row.y + 35), 13, SOFT, shadow=False)
+            ui.draw_text(surf, str(int(s[a])), (row.right - (58 if p.points else 20), row.centery), 26, WHITE,
+                         "bold", anchor="midright")
+            self.plus[a] = pygame.Rect(row.right - 44, row.centery - 15, 30, 30)
             if p.points:
                 rc = self.plus[a]
                 h2 = rc.collidepoint(mouse)
-                ui.circle(surf, (40, 110, 60) if h2 else (20, 60, 34), rc.center, 14)
-                ui.circle(surf, UP, rc.center, 14, 1)
-                ui.draw_text(surf, "+", rc.center, 20, WHITE, "bold", anchor="center", shadow=False)
-        if self.hover_attr:
-            ui.draw_text(surf, ATTR_DESC[self.hover_attr], (col.centerx, 548), 14, SOFT, anchor="midtop")
-        ui.draw_text(surf, f"Étage max {p.max_floor}  ·  {p.kills} monstres vaincus  ·  {p.deaths} mort(s)",
-                     (col.centerx, 604), 13, SOFT, anchor="midtop")
-        # statistiques
-        ui.botw_box(surf, (476, 122, 350, 518), 150, FRAME, radius=4)
-        ui.draw_text(surf, "Statistiques", (651, 134), 19, WHITE, "title", anchor="midtop")
+                ui.circle(surf, (40, 120, 64) if h2 else (18, 60, 32), rc.center, 15)
+                ui.circle(surf, UP, rc.center, 15, 1)
+                ui.draw_text(surf, "+", rc.center, 21, WHITE, "bold", anchor="center", shadow=False)
+        # grandes tuiles
         dr = p.damage_reduction() * 100
+        tiles = [("sword", "Attaque", f"{int(p.dps_estimate())}", "dégâts / seconde", (236, 140, 90)),
+                 ("shield", "Défense", f"{int(s['armor'])}", f"-{dr:.0f}% de dégâts subis", (170, 180, 200)),
+                 ("heart", "Vie", f"{int(p.hp)}", f"sur {int(s['max_hp'])}", (236, 80, 100)),
+                 ("drop", "Mana", f"{int(p.mana)}", f"sur {int(s['max_mana'])}", (100, 150, 255))]
+        for i, (kind, label, val, sub, col) in enumerate(tiles):
+            r = pygame.Rect(440 + (i % 2) * 196, 454 + (i // 2) * 94, 190, 86)
+            ui.botw_box(surf, r, 150, ui.darker(col, 0.7), radius=6)
+            icons.glyph(surf, kind, (r.x + 24, r.y + 26), 11, col)
+            ui.draw_text(surf, label, (r.x + 42, r.y + 17), 14, SOFT, "bold", shadow=False)
+            ui.draw_text(surf, val, (r.x + 18, r.y + 38), 28, WHITE, "bold")
+            ui.draw_text(surf, sub, (r.right - 12, r.bottom - 10), 12, SOFT, anchor="bottomright", shadow=False)
+        # ---- colonne statistiques + compétences
+        box = ui.botw_box(surf, (846, 122, 394, 518), 150, FRAME, radius=4)
+        ui.draw_text(surf, "Statistiques", (box.centerx, 134), 20, WHITE, "title", anchor="midtop")
         rows = [
-            ("Vie", f"{int(p.hp)} / {int(s['max_hp'])}"), ("Mana", f"{int(p.mana)} / {int(s['max_mana'])}"),
-            ("Dégâts de l'arme", f"{int(s['dmg_min'])} - {int(s['dmg_max'])}"),
-            ("Multiplicateur", f"x{s['dmg_mult']:.2f}"), ("Dégâts / seconde", f"{int(p.dps_estimate())}"),
-            ("Armure", f"{int(s['armor'])}"), ("Réduction des dégâts", f"{dr:.0f}%"),
-            ("Coup critique", f"{s['crit']:.1f}%"), ("Vitesse d'attaque", f"+{s['atk_speed']:.0f}%"),
-            ("Vol de vie", f"{s['lifesteal']:.0f}%"), ("Régén. de mana", f"{s['mana_regen']:.1f}/s"),
-            ("Recharge des sorts", f"-{s['cdr']:.0f}%"), ("Déplacement", f"+{s['move_speed']:.0f}%"),
-            ("Recharge potion / roulade", f"{p.potion_total:.0f} s / {p.roll_total:.1f} s"),
-            ("Or trouvé", f"+{s['gold_find']:.0f}%"),
+            ("sword", "Dégâts de l'arme", f"{int(s['dmg_min'])} - {int(s['dmg_max'])}", None,
+             "Dégâts de base de l'arme équipée."),
+            ("fist", "Multiplicateur", f"x{s['dmg_mult']:.2f}", None,
+             "Bonus de l'attribut principal et des bonus de dégâts."),
+            ("eye", "Coup critique", f"{s['crit']:.1f}%", s["crit"] / 60,
+             f"Les critiques infligent x{s['crit_mult']:.2f} dégâts."),
+            ("bolt", "Vitesse d'attaque", f"+{s['atk_speed']:.0f}%", s["atk_speed"] / 60, None),
+            ("drop", "Vol de vie", f"{s['lifesteal']:.0f}%", s["lifesteal"] / 15, None),
+            ("orb", "Régén. de mana", f"{s['mana_regen']:.1f}/s", None, None),
+            ("clock", "Recharge des sorts", f"-{s['cdr']:.0f}%", s["cdr"] / 50, "Maximum : 50%."),
+            ("boot", "Déplacement", f"+{s['move_speed']:.0f}%", s["move_speed"] / 40, None),
+            ("heart", "Potion · roulade", f"{p.potion_total:.0f} s · {p.roll_total:.1f} s", None,
+             "Temps de recharge de la potion (F) et de la roulade (Espace)."),
+            ("star", "Or trouvé", f"+{s['gold_find']:.0f}%", None, None),
         ]
-        y = 168
-        for i, (label, val) in enumerate(rows):
-            if i % 2 == 0:
-                ui.botw_box(surf, (490, y - 3, 322, 24), 70, None, radius=4, fill=(40, 60, 70))
-            ui.draw_text(surf, label, (504, y), 14, SOFT)
-            ui.draw_text(surf, val, (798, y), 14, WHITE, "bold", anchor="topright")
-            y += 25
-        if p.anima:
-            y += 6
-            ui.draw_text(surf, "Pouvoirs d'anima", (651, y), 16, SHEIKAH, "title", anchor="midtop")
-            y += 24
-            for pid, n in p.anima.items():
-                if y > 614:
-                    break
-                pw = ANIMA_POWERS[pid]
-                ui.circle(surf, pw["color"], (504, y + 8), 5)
-                ui.draw_text(surf, f"{pw['name']} x{n}", (516, y), 13, WHITE)
-                y += 19
-        # compétences
-        ui.botw_box(surf, (842, 122, 398, 518), 150, FRAME, radius=4)
-        ui.draw_text(surf, "Compétences", (1041, 134), 19, WHITE, "title", anchor="midtop")
+        y = 170
+        for i, (kind, label, val, frac_, tip) in enumerate(rows):
+            r = pygame.Rect(box.x + 12, y - 4, box.w - 24, 28)
+            hov = r.collidepoint(mouse)
+            if i % 2 == 0 or hov:
+                ui.rect(surf, (40, 60, 70, 110 if hov else 60), r, 0, 4)
+            icons.glyph(surf, kind, (r.x + 16, r.centery), 7, (170, 200, 210))
+            ui.draw_text(surf, label, (r.x + 32, r.centery), 14, SOFT, anchor="midleft", shadow=False)
+            ui.draw_text(surf, val, (r.right - 10, r.centery), 14, WHITE, "bold", anchor="midright", shadow=False)
+            if frac_ is not None:
+                bar = pygame.Rect(r.x + 32, r.bottom - 3, 140, 2)
+                ui.rect(surf, (60, 64, 66), bar)
+                ui.rect(surf, SHEIKAH, (bar.x, bar.y, max(1, bar.w * min(1.0, frac_)), bar.h))
+            if hov and tip:
+                self.hover_info = [(label, WHITE, 16), (tip, SOFT, 14)]
+            y += 31
+        # compétences : médaillons
+        ui.draw_text(surf, "Compétences", (box.centerx, 488), 18, WHITE, "title", anchor="midtop")
         a = p.cls["attack"]
-        entries = [(a["name"], a.get("color", p.cls["color"]), f"Attaque de base · {int(a['mult'] * 100)}% arme",
-                    "Clic gauche maintenu.", True, "LMB")]
+        entries = [(None, a["name"], a.get("color", cc), "LMB", True,
+                    f"Attaque de base · {int(a['mult'] * 100)}% de l'arme · clic gauche maintenu", None)]
         for i, sid in enumerate(p.spells):
             sp = SPELLS[sid]
-            entries.append((sp["name"], sp["color"], f"Mana {sp['mana']} · Recharge {sp['cd']} s · Niv {sp['level']}",
-                            sp["desc"], p.spell_unlocked(sid), str(i + 1)))
-        y = 170
-        for name, c, meta, desc, ok, key in entries:
-            ui.circle(surf, ui.darker(c, 0.45) if ok else (30, 30, 30), (878, y + 20), 20)
-            ui.circle(surf, ui.lighter(c, 1.2) if ok else (90, 90, 90), (878, y + 20), 20, 2)
-            ui.draw_text(surf, key, (878, y + 20), 12, WHITE if ok else (120, 120, 120), "bold", anchor="center",
+            entries.append((sid, sp["name"], sp["color"], str(i + 1), p.spell_unlocked(sid), sp["desc"], sp))
+        n = len(entries)
+        for i, (sid, name, col, key, ok, desc, sp) in enumerate(entries):
+            c = (box.x + 42 + i * (box.w - 84) / (n - 1), 556)
+            icons.spell_icon(surf, sid, c, 25, col, locked=not ok, attack_cls=p.cls_id if sid is None else None)
+            ui.key_badge(surf, key, (c[0], c[1] + 27), 10)
+            if not ok:
+                ui.draw_text(surf, f"Niv {sp['level']}", (c[0], c[1] + 46), 11, TEXT_DIM, "bold", anchor="center",
+                             shadow=False)
+            if math.hypot(mouse[0] - c[0], mouse[1] - c[1]) < 27:
+                info = [(name, ui.lighter(col, 1.2), 17)]
+                if sp:
+                    info.append((f"Mana {sp['mana']}  ·  Recharge {sp['cd']} s  ·  Niveau {sp['level']}", SHEIKAH, 13))
+                info += [(l, SOFT, 14) for l in ui.wrap(desc, 14, 300)]
+                self.hover_info = info
+        if p.anima:
+            txt = "  ·  ".join(f"{ANIMA_POWERS[k]['name']} x{v}" for k, v in list(p.anima.items())[:3])
+            ui.draw_text(surf, "Anima : " + txt, (box.centerx, 620), 12, SHEIKAH, "bold", anchor="center",
                          shadow=False)
-            ui.draw_text(surf, name, (910, y), 16, WHITE if ok else (130, 130, 130), "bold")
-            ui.draw_text(surf, meta, (910, y + 21), 12, SHEIKAH if ok else (120, 120, 120), shadow=False)
-            yy = y + 39
-            for line in ui.wrap(desc, 13, 310)[:2]:
-                ui.draw_text(surf, line, (910, yy), 13, SOFT if ok else (110, 110, 110), shadow=False)
-                yy += 17
-            y = max(yy, y + 60) + 10
+
+    # ------------------------------------------------------------------ talents
+    TAL_COL_X = (56, 450, 844)
+    TAL_W = 380
+    TAL_Y = (262, 356, 450, 548)
+
+    def talent_nodes(self):
+        from . import talents
+        p = self.world.player
+        res = []
+        for bi, br in enumerate(talents.TREES[p.cls_id]):
+            for t in br["talents"]:
+                c = (self.TAL_COL_X[bi] + 58, self.TAL_Y[t["tier"]])
+                res.append((t, br, c))
+        return res
+
+    def talent_click(self, e):
+        from . import talents
+        w = self.world
+        p = w.player
+        if self.reset_rect.collidepoint(e.pos) and e.button == 1:
+            if w.reset_talents():
+                self._preview_key = None
+            return
+        for t, br, c in self.talent_nodes():
+            if math.hypot(e.pos[0] - c[0], e.pos[1] - c[1]) > 32:
+                continue
+            if e.button == 1:
+                ok, why = talents.can_learn(p.talents, p.level, t["id"])
+                if ok:
+                    p.talents[t["id"]] = p.talents.get(t["id"], 0) + 1
+                    p.recompute()
+                    self.flash_node = (t["id"], self.t)
+                    sfx.play("levelup", 0.35)
+                else:
+                    w.message(why, RED, 3)
+                    sfx.play("click", 0.4)
+            elif e.button == 3:
+                if w.is_tower:
+                    w.message("Les points de talent se retirent au campement.", RED, 3)
+                elif talents.can_unlearn(p.talents, t["id"]):
+                    p.talents[t["id"]] -= 1
+                    if not p.talents[t["id"]]:
+                        del p.talents[t["id"]]
+                    p.recompute()
+                    sfx.play("click")
+                else:
+                    w.message("Retirez d'abord les points des paliers supérieurs.", RED, 3)
+            return
+
+    def draw_talents(self, surf, mouse):
+        from . import icons, talents
+        p = self.world.player
+        ranks = p.talents
+        free = p.talent_points
+        self.hover_talent = None
+        # bandeau d'information
+        ui.draw_text(surf, f"Arbre du {p.cls['name']}", (56, 130), 22, WHITE, "title")
+        txt = f"{free} point(s) disponible(s)" if free else "Aucun point disponible"
+        r = pygame.Rect(0, 0, ui.text_size(txt, 14, "bold")[0] + 30, 28)
+        r.midleft = (330, 146)
+        k = 0.6 + 0.4 * math.sin(self.t * 4) if free else 0.0
+        ui.botw_box(surf, r, 190, (int(180 + 60 * k), 170, 80) if free else (100, 100, 96), radius=14,
+                    fill=(46, 36, 10) if free else (0, 0, 0))
+        ui.draw_text(surf, txt, r.center, 14, (255, 222, 120) if free else SOFT, "bold", anchor="center", shadow=False)
+        ui.draw_text(surf, f"{talents.spent(ranks)} / {p.talent_points_total} dépensés · 1 point tous les 2 niveaux",
+                     (r.right + 16, 146), 13, SOFT, anchor="midleft", shadow=False)
+        cost = talents.reset_cost(p.level)
+        self.reset_rect = pygame.Rect(1030, 130, 194, 32)
+        can_reset = bool(ranks) and not self.world.is_tower
+        hov = self.reset_rect.collidepoint(mouse) and can_reset
+        ui.botw_box(surf, self.reset_rect, 200 if hov else 130, SHEIKAH if hov else (100, 102, 100),
+                    radius=16, fill=(16, 44, 56) if hov else (0, 0, 0))
+        ui.draw_text(surf, f"Réinitialiser · {cost} or" if not self.world.is_tower else "Réinitialiser (campement)",
+                     self.reset_rect.center, 13, WHITE if can_reset else TEXT_DIM, "bold", anchor="center",
+                     shadow=False)
+        for bi, br in enumerate(talents.TREES[p.cls_id]):
+            col = br["color"]
+            x0 = self.TAL_COL_X[bi]
+            spent_b = talents.branch_spent(ranks, p.cls_id, bi)
+            panel = ui.botw_box(surf, (x0, 176, self.TAL_W, 464), 150, ui.darker(col, 0.6), radius=6)
+            ui.rect(surf, (*ui.darker(col, 0.35), 150), (x0 + 1, 177, self.TAL_W - 2, 52), 0, 5)
+            hc = (x0 + 34, 203)
+            ui.circle(surf, ui.darker(col, 0.3), hc, 19)
+            ui.circle(surf, col, hc, 19, 2)
+            icons.glyph(surf, br["icon"], hc, 10, ui.lighter(col, 1.3))
+            ui.draw_text(surf, br["name"], (x0 + 62, 203), 21, WHITE, "title", anchor="midleft")
+            ui.draw_text(surf, f"{spent_b} pt{'s' if spent_b > 1 else ''}", (x0 + self.TAL_W - 16, 203), 15,
+                         ui.lighter(col, 1.2), "bold", anchor="midright")
+            # chemin reliant les paliers
+            nx = x0 + 58
+            for tier in range(3):
+                y1, y2 = self.TAL_Y[tier] + 31, self.TAL_Y[tier + 1] - 31
+                need = (tier + 1) * talents.TIER_COST
+                fill = max(0.0, min(1.0, (spent_b - tier * talents.TIER_COST) / talents.TIER_COST))
+                ui.rect(surf, (50, 54, 56), (nx - 2, y1, 4, y2 - y1))
+                if fill > 0:
+                    ui.rect(surf, col, (nx - 2, y1, 4, (y2 - y1) * fill))
+                    if fill >= 1:
+                        ui.glow(surf, nx, (y1 + y2) / 2, 18, ui.darker(col, 0.4))
+                ui.draw_text(surf, f"{need} pts", (nx + 8, (y1 + y2) / 2), 10, TEXT_DIM if fill < 1 else SOFT,
+                             "bold", anchor="midleft", shadow=False)
+            for t in br["talents"]:
+                c = (nx, self.TAL_Y[t["tier"]])
+                rk = ranks.get(t["id"], 0)
+                ok, _ = talents.can_learn(ranks, p.level, t["id"])
+                unlocked = spent_b >= t["tier"] * talents.TIER_COST
+                state = "max" if rk >= t["max"] else ("some" if rk else ("open" if unlocked else "locked"))
+                fl = getattr(self, "flash_node", None)
+                if fl and fl[0] == t["id"] and self.t - fl[1] < 0.5:
+                    ui.glow(surf, c[0], c[1], 60 * (1 - (self.t - fl[1]) * 2) + 20, col)
+                icons.talent_icon(surf, t, c, 27, col, state)
+                if ok and free:
+                    ui.circle(surf, (255, 222, 120), c, 31 + 1.5 * math.sin(self.t * 5), 1)
+                pip = f"{rk}/{t['max']}"
+                pr = pygame.Rect(0, 0, 34, 18)
+                pr.center = (c[0] + 22, c[1] + 22)
+                ui.botw_box(surf, pr, 220, col if rk else (90, 92, 92), radius=9, fill=(8, 10, 12))
+                ui.draw_text(surf, pip, pr.center, 11, WHITE if rk else SOFT, "bold", anchor="center", shadow=False)
+                tx = x0 + 104
+                name_col = WHITE if unlocked else (130, 134, 134)
+                ui.draw_text(surf, t["name"], (tx, c[1] - 26), 16, name_col, "bold")
+                desc = talents.describe(t["id"], max(1, rk))
+                lines = ui.wrap(desc, 13, self.TAL_W - 118)
+                for li, line in enumerate(lines[:3]):
+                    ui.draw_text(surf, line, (tx, c[1] - 4 + li * 16), 13,
+                                 SOFT if unlocked else (110, 112, 112), shadow=False)
+                area = pygame.Rect(x0 + 20, c[1] - 36, self.TAL_W - 30, 74)
+                if area.collidepoint(mouse):
+                    self.hover_talent = (t, br, rk, ok, unlocked)
+
+    def talent_tooltip(self, surf):
+        from . import talents
+        t, br, rk, ok, unlocked = self.hover_talent
+        col = br["color"]
+        lines = [(t["name"], ui.lighter(col, 1.2), 17),
+                 (f"{br['name']} · palier {t['tier'] + 1}" + (" · talent ultime" if t["tier"] == 3 else ""), SOFT, 13),
+                 (f"Rang {rk} / {t['max']}", WHITE, 14)]
+        if rk:
+            lines.append(("Actuel : " + talents.describe(t["id"], rk), WHITE, 14))
+        if rk < t["max"]:
+            lines.append(("Rang suivant : " + talents.describe(t["id"], rk + 1), UP, 14))
+            if not unlocked:
+                lines.append((f"Requiert {t['tier'] * talents.TIER_COST} points dans {br['name']}", DOWN, 13))
+            elif ok:
+                lines.append(("Clic : apprendre", BOTW_YELLOW, 13))
+            elif self.world.player.talent_points <= 0:
+                lines.append(("Aucun point de talent disponible", DOWN, 13))
+        if rk:
+            lines.append(("Clic droit : retirer un point (au campement)", SOFT, 12))
+        ui.draw_tooltip_lines(surf, lines, ui.mouse_pos(), col)
 
     # ------------------------------------------------------------------ système (ancien menu pause)
     def draw_system(self, surf, mouse):
@@ -871,6 +1113,13 @@ class MenuScreen(Panel):
             y += 39
 
     def draw_tooltips(self, surf):
+        if self.page == PAGE_CHAR and self.hover_info:
+            ui.draw_tooltip_lines(surf, self.hover_info, ui.mouse_pos())
+        if self.page == PAGE_CHAR and self.hover_attr and not self.hover_info:
+            ui.draw_tooltip_lines(surf, [(ATTR_NAMES[self.hover_attr], WHITE, 16),
+                                         (ATTR_DESC[self.hover_attr], SOFT, 14)], ui.mouse_pos())
+        if self.page == PAGE_TAL and self.hover_talent:
+            self.talent_tooltip(surf)
         if self.page == PAGE_INV and self.ench_hover and not self.ctx:
             it, si, eid = self.ench_hover
             e = it["ench"][si]

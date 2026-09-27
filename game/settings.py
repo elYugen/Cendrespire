@@ -46,16 +46,17 @@ class View:
 
 VIEW = View()
 
-# Police embarquée (Lato, licence OFL, assets/fonts) : rendu identique sur toutes les machines,
+# Police embarquée (M PLUS Rounded 1c, licence OFL, assets/fonts) : rendu identique sur toutes les machines,
 # sans dépendre des polices du système.
 _FONTS_DIR = os.path.join(ASSETS_DIR, "fonts")
-# Fira Sans (textes) et Philosopher (titres, noms) : licence OFL (assets/fonts/OFL-*.txt).
-# (fichier, index dans le fichier, facteur de taille : les mises en page ont été conçues pour Lato, plus étroite)
-FONT_FILES = {
-    "text": (os.path.join(_FONTS_DIR, "FiraSans-Regular.ttf"), 0, 0.94),
-    "bold": (os.path.join(_FONTS_DIR, "FiraSans-SemiBold.ttf"), 0, 0.94),
-    "title": (os.path.join(_FONTS_DIR, "Philosopher-Regular.ttf"), 0, 1.0),
-    "title_bold": (os.path.join(_FONTS_DIR, "Philosopher-Bold.ttf"), 0, 1.0),
+# M PLUS Rounded 1c pour tous les textes : gothique japonaise aux terminaisons arrondies, proche de FOT-Rodin, la
+# police de l'interface de Breath of the Wild. Licence OFL (assets/fonts/OFL-MPLUSRounded1c.txt).
+# (fichier, index dans le fichier, facteur de taille : police plus large que celle des mises en page d'origine)
+FONT_FILES = {                      # graisses légères : Regular pour le texte, Medium pour la mise en valeur
+    "text": (os.path.join(_FONTS_DIR, "MPLUSRounded1c-Regular.ttf"), 0, 0.93),
+    "bold": (os.path.join(_FONTS_DIR, "MPLUSRounded1c-Medium.ttf"), 0, 0.93),
+    "title": (os.path.join(_FONTS_DIR, "MPLUSRounded1c-Regular.ttf"), 0, 0.95),
+    "title_bold": (os.path.join(_FONTS_DIR, "MPLUSRounded1c-Medium.ttf"), 0, 0.95),
 }
 
 # Palette

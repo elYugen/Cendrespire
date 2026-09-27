@@ -188,9 +188,13 @@ def _glyph_skull_small(surf, x, y, s, col):
     ui.circle(surf, (20, 20, 24), (x + s * 0.25, y), s * 0.18)
 
 
-def spell_icon(surf, sid, c, r, color, locked=False, attack_cls=None):
-    """Médaillon rond d'un sort (ou de l'attaque de base si attack_cls est donné)."""
+def spell_icon(surf, sid, c, r, color, locked=False, attack_cls=None, flat=False):
+    """Médaillon rond d'un sort (ou de l'attaque de base si attack_cls est donné).
+    flat : pictogramme seul, sans médaillon ni halo (barre de compétences au style plat)."""
     kind = ATTACK_GLYPH.get(attack_cls, "sword") if attack_cls else SPELL_GLYPH.get(sid, "star")
+    if flat:
+        glyph(surf, kind, c, r * 0.55, (92, 94, 96) if locked else ui.lighter(color, 1.25))
+        return
     if locked:
         ui.circle(surf, (26, 28, 30), c, r)
         ui.circle(surf, (90, 92, 92), c, r, 2)

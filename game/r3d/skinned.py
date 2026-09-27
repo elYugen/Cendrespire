@@ -185,6 +185,7 @@ class Model:
                 col = col @ rot.T
             gray = col.mean(1, keepdims=True)
             self.vertices[:, 7:10] = np.clip((gray + (col - gray) * sat) * bright, 0.0, 1.0)
+        self._poses = {}
         self.anims = {}
         for a in g.get("animations", []):
             # « CharacterArmature|Run » -> « Run » ; certains exports répètent l'armature et tronquent la fin
@@ -236,12 +237,24 @@ class Model:
     def duration(self, anim):
         return self.anims[anim][1] if anim in self.anims else 1.0
 
+    POSE_FPS = 30          # les poses sont calculées au plus 30 fois par seconde d'animation...
+
     def pose(self, anim, t, loop=True):
-        """Matrices des articulations (J, 4, 4) et matrices « monde » des nœuds, à l'instant t (secondes)."""
+        """Matrices des articulations (J, 4, 4) et matrices « monde » des nœuds, à l'instant t (secondes).
+        ...et mises en cache : tous les monstres d'un même modèle qui courent en même temps partagent la même pose
+        (horloge d'animation commune), elle n'est donc calculée qu'une fois par image au lieu d'une fois par monstre."""
         d = self.duration(anim)
         t = (t % d) if loop else min(t, d - 1e-3)
+        key = (anim, int(t * self.POSE_FPS))
+        hit = self._poses.get(key)
+        if hit is not None:
+            return hit
+        t = key[1] / self.POSE_FPS
         world = self.world_matrices(anim, t)
         mats = np.array([world[j] @ self.ibm[k] for k, j in enumerate(self.joints)], dtype="f4")
+        if len(self._poses) > 600:
+            self._poses.clear()
+        self._poses[key] = (mats, world)
         return mats, world
 
     def node(self, name):

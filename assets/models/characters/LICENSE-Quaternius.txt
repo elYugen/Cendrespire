@@ -16,7 +16,6 @@ Monstres (Quaternius, via poly.pizza) :
   orc.glb           Orc                                        CC0 1.0   https://poly.pizza/m/5vO2YJsPEf
   spider.glb        Spider         (Animated Enemies)          CC0 1.0   https://poly.pizza/m/yRYJiAJyiM
   zombie.glb        « Zombie » par Quaternius, CC-BY 3.0 (attribution requise), https://poly.pizza/m/22K0aSZkHV
-  skel_a.glb        Skeleton                                   CC0 1.0   https://poly.pizza/m/wODZYCgX5Z
   giant.glb         Giant                                      CC0 1.0   https://poly.pizza/m/BldaiPtyJa
   yeti_block.glb    Yeti                                       CC0 1.0   https://poly.pizza/m/xtMYEVzyw0
   demon_trident.glb Demon                                      CC0 1.0   https://poly.pizza/m/LnfIziKv4o

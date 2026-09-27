@@ -1242,12 +1242,12 @@ class World(Scene):
                 ui.rect(surf, (0, 0, 0, 180), r.inflate(2, 2), 0, 3)
                 ui.rect(surf, (220, 40, 40), (r.x, r.y, max(1, r.w * max(0, m.hp / m.max_hp)), r.h), 0, 2)
                 if m.elite:
-                    ui.draw_text(surf, m.name, (pt[0], pt[1] - 3), 13, GOLD_BRIGHT, "bold", anchor="midbottom")
+                    ui.draw_text(surf, m.name, (pt[0], pt[1] - 3), 13, GOLD_BRIGHT, "text", anchor="midbottom")
         for o in self.interactables:
             if o.label:
                 pt = self.project(o.x, o.y, 78)
                 if pt:
-                    r = ui.draw_text(surf, o.label, pt, 14, WHITE, "bold", anchor="midbottom")
+                    r = ui.draw_text(surf, o.label, pt, 14, WHITE, "text", anchor="midbottom")
                     mark = self.npc_marker(o)
                     if mark:
                         bob = 3 * math.sin(self.time * 3 + o.x)
@@ -1257,12 +1257,12 @@ class World(Scene):
                 pt = self.project(l.x, l.y, 30)
                 if pt:
                     col = RARITY_COLORS[l.item["rarity"]]
-                    tw, th = ui.text_size(l.item["name"], 13, "bold")
+                    tw, th = ui.text_size(l.item["name"], 13, "text")
                     r = pygame.Rect(0, 0, tw + 14, th + 2)
                     r.midbottom = pt
                     ui.rect(surf, (0, 0, 0, 170), r, 0, r.h // 2)
                     ui.rect(surf, col, r, 1, r.h // 2)
-                    ui.draw_text(surf, l.item["name"], r.center, 13, col, "bold", anchor="center", shadow=False)
+                    ui.draw_text(surf, l.item["name"], r.center, 13, col, "text", anchor="center", shadow=False)
         for tx in self.texts:
             pt = self.project(tx[0], tx[1], tx[2])
             if pt:

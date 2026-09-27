@@ -448,7 +448,9 @@ def draw_tooltip_lines(surf, lines_, pos, border=UI_LINE, side="right"):
     w = max(s[0] for s in sizes) + pad * 2
     h = sum(s[1] + 1 for s in sizes) + pad * 2 + 6
     x, y = pos
-    if side == "right":
+    if side == "above":             # centrée au-dessus du point donné
+        x, y = pos[0] - w / 2, pos[1] - h - 8
+    elif side == "right":
         x += 18
         if x + w > SCREEN_W - 4:
             x = pos[0] - w - 14
@@ -456,7 +458,7 @@ def draw_tooltip_lines(surf, lines_, pos, border=UI_LINE, side="right"):
         x -= w + 14
         if x < 4:
             x = pos[0] + 18
-    y = min(max(4, y + 8), SCREEN_H - h - 4)
+    y = min(max(4, y + (0 if side == "above" else 8)), SCREEN_H - h - 4)
     x = max(4, min(x, SCREEN_W - w - 4))
     r = pygame.Rect(x, y, w, h)
     botw_box(surf, r, 232, border, radius=8, fill=(6, 9, 12))

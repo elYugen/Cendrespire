@@ -1,0 +1,23 @@
+{
+  "version": "3.2",
+  "date": "2026-09-28",
+  "title": "Fluidité et nouvelle police",
+  "sections": [
+    {"name": "Performances", "notes": [
+      "Les monstres animés sont bien plus légers à afficher : leurs poses sont partagées entre monstres du même type au lieu d'être recalculées pour chacun.",
+      "Les étages chargés de monstres sont environ trois fois plus fluides."
+    ]},
+    {"name": "Interface", "notes": [
+      "Nouvelle police pour tous les textes : M PLUS Rounded 1c, aux formes arrondies proches de l'interface de Breath of the Wild, en graisse légère.",
+      "La barre de compétences passe en bas au centre de l'écran, dans un style plat et épuré : pictogrammes colorés, touche et coût en mana dans les coins, recharge qui se retire de haut en bas, jauge de mana au-dessus.",
+      "La barre de vie des gardiens s'affiche désormais en haut de l'écran ; les infobulles des sorts apparaissent au-dessus de la barre.",
+      "Corrigé : l'infobulle de la potion indiquait encore 50% de soins au lieu de 35%."
+    ]},
+    {"name": "Monstres", "notes": [
+      "Les squelettes et archers squelettes retrouvent leur modèle d'origine."
+    ]},
+    {"name": "Crédits", "notes": [
+      "Police : M PLUS Rounded 1c (licence SIL Open Font)."
+    ]}
+  ]
+}

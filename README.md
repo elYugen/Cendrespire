@@ -146,7 +146,7 @@ Classes, sorts, talents, effets temporaires, artefacts, monstres, boss, anima, e
     - [Survival Kit](https://kenney.nl/assets/survival-kit) : enclume, établis, tonneaux, caisses.
 
     Les couleurs des textures-palettes sont lues à chaque sommet, puis étalonnées pour s'accorder à l'ambiance du jeu. Les modèles sont déclarés dans `assets/models/models.json`. Si un modèle manque, le décor procédural d'origine le remplace.
-- **Interface** (pygame) : dessinée à la résolution native, puis posée sur l'image 3D, ce qui garde les textes nets. Police Lato embarquée (`assets/fonts`, licence OFL) : même rendu sur toutes les machines.
+- **Interface** (pygame) : dessinée à la résolution native, puis posée sur l'image 3D, ce qui garde les textes nets. Police M PLUS Rounded 1c embarquée (proche de l'interface de Breath of the Wild) (`assets/fonts`, licence OFL) : même rendu sur toutes les machines.
 - **HUD façon BotW** :
   - cœurs par quarts en haut à gauche ;
   - roue de mana à côté du héros ;

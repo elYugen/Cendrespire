@@ -104,6 +104,16 @@ NPC_SPECS = {
 # =========================================================================== humanoïde
 def humanoid(fr, x, y, z0, facing, phase, spec, sc=1.0, flash=False, tint_col=None, swing=0.0, moving=True,
              glow_eyes=True):
+    """Personnage (héros, PNJ, monstre) : dessiné avec contour cartoon et ombrage en paliers."""
+    prev = getattr(fr, "outline", False)
+    fr.outline = True
+    try:
+        _humanoid(fr, x, y, z0, facing, phase, spec, sc, flash, tint_col, swing, moving, glow_eyes)
+    finally:
+        fr.outline = prev
+
+
+def _humanoid(fr, x, y, z0, facing, phase, spec, sc, flash, tint_col, swing, moving, glow_eyes):
     if spec.get("detailed"):
         return hero(fr, x, y, z0, facing, phase, spec, sc, flash, tint_col, swing, moving)
     p = Painter(fr, flash, tint_col)
@@ -373,16 +383,34 @@ def hero(fr, x, y, z0, facing, phase, spec, sc=1.0, flash=False, tint_col=None, 
         p.part("cylinder", add(knee, mul(up2, -1.6 * sc)), mul(fp2, 2.95 * sc * Wd), mul(up2, 0.9 * sc),
                mul(s, 2.95 * sc * Wd), spec.get("cuff", boots))
         p.ellipsoid(add(ankle, mul(f, 1.6 * sc), (0, 0, 1.0 * sc)), f, s, 4.0 * sc, 2.7 * sc * Wd, 2.0 * sc, boots)
+        p.part("cylinder", add(ankle, mul(f, 1.6 * sc), (0, 0, -0.55 * sc)), mul(f, 4.1 * sc), mul(UP, 0.45 * sc),
+               mul(s, 2.8 * sc * Wd), tint(boots, (20, 16, 14), 0.55))
 
     # bassin, ventre, poitrine
     if robe:
-        p.part("frustum", add(base, (0, 0, 13.5 * sc)), mul(f, 8.0 * sc * Wd), mul(UP, 13.5 * sc), mul(s, 8.4 * sc * Wd),
-               body)
-        if spec.get("trim"):
-            p.part("frustum", add(base, (0, 0, 1.6 * sc)), mul(f, 8.1 * sc * Wd), mul(UP, 1.2 * sc),
-                   mul(s, 8.5 * sc * Wd), spec["trim"])
+        sway = walk * 0.6 * sc
+        p.part("frustum", add(base, mul(f, sway * 0.3), (0, 0, 13.5 * sc)), mul(f, 8.6 * sc * Wd), mul(UP, 13.5 * sc),
+               mul(s, 9.0 * sc * Wd), body)
+        hem = spec.get("trim", tint(body, (0, 0, 0), 0.3))
+        p.part("frustum", add(base, (0, 0, 1.4 * sc)), mul(f, 8.75 * sc * Wd), mul(UP, 1.4 * sc),
+               mul(s, 9.15 * sc * Wd), hem)
+        # plis : bandes légèrement plus sombres autour de la robe
+        for i in range(6):
+            a = (i + 0.5) / 6 * math.tau
+            d = add(mul(f, math.cos(a)), mul(s, math.sin(a)))
+            p.rod(add(base, mul(d, 7.4 * sc * Wd), (0, 0, 2.8 * sc)), add(base, mul(d, 4.6 * sc * Wd), (0, 0, 20 * sc)),
+                  0.9 * sc, tint(body, (0, 0, 0), 0.22), UP)
+        # bande frontale de la robe
+        p.boxv(add(base, mul(f, 6.2 * sc * Wd), (0, 0, 12 * sc)), mul(norm(add(f, (0, 0, 0.3))), 0.35 * sc),
+               mul(s, 1.5 * sc), mul(norm(add(UP, mul(f, -0.28))), 11 * sc), spec.get("collar", hem))
     else:
         p.ellipsoid(add(base, (0, 0, hip + 0.5 * sc)), f, s, 4.6 * sc, 6.4 * sc * Wd, 3.4 * sc, legs_c)
+        if not spec.get("tabard"):
+            # tunique : jupe courte évasée sur les hanches, ourlet plus sombre
+            p.part("frustum", add(base, (0, 0, hip + 1.2 * sc)), mul(f, 5.6 * sc * Wd), mul(UP, 3.4 * sc),
+                   mul(s, 7.2 * sc * Wd), body)
+            p.part("frustum", add(base, (0, 0, hip - 1.9 * sc)), mul(f, 5.75 * sc * Wd), mul(UP, 0.45 * sc),
+                   mul(s, 7.35 * sc * Wd), tint(body, (0, 0, 0), 0.3))
     # torse d'un seul volume, élargi aux épaules (silhouette en V)
     p.ellipsoid(add(base, (0, 0, hip + 8.6 * sc)), f, s, 4.5 * sc, 6.3 * sc * Wd, 9.4 * sc, body)
     p.ellipsoid(add(base, mul(f, -0.3 * sc), (0, 0, hip + 14.6 * sc)), f, s, 4.2 * sc, 8.2 * sc * Wd, 3.6 * sc, body)
@@ -392,6 +420,10 @@ def hero(fr, x, y, z0, facing, phase, spec, sc=1.0, flash=False, tint_col=None, 
                mul(s, 6.35 * sc * Wd), belt)
         p.boxv(add(base, mul(f, 4.8 * sc), (0, 0, hip + 2.4 * sc)), mul(f, 0.5 * sc), mul(s, 1.3 * sc),
                mul(UP, 1.1 * sc), (224, 188, 100), 0.1)
+        if not robe:   # sacoche de cuir sur la hanche
+            pc = add(base, mul(f, 1.6 * sc), mul(s, -6.4 * sc * Wd), (0, 0, hip + 0.6 * sc))
+            p.boxv(pc, mul(f, 1.6 * sc), mul(s, 0.9 * sc), mul(UP, 1.8 * sc), (96, 64, 40))
+            p.boxv(add(pc, (0, 0, 1.5 * sc)), mul(f, 1.7 * sc), mul(s, 1.0 * sc), mul(UP, 0.5 * sc), (74, 48, 30))
     if spec.get("strap"):
         a = add(base, mul(f, 3.9 * sc), mul(s, -5.2 * sc * Wd), (0, 0, hip + 16 * sc))
         m = add(base, mul(f, 5.5 * sc), mul(s, -0.3 * sc * Wd), (0, 0, hip + 10 * sc))
@@ -486,8 +518,10 @@ def hero(fr, x, y, z0, facing, phase, spec, sc=1.0, flash=False, tint_col=None, 
         hand, fp2, up2 = limb(p, elbow, f, s, t + bend, 2.05 * sc * Wd, 3.3 * sc, upper_c if robe else skin
                               if spec.get("arms") == "skin" else body)
         if robe:
-            p.part("frustum", add(elbow, mul(up2, -4.6 * sc)), mul(fp2, 3.0 * sc * Wd), mul(up2, 1.8 * sc),
-                   mul(s, 3.0 * sc * Wd), spec.get("trim", body))
+            p.part("frustum", add(elbow, mul(up2, -3.2 * sc)), mul(fp2, 3.4 * sc * Wd), mul(up2, 2.6 * sc),
+                   mul(s, 3.4 * sc * Wd), body)
+            p.part("frustum", add(elbow, mul(up2, -5.3 * sc)), mul(fp2, 3.5 * sc * Wd), mul(up2, 0.6 * sc),
+                   mul(s, 3.5 * sc * Wd), spec.get("trim", body))
         if spec.get("bracers"):
             p.part("cylinder", add(elbow, mul(up2, -4.2 * sc)), mul(fp2, 2.3 * sc * Wd), mul(up2, 1.7 * sc),
                    mul(s, 2.3 * sc * Wd), spec["bracers"])

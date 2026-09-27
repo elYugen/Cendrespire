@@ -55,6 +55,7 @@ class World(Scene):
         self.theme = theme
         th = level.THEMES[theme]
         self.geo = level.build(dungeon, theme, self.rng, hub=self.hub)
+        self.obstacles = []        # (x, y, rayon) : décor qui bloque le passage (étal, tentes, charrette...)
         self.torch_col = th["torch"]
         self.env = Env(sun_col=th["sun"], amb_sky=th["sky"], amb_ground=th["ground"])
         self.cam = Camera3D()
@@ -107,6 +108,9 @@ class World(Scene):
                     cy = min(max(y, ty * T), ty * T + T)
                     if (x - cx) ** 2 + (y - cy) ** 2 < r * r:
                         return True
+        for ox, oy, orad in self.obstacles:
+            if (x - ox) ** 2 + (y - oy) ** 2 < (r + orad) ** 2:
+                return True
         return False
 
     def move_circle(self, e, dx, dy):

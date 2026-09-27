@@ -1,22 +1,23 @@
 {
  "name": "Sakou",
  "cls": "barbare",
- "level": 9,
- "xp": 617,
+ "level": 10,
+ "xp": 1494,
  "alloc": {
-  "force": 16,
+  "force": 21,
   "dex": 1,
   "int": 0,
   "vit": 23
  },
  "points": 0,
- "gold": 91,
- "max_floor": 5,
+ "gold": 1455,
+ "max_floor": 6,
  "cleared": [
   1,
   2,
   3,
-  4
+  4,
+  5
  ],
  "equipment": {
   "arme": {
@@ -367,9 +368,472 @@
      "lvl": 0
     }
    ]
+  },
+  {
+   "uid": 59811751317632,
+   "slot": "artefact",
+   "art": "crane",
+   "rarity": "commun",
+   "ilvl": 5,
+   "upgrade": 0,
+   "affixes": {},
+   "base": "Artefact",
+   "name": "Crâne infernal"
+  },
+  {
+   "uid": 74298727863132,
+   "slot": "casque",
+   "rarity": "rare",
+   "ilvl": 5,
+   "upgrade": 0,
+   "affixes": {
+    "armure": 11,
+    "gold_find": 14,
+    "force": 9
+   },
+   "base": "Heaume",
+   "armor": 19,
+   "name": "Serment des Ossements",
+   "ench": [
+    {
+     "choices": [
+      "epines",
+      "ame_soin",
+      "rempart"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "potion_vive",
+      "vitalite",
+      "rempart"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 137808079532865,
+   "slot": "torse",
+   "rarity": "commun",
+   "ilvl": 5,
+   "upgrade": 0,
+   "affixes": {},
+   "base": "Cuirasse",
+   "armor": 25,
+   "name": "Cuirasse",
+   "ench": []
+  },
+  {
+   "uid": 258660451960419,
+   "slot": "amulette",
+   "rarity": "magique",
+   "ilvl": 5,
+   "upgrade": 0,
+   "affixes": {
+    "force": 9
+   },
+   "base": "Amulette",
+   "name": "Amulette de l'Ours",
+   "ench": [
+    {
+     "choices": [
+      "epines",
+      "recharge",
+      "vitalite"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 222043624375957,
+   "slot": "torse",
+   "rarity": "commun",
+   "ilvl": 5,
+   "upgrade": 0,
+   "affixes": {},
+   "base": "Robe runique",
+   "armor": 25,
+   "name": "Robe runique",
+   "ench": []
+  },
+  {
+   "uid": 211415053497577,
+   "slot": "amulette",
+   "rarity": "commun",
+   "ilvl": 5,
+   "upgrade": 0,
+   "affixes": {
+    "force": 6
+   },
+   "base": "Talisman",
+   "name": "Talisman",
+   "ench": []
+  },
+  {
+   "uid": 13429885715000,
+   "slot": "casque",
+   "rarity": "magique",
+   "ilvl": 5,
+   "upgrade": 0,
+   "affixes": {
+    "armure": 17
+   },
+   "base": "Casque à cornes",
+   "armor": 14,
+   "name": "Casque à cornes du Rempart",
+   "ench": [
+    {
+     "choices": [
+      "ame_soin",
+      "recharge",
+      "potion_vive"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 117122824614588,
+   "slot": "amulette",
+   "rarity": "magique",
+   "ilvl": 5,
+   "upgrade": 0,
+   "affixes": {
+    "cdr": 4
+   },
+   "base": "Pendentif",
+   "name": "Pendentif de l'Instant",
+   "ench": [
+    {
+     "choices": [
+      "agilite",
+      "celerite",
+      "vitalite"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 236388541404249,
+   "slot": "bottes",
+   "rarity": "rare",
+   "ilvl": 5,
+   "upgrade": 0,
+   "affixes": {
+    "dex": 9,
+    "armure": 17,
+    "crit": 3,
+    "gold_find": 15
+   },
+   "base": "Bottes",
+   "armor": 12,
+   "name": "Éclat de Givre",
+   "ench": [
+    {
+     "choices": [
+      "ame_soin",
+      "celerite",
+      "riposte"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "ame_soin",
+      "celerite",
+      "agilite"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 161060487085029,
+   "slot": "arme",
+   "rarity": "magique",
+   "ilvl": 5,
+   "upgrade": 0,
+   "affixes": {
+    "cdr": 4,
+    "dmg_pct": 7
+   },
+   "wclass": "barbare",
+   "base": "Hache de guerre",
+   "dmg": [
+    22,
+    39
+   ],
+   "name": "Hache de guerre de l'Instant",
+   "ench": [
+    {
+     "choices": [
+      "entrave",
+      "vampirisme",
+      "vivacite"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 240524670340772,
+   "slot": "torse",
+   "rarity": "commun",
+   "ilvl": 5,
+   "upgrade": 0,
+   "affixes": {},
+   "base": "Cotte de mailles",
+   "armor": 24,
+   "name": "Cotte de mailles",
+   "ench": []
+  },
+  {
+   "uid": 77441846040500,
+   "slot": "artefact",
+   "art": "bottes",
+   "rarity": "legendaire",
+   "ilvl": 5,
+   "upgrade": 0,
+   "affixes": {},
+   "base": "Artefact",
+   "name": "Bottes de célérité"
+  },
+  {
+   "uid": 247642014406362,
+   "slot": "torse",
+   "rarity": "magique",
+   "ilvl": 5,
+   "upgrade": 0,
+   "affixes": {
+    "mana": 19
+   },
+   "base": "Tunique de cuir",
+   "armor": 23,
+   "name": "Tunique de cuir d'Arcane",
+   "ench": [
+    {
+     "choices": [
+      "epines",
+      "potion_vive",
+      "rempart"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 56925287032340,
+   "slot": "artefact",
+   "art": "lanterne",
+   "rarity": "rare",
+   "ilvl": 5,
+   "upgrade": 0,
+   "affixes": {},
+   "base": "Artefact",
+   "name": "Lanterne des âmes"
+  },
+  {
+   "uid": 6088270115171,
+   "slot": "arme",
+   "rarity": "commun",
+   "ilvl": 5,
+   "upgrade": 0,
+   "affixes": {},
+   "wclass": "barbare",
+   "base": "Hache de guerre",
+   "dmg": [
+    17,
+    29
+   ],
+   "name": "Hache de guerre",
+   "ench": []
+  },
+  {
+   "uid": 238491215868705,
+   "slot": "amulette",
+   "rarity": "magique",
+   "ilvl": 5,
+   "upgrade": 0,
+   "affixes": {
+    "mana_regen": 2,
+    "dmg_pct": 7
+   },
+   "base": "Amulette",
+   "name": "Amulette de Clarté",
+   "ench": [
+    {
+     "choices": [
+      "riposte",
+      "ame_soin",
+      "epines"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 85706637515187,
+   "slot": "anneau",
+   "rarity": "legendaire",
+   "ilvl": 5,
+   "upgrade": 0,
+   "affixes": {
+    "cdr": 4,
+    "force": 8,
+    "mana_regen": 3,
+    "mana": 19,
+    "armure": 16
+   },
+   "base": "Bague",
+   "name": "Anneau du Geôlier",
+   "ench": [
+    {
+     "choices": [
+      "rempart",
+      "riposte",
+      "agilite"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "agilite",
+      "vitalite",
+      "riposte"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "riposte",
+      "potion_vive",
+      "ame_soin"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 117431872013132,
+   "slot": "bottes",
+   "rarity": "legendaire",
+   "ilvl": 5,
+   "upgrade": 0,
+   "affixes": {
+    "dmg_pct": 6,
+    "mana_regen": 3,
+    "int": 12,
+    "armure": 22,
+    "move_speed": 6
+   },
+   "base": "Bottes",
+   "armor": 17,
+   "name": "Pas du Spectre",
+   "ench": [
+    {
+     "choices": [
+      "epines",
+      "vitalite",
+      "riposte"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "recharge",
+      "potion_vive",
+      "riposte"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "potion_vive",
+      "vitalite",
+      "epines"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 198150791220276,
+   "slot": "artefact",
+   "art": "fiole",
+   "rarity": "magique",
+   "ilvl": 5,
+   "upgrade": 0,
+   "affixes": {},
+   "base": "Artefact",
+   "name": "Fiole d'essence"
+  },
+  {
+   "uid": 47122811931605,
+   "slot": "amulette",
+   "rarity": "legendaire",
+   "ilvl": 5,
+   "upgrade": 0,
+   "affixes": {
+    "cdr": 4,
+    "mana_regen": 2,
+    "int": 10,
+    "dex": 12,
+    "dmg_pct": 9
+   },
+   "base": "Talisman",
+   "name": "Larme du Dieu mort",
+   "ench": [
+    {
+     "choices": [
+      "celerite",
+      "rempart",
+      "riposte"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "esquive",
+      "potion_vive",
+      "rempart"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "rempart",
+      "epines",
+      "agilite"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
   }
  ],
- "kills": 294,
+ "kills": 351,
  "deaths": 2,
  "created_at": 1790432904.3347578,
  "look": {
@@ -389,5 +853,5 @@
   "ba_peau": 1,
   "ba_tourb": 1
  },
- "saved_at": 1790495315.696929
+ "saved_at": 1790497131.7037492
 }

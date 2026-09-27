@@ -41,7 +41,7 @@ def cube():
     return np.array(v, dtype="f4")
 
 
-def sphere(rings=9, segs=14):
+def sphere(rings=12, segs=20):
     v = []
 
     def P(i, j):
@@ -56,7 +56,7 @@ def sphere(rings=9, segs=14):
     return np.array(v, dtype="f4")
 
 
-def cylinder(segs=14, top=1.0):
+def cylinder(segs=20, top=1.0):
     """Cylindre (ou tronc de cône si top < 1) le long de Y, de -1 à 1, rayon 1."""
     v = []
     slope = (1.0 - top) / 2.0
@@ -75,7 +75,7 @@ def cylinder(segs=14, top=1.0):
     return np.array(v, dtype="f4")
 
 
-def cone(segs=14):
+def cone(segs=20):
     return cylinder(segs, top=0.0)
 
 
@@ -85,7 +85,7 @@ def quad2d():
 
 
 PRIMITIVES = {"cube": cube, "sphere": sphere, "cylinder": cylinder, "cone": cone,
-              "frustum": lambda: cylinder(14, 0.55)}
+              "frustum": lambda: cylinder(20, 0.55)}
 
 
 # --------------------------------------------------------------------------- assemblage statique

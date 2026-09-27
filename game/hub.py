@@ -7,7 +7,7 @@ from .dungeon import build_hub
 from .entities import NPC, Portal, Campfire, Prop
 from .items import generate_item, generate_artifact
 from .panels import MerchantPanel, ForgePanel, PortalPanel
-from .r3d import camp, models
+from .r3d import camp, models, objmodels
 from .wardrobe import WardrobePanel
 from .settings import TILE, WHITE
 from .world import World
@@ -27,7 +27,7 @@ class HubScene(World):
         player.reset_run()
         player.x, player.y = 17.5 * TILE, 13.5 * TILE
         self.cam.tx, self.cam.ty = player.x, player.y
-        self.interactables.append(NPC(6.5 * TILE, 10.5 * TILE, "Gorvan le Marchand", "Commercer",
+        self.interactables.append(NPC(6.4 * TILE, 10.5 * TILE, "Gorvan le Marchand", "Commercer",
                                       models.NPC_SPECS["marchand"], self.open_merchant, facing=0.3))
         self.interactables.append(NPC(28.9 * TILE, 10.6 * TILE, "Hilda la Forgeronne", "Forge",
                                       models.NPC_SPECS["forgeronne"], self.open_forge, facing=2.47, work=True))
@@ -38,11 +38,14 @@ class HubScene(World):
         self.fire = Campfire(17.5 * TILE, 10.5 * TILE)
         self.interactables.append(self.fire)
         self.interactables.append(Prop(5 * TILE, 8.2 * TILE, models.tent, (170, 70, 60), 0.4))
-        self.interactables.append(Prop(8.2 * TILE, 12.8 * TILE, models.crate))
-        self.interactables.append(Prop(7.4 * TILE, 12.9 * TILE, models.barrel))
+        if not objmodels.family("camp"):
+            self.interactables.append(Prop(8.2 * TILE, 12.8 * TILE, models.crate))
+            self.interactables.append(Prop(7.4 * TILE, 12.9 * TILE, models.barrel))
         self.interactables.append(Prop(32.6 * TILE, 7.9 * TILE, models.tent, (70, 90, 150), 2.6))
-        self.interactables.append(Prop(27.6 * TILE, 11.6 * TILE, models.anvil))
-        self.interactables.append(Prop(26.6 * TILE, 12.8 * TILE, models.barrel))
+        if not objmodels.family("camp"):      # décor procédural si les modèles importés manquent
+            self.interactables.append(Prop(27.6 * TILE, 11.6 * TILE, models.anvil))
+            self.interactables.append(Prop(26.6 * TILE, 12.8 * TILE, models.barrel))
+        self.obstacles = [(x * TILE, z * TILE, r * TILE) for x, z, r in camp.OBSTACLES]
         lvl = max(1, player.max_floor)
         stock = [generate_item(lvl, cls_id=player.cls_id, tier=random.choice([0, 1, 1])) for _ in range(7)]
         stock += [generate_artifact(lvl, random.choice(["commun", "magique", "rare"])) for _ in range(2)]

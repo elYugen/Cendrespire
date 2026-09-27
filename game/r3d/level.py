@@ -67,6 +67,8 @@ def build(d, theme_name, rng=None, hub=False):
     def is_floor(x, y):
         return 0 <= x < d.w and 0 <= y < d.h and tiles[y][x] != WALL
 
+    house_cells = camp.house_tiles() if hub and objmodels.family("town") else set()
+
     # dessous sombre (visible dans les joints entre les dalles)
     mb.box(-2, -0.3, -2, d.w + 2, -0.1, d.h + 2, (0.03, 0.03, 0.035))
     for y in range(d.h):
@@ -102,6 +104,9 @@ def build(d, theme_name, rng=None, hub=False):
             mb.box(x + 0.08, 1.85, y + 0.08, x + 0.92, 2.1, y + 0.92, _f(th["top"]), 1.0)
             continue
         if hub and d.tiles[y][x] == WALL and getattr(d, "tower_tiles", None) and (x, y) in d.tower_tiles:
+            mb.box(x, 0, y, x + 1, 0.1, y + 1, _jit((70, 96, 58), 6, rng))
+            continue
+        if hub and (x, y) in house_cells:
             mb.box(x, 0, y, x + 1, 0.1, y + 1, _jit((70, 96, 58), 6, rng))
             continue
         if hub:

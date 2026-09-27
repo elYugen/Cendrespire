@@ -7,6 +7,27 @@ import math
 
 from . import objmodels
 
+# maisons du hameau, sur les cases de lisière (non praticables) : (x, z, modules, étages, rotation, toit)
+HOUSES = [(3.4, 2.5, 2, 2, 0.0, (0.62, 0.24, 0.2)), (10.6, 1.4, 1, 1, 0.0, (0.30, 0.50, 0.46)),
+          (30.9, 2.3, 2, 1, 0.0, (0.30, 0.50, 0.46)), (1.2, 10.5, 2, 1, -math.pi / 2, (0.62, 0.24, 0.2))]
+# obstacles ronds du décor (x, z, rayon) en tuiles : le héros et les monstres les contournent
+OBSTACLES = [(8.2, 10.5, 0.7), (4.7, 13.2, 0.6), (27.6, 11.6, 0.35), (23.6, 13.7, 0.55), (5.0, 8.2, 0.8),
+             (32.6, 7.9, 0.8), (7.6, 12.85, 0.45), (26.4, 12.9, 0.3)]
+
+
+def house_tiles():
+    """Cases occupées par les maisons (le talus et les arbres n'y sont pas dessinés)."""
+    tiles = set()
+    for x, z, n, _fl, rot, _roof in HOUSES:
+        hl, hw = n * 1.0 + 0.2, 1.2          # demi-longueur et demi-largeur (modules de 2 tuiles)
+        if abs(math.sin(rot)) > 0.5:
+            hl, hw = hw, hl
+        for tx in range(int(x - hl), int(x + hl) + 1):
+            for tz in range(int(z - hw), int(z + hw) + 1):
+                tiles.add((tx, tz))
+    return tiles
+
+
 LANTERNS = [(15.1, 7.9), (19.9, 7.9), (11.0, 9.3), (24.0, 9.3), (13.6, 13.6), (19.9, 13.9)]
 FURNACE = (32.0, 10.6)
 WELL = (23.6, 13.7)
@@ -90,6 +111,9 @@ def benches(mb, fx, fz):
 
 
 def lantern(mb, geo, x, z, tile):
+    if objmodels.put(mb, "town", x, 0.0, z, 0.0, 1.0, 0.0, "lantern"):
+        geo.torches.append((x * tile, z * tile, 1.38 * tile))
+        return
     post(mb, x, z, 1.25, 0.05)
     mb.box(x - 0.02, 1.2, z - 0.02, x + 0.3, 1.25, z + 0.02, DARK_WOOD)
     lx = x + 0.26
@@ -102,7 +126,10 @@ def lantern(mb, geo, x, z, tile):
 
 
 def stall(mb, x, z):
-    """Étal du marchand : table chargée et auvent rayé."""
+    """Étal du marchand : étal à auvent du Fantasy Town Kit, ou table et auvent rayé procéduraux."""
+    if objmodels.put(mb, "town", x, 0.0, z, -math.pi / 2, 1.8, 0.0, "stall-red"):
+        objmodels.put(mb, "town", x - 1.25, 0.0, z + 0.4, 0.0, 1.8, 0.0, "stall-stool")
+        return
     mb.box(x - 0.35, 0.42, z - 0.9, x + 0.35, 0.48, z + 0.9, WOOD)
     for ox in (-0.3, 0.3):
         for oz in (-0.85, 0.85):
@@ -168,6 +195,8 @@ def banner(mb, x, z, color):
 
 
 def signpost(mb, x, z):
+    if objmodels.put(mb, "camp", x, 0.0, z, 0.3, 3.0, 0.0, "signpost"):
+        return
     post(mb, x, z, 1.1, 0.05)
     mb.box(x - 0.35, 0.82, z - 0.03, x + 0.3, 0.95, z + 0.03, WOOD)
     mb.box(x - 0.28, 0.62, z - 0.03, x + 0.37, 0.75, z + 0.03, shade(WOOD, 0.85))
@@ -195,7 +224,7 @@ def build(mb, geo, d, rng, tile):
     benches(mb, fx, fz)
     for x, z in LANTERNS:
         lantern(mb, geo, x, z, tile)
-    stall(mb, 7.9, 10.5)
+    stall(mb, 8.2, 10.5)
     furnace(mb, *FURNACE)
     weapon_rack(mb, 26.2, 8.9)
     woodpile(mb, 33.0, 12.8, rng)
@@ -207,3 +236,110 @@ def build(mb, geo, d, rng, tile):
     mirror(mb, *MIRROR)
     for x, z in ((4.4, 12.3), (5.1, 12.8)):     # bottes de foin
         log(mb, x, 0.2, z, 0.4, 0.55, 0.2, (0.78, 0.66, 0.34))
+    village(mb, rng)
+
+
+def village(mb, rng):
+    """Hameau et mobilier de camp importés (Fantasy Town Kit, Survival Kit) ; rien si les modèles manquent."""
+    if not objmodels.family("town"):
+        return
+    for x, z, n, fl, rot, roof in HOUSES:
+        house(mb, x, z, n, fl, rot, 2.0, door=0, roof=roof)
+    put = objmodels.put
+    put(mb, "town", 4.7, 0.0, 13.2, 0.5, 1.4, 0.0, "cart")                 # charrette du marchand
+    put(mb, "camp", 7.6, 0.0, 12.85, 0.2, 2.6, 0.0, "barrel")
+    put(mb, "camp", 8.3, 0.0, 12.7, 0.6, 2.4, 0.0, "box-large")
+    put(mb, "camp", 5.6, 0.0, 9.0, 1.1, 2.4, 0.0, "box")
+    put(mb, "camp", 5.4, 0.0, 12.0, 0.0, 2.6, 0.0, "barrel-open")
+    put(mb, "camp", 27.6, 0.0, 11.6, 2.3, 2.3, 0.0, "workbench-anvil")     # forge
+    put(mb, "camp", 26.4, 0.0, 12.9, 0.9, 2.4, 0.0, "barrel")
+    put(mb, "camp", 30.3, 0.0, 12.5, 2.0, 2.2, 0.0, "workbench-grind")
+    put(mb, "camp", 29.8, 0.0, 8.6, 0.4, 2.4, 0.0, "workbench")
+    put(mb, "camp", 29.9, 0.62, 8.6, 1.2, 2.0, 0.0, "tool-hammer")
+    put(mb, "camp", 21.2, 0.0, 12.9, 2.2, 1.8, 0.0, "bedroll")             # couchage près du feu
+    put(mb, "camp", 20.6, 0.0, 8.0, 0.5, 2.0, 0.0, "bedroll-packed")
+    for i in range(6):                                                      # clôture au nord-est
+        put(mb, "town", 21.5 + i, 0.0, 3.25, math.pi / 2, 1.0, 0.0, "fence" if i != 3 else "fence-broken")
+    for i in range(4):                                                      # clôture au nord-ouest
+        put(mb, "town", 8.5 + i, 0.0, 3.25, math.pi / 2, 1.0, 0.0, "fence")
+
+
+
+# =========================================================================== maisons modulaires (Fantasy Town Kit)
+def _local(x, z, rot, s, lx, lz):
+    c, sn = math.cos(rot), math.sin(rot)
+    return x + (c * lx + sn * lz) * s, z + (-sn * lx + c * lz) * s
+
+
+def house(mb, x, z, length=2, floors=1, rot=0.0, s=2.0, door=0, chimney=True, roof=(0.62, 0.24, 0.2)):
+    """Maison du Fantasy Town Kit assemblée pièce par pièce : rez-de-chaussée en pierre, étage à colombages, toit à
+    pignons. (x, z) : centre au sol ; length : nombre de modules le long de l'axe local x ; s : taille d'un module."""
+    put = objmodels.put
+    for fl in range(floors):
+        y = fl * s
+        stone = fl == 0
+        for i in range(length):
+            lx = i - (length - 1) / 2
+            px, pz = _local(x, z, rot, s, lx, 0)
+            # (côté, rotation de la pièce) : +z devant, -z derrière, extrémités en -x / +x
+            sides = [(-math.pi / 2, "front"), (math.pi / 2, "back")]
+            if i == 0:
+                sides.append((math.pi, "end"))
+            if i == length - 1:
+                sides.append((0.0, "end"))
+            for r, kind in sides:
+                if stone:
+                    name = "wall-door" if (kind == "front" and i == door) else (
+                        "wall-window-shutters" if (kind != "end" or length == 1) else "wall")
+                else:
+                    name = "wall-wood-window-shutters" if kind != "end" else "wall-wood-window-round"
+                put(mb, "town", px, y, pz, rot + r, s, 1.0, name)
+    _roof(mb, x, z, rot, length * s, s, floors * s, roof)
+    if chimney:
+        L = length * s
+        px, pz = _local(x, z, rot, 1.0, L / 2 - 0.45 * s, -0.22 * s)
+        top = floors * s + 0.75 * s
+        mb.box(px - 0.13 * s, floors * s * 0.5, pz - 0.13 * s, px + 0.13 * s, top, pz + 0.13 * s, (0.46, 0.44, 0.46), 1.0)
+        mb.box(px - 0.16 * s, top, pz - 0.16 * s, px + 0.16 * s, top + 0.08 * s, pz + 0.16 * s, (0.34, 0.33, 0.35), 1.0)
+
+
+def _roof(mb, x, z, rot, L, W, H, color):
+    """Toit à deux pans : faîtage selon l'axe local x (longueur L), largeur W, posé à la hauteur H."""
+    rh, o, th = 0.55 * W, 0.14 * W, 0.06 * W
+    c, sn = math.cos(rot), math.sin(rot)
+
+    def vec(lx, ly, lz):
+        return (c * lx + sn * lz, ly, -sn * lx + c * lz)
+
+    def pt(lx, ly, lz):
+        v = vec(lx, ly, lz)
+        return (x + v[0], v[1], z + v[2])
+
+    run = W / 2 + o
+    drop = o * rh / (W / 2)
+    for sg in (-1, 1):
+        a = (0.0, H + rh, 0.0)
+        b = (0.0, H - drop, sg * run)
+        mid = ((a[1] + b[1]) / 2, (a[2] + b[2]) / 2)
+        dy, dz = (b[1] - a[1]) / 2, (b[2] - a[2]) / 2
+        ln = math.hypot(dy, dz)
+        ny, nz = -dz / ln * th * -sg, dy / ln * th * -sg
+        mb.add("cube", pt(0, mid[0], mid[1]), vec(L / 2 + o, 0, 0), vec(0, dy, dz), vec(0, ny, nz), color, 1.0)
+        # rangées de tuiles : fines bandes plus sombres le long de la pente
+        for k in (0.3, 0.62):
+            ty, tz = a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k
+            mb.add("cube", pt(0, ty + ny * 1.2, tz + nz * 1.2), vec(L / 2 + o, 0, 0), vec(0, dy * 0.06, dz * 0.06),
+                   vec(0, ny * 0.5, nz * 0.5), shade(color, 0.78), 1.0)
+    # pignons triangulaires (colombages) aux deux extrémités
+    from .meshes import quads_array
+    wall = (0.56, 0.36, 0.22)
+    tris = []
+    for ex in (-L / 2, L / 2):
+        p0, p1, p2 = pt(ex, H, -W / 2), pt(ex, H, W / 2), pt(ex, H + rh * 0.96, 0)
+        n = vec(1 if ex > 0 else -1, 0, 0)
+        tris.append((p0, p1, p2, p2, n, (*wall, 1.0)))
+    mb.raw(quads_array(tris))
+    # faîtière
+    mb.add("cylinder", pt(0, H + rh + th * 0.4, 0), vec(0, W * 0.04, 0), vec(L / 2 + o, 0, 0), vec(0, 0, W * 0.04),
+           shade(color, 0.6), 1.0)
+

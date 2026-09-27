@@ -50,6 +50,7 @@ uniform float u_cut;
 uniform vec3 u_fog_col;
 uniform vec3 u_fog_center;
 uniform vec2 u_fog;
+uniform float u_toon;
 in vec3 v_wpos;
 in vec3 v_norm;
 in vec3 v_col;
@@ -86,7 +87,17 @@ void main() {
     vec3 base = v_col;
     vec3 light = mix(u_ground, u_sky, n.y * 0.5 + 0.5);
     float sh = u_shadow_on > 0.5 ? shadow_at() : 1.0;
-    light += u_sun_col * max(dot(n, -u_sun_dir), 0.0) * sh;
+    float ndl = dot(n, -u_sun_dir);
+    if (u_toon > 0.5) {
+        // personnages : lumière en paliers doux (cel shading) et liseré de lumière sur les bords
+        float band = smoothstep(0.0, 0.18, ndl) * 0.75 + smoothstep(0.55, 0.7, ndl) * 0.25;
+        light += u_sun_col * band * max(sh, 0.35) * 1.15;
+        vec3 V = normalize(u_cam - v_wpos);
+        float rim = pow(1.0 - max(dot(n, V), 0.0), 3.0);
+        light += (u_sky * 1.3 + u_sun_col * 0.6 + 0.08) * rim * 0.9;
+    } else {
+        light += u_sun_col * max(ndl, 0.0) * sh;
+    }
     for (int i = 0; i < u_nl; i++) {
         vec3 L = u_lpos[i].xyz - v_wpos;
         float d = length(L);
@@ -290,3 +301,49 @@ in vec2 v_uv;
 out vec4 f_col;
 void main() { f_col = texture(u_tex, v_uv); }
 """
+
+# Contour des personnages (coque inversée) : chaque pièce est grossie le long de ses normales d'une épaisseur
+# constante à l'écran, poussée un peu en arrière et dessinée en couleur sombre derrière le modèle.
+OUTLINE_VS = """
+#version 330
+uniform mat4 u_vp;
+uniform vec2 u_px;
+uniform vec3 u_cam;
+in vec3 in_pos;
+in vec3 in_norm;
+in vec3 i_ax;
+in vec3 i_ay;
+in vec3 i_az;
+in vec3 i_pos;
+in vec4 i_col;
+out vec3 v_col;
+void main() {
+    mat3 M = mat3(i_ax, i_ay, i_az);
+    float size = max(max(length(i_ax), length(i_ay)), length(i_az));
+    v_col = i_col.rgb;
+    if (size < 0.045 || i_col.a > 0.5) {        // petits détails (yeux, bijoux) et pièces lumineuses : pas de contour
+        gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+        return;
+    }
+    vec3 wp = M * in_pos + i_pos;
+    vec3 n = normalize(transpose(inverse(M)) * in_norm);
+    wp += normalize(wp - u_cam) * 0.03;          // légèrement derrière la pièce : ne recouvre jamais le modèle
+    vec4 c = u_vp * vec4(wp, 1.0);
+    vec4 cn = u_vp * vec4(wp + n * 0.05, 1.0);
+    vec2 d = cn.xy / cn.w - c.xy / c.w;
+    float l = length(d);
+    d = l > 1e-6 ? d / l : vec2(0.0);
+    c.xy += d * u_px * c.w;
+    gl_Position = c;
+}
+"""
+
+OUTLINE_FS = """
+#version 330
+in vec3 v_col;
+out vec4 f_col;
+void main() {
+    f_col = vec4(v_col * 0.16 + vec3(0.015, 0.012, 0.02), 1.0);
+}
+"""
+

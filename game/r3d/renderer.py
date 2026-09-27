@@ -30,6 +30,7 @@ class Frame:
         self.glows = []
         self.solids = []
         self.lights = []
+        self.outline = False       # vrai pendant le dessin d'un personnage : contour cartoon et ombrage en paliers
 
     @staticmethod
     def _v(v):
@@ -38,7 +39,11 @@ class Frame:
     def part(self, mesh, c, ax, ay, az, color, emis=0.0, additive=False):
         a, b, d, p = self._v(ax), self._v(ay), self._v(az), self._v(c)
         col = _c(color)
-        (self.adds if additive else self.parts)[mesh].extend(
+        if additive:
+            target = self.adds[mesh]
+        else:
+            target = self.parts[mesh + "#o" if self.outline else mesh]
+        target.extend(
             (a[0], a[1], a[2], b[0], b[1], b[2], d[0], d[1], d[2], p[0], p[1], p[2], col[0], col[1], col[2], emis))
 
     def box(self, x, y, z, hx, hy, hz, color, emis=0.0, mesh="cube", additive=False):
@@ -93,18 +98,23 @@ class Renderer:
         self.p_part = ctx.program(vertex_shader=S.PART_VS, fragment_shader=S.PART_FS)
         self.p_sky = ctx.program(vertex_shader=S.SKY_VS, fragment_shader=S.SKY_FS)
         self.p_ui = ctx.program(vertex_shader=S.UI_VS, fragment_shader=S.UI_FS)
+        self.p_outline = ctx.program(vertex_shader=S.OUTLINE_VS, fragment_shader=S.OUTLINE_FS)
 
         self.meshes = {}
         for name, fn in PRIMITIVES.items():
             data = fn()
             vbo = ctx.buffer(data.tobytes())
-            ibuf = ctx.buffer(reserve=64 * 64, dynamic=True)
-            self.meshes[name] = {
-                "n": len(data) // 10, "ibuf": ibuf,
-                "lit": self._vao(self.p_lit, vbo, ibuf, depth=False),
-                "add": self._vao(self.p_add, vbo, ibuf, depth=False),
-                "depth": self._vao(self.p_depth, vbo, ibuf, depth=True),
-            }
+            # deux jeux d'instances par primitive : décor / effets, et personnages (« #o », avec contour)
+            for key in (name, name + "#o"):
+                ibuf = ctx.buffer(reserve=64 * 64, dynamic=True)
+                self.meshes[key] = {
+                    "n": len(data) // 10, "ibuf": ibuf, "toon": key.endswith("#o"),
+                    "lit": self._vao(self.p_lit, vbo, ibuf, depth=False),
+                    "add": self._vao(self.p_add, vbo, ibuf, depth=False),
+                    "depth": self._vao(self.p_depth, vbo, ibuf, depth=True),
+                    "outline": self.ctx.vertex_array(self.p_outline, [(vbo, "3f 3f 16x", "in_pos", "in_norm"),
+                                                                      (ibuf, INST_FMT, *INST_ATTRS)]),
+                }
         self.ident = ctx.buffer(IDENTITY.tobytes())
         self.static = None
         q = ctx.buffer(quad2d().tobytes())
@@ -255,11 +265,23 @@ class Renderer:
         if "u_shadow" in p:
             self.shadow_tex.use(location=0)
             p["u_shadow"].value = 0
+        self._set(p, "u_toon", 0.0)
         if self.static:
             self.static["lit"].render(instances=1)
+        for toon in (False, True):
+            self._set(p, "u_toon", 1.0 if toon else 0.0)
+            for name, n in counts.items():
+                if n and self.meshes[name]["toon"] == toon:
+                    self.meshes[name]["lit"].render(instances=n)
+        # contours des personnages (épaisseur ~2 px à 720p, proportionnelle à la définition)
+        po = self.p_outline
+        po["u_vp"].write(vp_bytes)
+        self._set(po, "u_cam", tuple(float(v) for v in cam.eye))
+        w_px = max(1.5, screen.size[1] / 720 * 2.0)
+        self._set(po, "u_px", (2 * w_px / screen.size[0], 2 * w_px / screen.size[1]))
         for name, n in counts.items():
-            if n:
-                self.meshes[name]["lit"].render(instances=n)
+            if n and self.meshes[name]["toon"]:
+                self.meshes[name]["outline"].render(instances=n)
 
         # décalques au sol
         if frame.decals:

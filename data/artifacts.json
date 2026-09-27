@@ -32,15 +32,15 @@
       "name": "Pierre d'orage",
       "cd": 10,
       "color": [150, 190, 255],
-      "desc": "La foudre frappe jusqu'à 6 ennemis proches ({v}% dégâts d'arme).",
-      "base": 220,
+      "desc": "La foudre frappe jusqu'à 5 ennemis proches ({v}% dégâts d'arme).",
+      "base": 150,
       "icon": "bolt",
       "effects": [
         {
           "type": "strikes",
           "at": "self",
           "search": 340,
-          "count": 6,
+          "count": 5,
           "stun": 0.3,
           "mult_abs": "v%",
           "sound": "explosion",

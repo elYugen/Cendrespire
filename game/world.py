@@ -6,7 +6,7 @@ from collections import deque
 import pygame
 
 from . import artifacts, hud, nav, quests, save, sfx, spells, ui
-from .data import ANIMA_POWERS, ANIMA_TIERS, BAG_SIZE, SPELLS
+from .data import ANIMA_POWERS, ANIMA_TIERS, BAG_SIZE, POINTS_PER_LEVEL, SPELLS
 from .dungeon import WALL, BARRIER, Minimap
 from .entities import Loot
 from .fx import Particles, RingFX, Blast, Lightning
@@ -426,7 +426,7 @@ class World(Scene):
 
     def on_level_up(self):
         p = self.player
-        self.show_banner(f"Niveau {p.level}", "+5 points de caractéristique · +1 point d'enchantement", GOLD_BRIGHT)
+        self.show_banner(f"Niveau {p.level}", f"+{POINTS_PER_LEVEL} point de caractéristique · +1 point d'enchantement", GOLD_BRIGHT)
         self.effects.append(RingFX(p.x, p.y, 10, 160, 0.6, (255, 210, 100), 6))
         self.particles.emit(p.x, p.y, (255, 210, 100), n=50, speed=200, life=0.9, size=4, up=200, z=10)
         for sid in p.spells:

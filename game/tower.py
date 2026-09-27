@@ -2,7 +2,7 @@
 import math
 import random
 
-from . import sfx
+from . import seals, sfx
 from .bosses import make_boss
 from .data import MONSTERS, ELITE_AFFIXES, floor_name, floor_boss, boss_floor
 from .dungeon import Dungeon, FLOOR, WALL
@@ -51,6 +51,8 @@ class TowerScene(World):
         player.x, player.y = sx, sy
         self.cam.tx, self.cam.ty = sx, sy
         self.kills = 0
+        self.seal_kind = "kills"
+        self.seal_have = 0             # avancement des conditions à objets (fragments, brasiers, élites, clé)
         self.run_gold = 0
         self.barrier_active = True
         self.boss_started = False
@@ -61,8 +63,9 @@ class TowerScene(World):
             self.show_banner(floor_name(floor), f"Étage {floor} · étage du boss", (200, 140, 255), 4.5)
             self.message(f"{self.boss.name}, {self.boss.title.lower()}, vous attend dans l'arène.", (210, 170, 255), 8)
         else:
-            self.show_banner(floor_name(floor), f"Étage {floor}", WHITE, 4.5)
-            self.message("Éliminez les créatures pour briser le sceau du gardien.", (220, 214, 200), 8)
+            name, text = seals.KINDS[self.seal_kind]
+            self.show_banner(floor_name(floor), f"Étage {floor} · Sceau : {name}", WHITE, 4.5)
+            self.message(text, (220, 214, 200), 9)
         sfx.play("portal")
         sfx.music(sfx.pick_music(TOWER_MUSIC), restart=True)
 
@@ -100,7 +103,7 @@ class TowerScene(World):
                 elite = rng.choice(list(ELITE_AFFIXES)) if i == elite_i else None
                 self.monsters.append(Monster(mid, x, y, f, elite))
         self.total = len(self.monsters)
-        self.seal_needed = max(1, min(90, int(self.total * 0.35)))
+        self.setup_seal(rooms)
         for room in rng.sample(rooms, min(5, len(rooms))):
             x, y = self.random_point(room, 24)
             self.interactables.append(Chest(x, y))
@@ -119,6 +122,46 @@ class TowerScene(World):
         bx, by = d.boss_room.center_px
         self.boss = make_boss(floor_boss(f), bx, by, f, d.boss_room)
         self.monsters.append(self.boss)
+
+    def setup_seal(self, rooms):
+        """Condition d'ouverture de l'arène du gardien (voir seals.py)."""
+        rng, f = self.rng, self.floor
+        kind = self.seal_kind = seals.pick(rng, f)
+        if kind == "kills":
+            self.seal_needed = max(1, min(90, int(self.total * 0.35)))
+        elif kind == "shards":
+            self.seal_needed = 3 if f < 8 else 4
+            for room in seals.far_rooms(self, self.seal_needed):
+                self.interactables.append(seals.SealShard(*self.random_point(room, 24)))
+        elif kind == "braziers":
+            self.seal_needed = 3 if f < 8 else 4
+            for room in seals.far_rooms(self, self.seal_needed):
+                self.interactables.append(seals.Brazier(*self.random_point(room, 26), room))
+        elif kind == "elites":
+            self.seal_needed = 3 if f < 8 else 4
+            # assez de champions dans l'étage : des monstres ordinaires deviennent des élites
+            elites = sum(1 for m in self.monsters if m.elite)
+            plain = [m for m in self.monsters if not m.elite]
+            for m in rng.sample(plain, max(0, min(len(plain), self.seal_needed + 1 - elites))):
+                self.monsters[self.monsters.index(m)] = Monster(m.mid, m.x, m.y, f, rng.choice(list(ELITE_AFFIXES)))
+        else:                             # keeper
+            self.seal_needed = 1
+            self.monsters.append(seals.make_keeper(self, seals.far_rooms(self, 1)[0], f))
+
+    def seal_count(self):
+        return self.kills if self.seal_kind == "kills" else self.seal_have
+
+    def ambush(self, x, y, room):
+        """Brasier allumé : des créatures surgissent autour du héros."""
+        f = self.floor
+        pool = [mid for mid, m in MONSTERS.items() if m["floor"] <= f]
+        for i in range(3 + min(3, f // 3)):
+            mid = self.rng.choice(pool)
+            mx, my = self.random_point(room, MONSTERS[mid]["radius"] + 8)
+            m = Monster(mid, mx, my, f)
+            m.aggro = True
+            self.monsters.append(m)
+            self.particles.emit(mx, my, (255, 120, 50), n=16, speed=120, life=0.5, size=4, up=80)
 
     def add_camp(self, room):
         """Salle d'entrée d'un étage BOSS : Hilda la forgeronne (améliorations) et un rescapé terrifié."""
@@ -155,7 +198,9 @@ class TowerScene(World):
         if self.boss_started:
             return title, ""
         if self.barrier_active:
-            return title, f"Sceau du gardien : {min(self.kills, self.seal_needed)} / {self.seal_needed} créatures"
+            if any(isinstance(o, seals.SealKey) for o in self.interactables):
+                return title, "Le Geôlier est tombé : ramassez la clé du sceau."
+            return title, seals.label(self.seal_kind, self.seal_count(), self.seal_needed)
         if self.arena:
             return title, f"{self.boss.name} vous attend dans l'arène."
         return title, "Le sceau est brisé : le gardien vous attend."
@@ -170,13 +215,19 @@ class TowerScene(World):
         return details, hero, small
 
     def seal_progress(self):
-        return (min(1.0, self.kills / self.seal_needed), not self.barrier_active or self.boss_started)
+        return (min(1.0, self.seal_count() / self.seal_needed), not self.barrier_active or self.boss_started)
 
     def active_boss(self):
         return self.boss if self.boss_started and not self.boss_dead else None
 
     def on_monster_killed(self, m):
         self.kills += 1
+        if self.seal_kind == "elites" and m.elite and self.barrier_active:
+            self.seal_have += 1
+            self.message(f"Champion abattu ({self.seal_have} / {self.seal_needed})", (255, 200, 90), 4)
+        if getattr(m, "keeper", False):
+            self.interactables.append(seals.SealKey(m.x, m.y))
+            self.message("Le Geôlier lâche la clé du sceau !", seals.KEY_COL, 5)
 
     def on_gold(self, amount):
         self.run_gold += amount
@@ -200,7 +251,7 @@ class TowerScene(World):
             if abs(trap.x - p.x) < 600 and abs(trap.y - p.y) < 600:
                 trap.update(dt, self)
         room = self.dungeon.boss_room
-        if self.barrier_active and not self.boss_started and self.kills >= self.seal_needed:
+        if self.barrier_active and not self.boss_started and self.seal_count() >= self.seal_needed:
             self.set_barrier(False)
             self.show_banner("Le sceau est brisé", "Le gardien de l'étage vous attend", (255, 110, 80))
             sfx.play("seal")

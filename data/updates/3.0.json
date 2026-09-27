@@ -1,0 +1,40 @@
+{
+  "version": "3.0",
+  "date": "2026-09-27",
+  "title": "Les sceaux de la tour",
+  "sections": [
+    {"name": "Sceaux des gardiens", "notes": [
+      "Chaque étage tire désormais sa propre condition pour ouvrir l'arène du gardien, annoncée à l'entrée et suivie sous le nom de l'étage.",
+      "Massacre : éliminez les créatures de l'étage.",
+      "Fragments : retrouvez les éclats du sceau cachés dans les salles lointaines.",
+      "Champions : abattez les monstres d'élite de l'étage.",
+      "Brasiers : allumez les brasiers… et survivez aux embuscades qu'ils réveillent.",
+      "Geôlier : traquez le Geôlier du sceau et reprenez la clé qu'il garde.",
+      "Fragments, brasiers, clé et Geôlier apparaissent sur la minicarte une fois leur zone explorée."
+    ]},
+    {"name": "Nouveaux modèles de monstres", "notes": [
+      "Goules, diablotins, cultistes et brutes démoniaques ont de nouveaux modèles 3D animés (course, attaque).",
+      "Arachne devient une araignée géante et Varkul la Liche un crâne spectral.",
+      "Les monstres jouent une animation d'attaque pendant l'avertissement qui précède leurs coups."
+    ]},
+    {"name": "Équilibrage des classes", "notes": [
+      "Les dégâts de toutes les classes sont revus à la baisse et resserrés : l'écart entre la classe la plus forte et la plus faible est réduit.",
+      "Attaque de base : Paladin 140% -> 102%, Chasseur 95% -> 78%, Barbare 112% -> 100%, Sorcier 90% -> 82%, Nécromancien 85% -> 82%, Assassin 68% -> 66%.",
+      "Barbare : Tourbillon 170%, Bond 200%, Séisme 135% par onde.",
+      "Sorcier : Boule de feu 145%, Nova de givre 80%, Téléportation 70%, Météore 250%.",
+      "Chasseur : Tir multiple 80% par flèche, Piège explosif 260%, Flèche perforante 230%, Pluie de flèches 55% par salve.",
+      "Paladin : Charge du bouclier 190%, Consécration 45% par impulsion, Jugement céleste 230%.",
+      "Nécromancien : Lance d'os 140%, Armée des morts 33% par coup, Moisson d'âmes 180%.",
+      "Assassin : Pas de l'ombre 220%, Éventail de dagues 72% par dague, Danse des lames 80% par frappe."
+    ]},
+    {"name": "Autres ajustements", "notes": [
+      "Caractéristiques : 1 point à répartir par niveau (au lieu de 5). Les points déjà gagnés sont conservés.",
+      "Potion de soin : rend 35% de la vie maximale (au lieu de 50%).",
+      "Pierre d'orage (artefact) : frappe jusqu'à 5 ennemis (au lieu de 6), 150% de dégâts d'arme de base (au lieu de 220%).",
+      "Deathstrake : ses éclairs frappent moins souvent (4 au lieu de 5, 6 au lieu de 8 enragé) et font deux fois moins de dégâts."
+    ]},
+    {"name": "Crédits", "notes": [
+      "Modèles de monstres : Quaternius (CC0, et « Zombie » sous licence CC-BY 3.0)."
+    ]}
+  ]
+}

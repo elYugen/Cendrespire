@@ -57,7 +57,15 @@
         "weapon": "staff",
         "orb": [120, 235, 255],
         "eyes": [120, 235, 255],
-        "cape": [32, 42, 74]
+        "cape": [32, 42, 74],
+        "rig": {
+          "model": "ghost_skull",
+          "palette": {
+            "Ghost_Main": [36, 46, 88],
+            "Ghost_Secondary": [228, 232, 222]
+          },
+          "height": 0.7
+        }
       },
       "melee": false,
       "keep": 260,
@@ -158,7 +166,15 @@
         "hunch": true,
         "horns": [30, 20, 36],
         "weapon": "claws",
-        "aura": [200, 90, 220]
+        "aura": [200, 90, 220],
+        "rig": {
+          "model": "spider",
+          "height": 0.5,
+          "palette": {
+            "Material": [48, 30, 54],
+            "Material.001": [200, 40, 50]
+          }
+        }
       },
       "melee": true,
       "keep": 0,

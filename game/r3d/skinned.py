@@ -21,7 +21,10 @@ MAX_JOINTS = 64
 MAX_MATS = 16
 STRIDE = 3 + 3 + 1 + 3 + 4 + 4    # position, normale, matériau, couleur, articulations, poids
 
-SKIP_MESHES = {"Backpack"}        # accessoires encombrants du pack, remplacés par l'équipement du jeu
+SKIP_MESHES = {"Backpack"}
+# étalonnage des couleurs par modèle (saturation, luminosité, rotation de teinte en degrés) : les modèles à texture
+# ne se recolorent pas par matériau
+GRADE = {"zombie": (0.75, 0.95, -115.0)}     # zombie bleu du pack -> goule verdâtre        # accessoires encombrants du pack, remplacés par l'équipement du jeu
 _COMP = {5120: "b", 5121: "B", 5122: "h", 5123: "H", 5125: "I", 5126: "f"}
 _NCOMP = {"SCALAR": 1, "VEC2": 2, "VEC3": 3, "VEC4": 4, "MAT4": 16}
 _models = {}
@@ -167,9 +170,26 @@ class Model:
                 idx = acc(prim["indices"]).reshape(-1) if "indices" in prim else np.arange(len(pos))
                 verts.append(v[idx])
         self.vertices = np.ascontiguousarray(np.vstack(verts), dtype="f4")
+        grade = GRADE.get(os.path.splitext(os.path.basename(path))[0])
+        if grade:
+            sat, bright, hue = grade
+            col = self.vertices[:, 7:10]
+            if hue:                      # rotation de teinte autour de l'axe des gris
+                a = math.radians(hue)
+                c, s_, k = math.cos(a), math.sin(a), 1 / 3
+                sq = math.sqrt(k)
+                rot = np.array([[c + (1 - c) * k, k * (1 - c) - sq * s_, k * (1 - c) + sq * s_],
+                                [k * (1 - c) + sq * s_, c + k * (1 - c), k * (1 - c) - sq * s_],
+                                [k * (1 - c) - sq * s_, k * (1 - c) + sq * s_, c + k * (1 - c)]], "f4")
+                col = col @ rot.T
+            gray = col.mean(1, keepdims=True)
+            self.vertices[:, 7:10] = np.clip((gray + (col - gray) * sat) * bright, 0.0, 1.0)
         self.anims = {}
         for a in g.get("animations", []):
-            name = a["name"].split("|")[-1]
+            # « CharacterArmature|Run » -> « Run » ; certains exports répètent l'armature et tronquent la fin
+            # (« CharacterArmature|...|Death|CharacterArmature|Dea ») : on garde le premier nom qui n'est pas une armature
+            parts = [q for q in a["name"].split("|") if q and "Armatur" not in q]
+            name = parts[0] if parts else a["name"]
             chans = []
             dur = 0.0
             for ch in a["channels"]:

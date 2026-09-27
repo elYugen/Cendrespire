@@ -14,11 +14,11 @@ ATTRS = ["force", "dex", "int", "vit"]
 ATTR_NAMES = {"force": "Force", "dex": "Dextérité", "int": "Intelligence", "vit": "Vitalité"}
 MAX_LEVEL = 60
 BAG_SIZE = 40
-POINTS_PER_LEVEL = 5
+POINTS_PER_LEVEL = 1         # point de caractéristique gagné à chaque niveau
 
 # Mécaniques inspirées de Minecraft Dungeons
 POTION_CD = 22.0          # potion de soin illimitée, avec temps de recharge
-POTION_HEAL = 0.5
+POTION_HEAL = 0.35         # part de la vie maximale rendue par la potion
 ROLL_CD = 1.2             # roulade d'esquive (Espace)
 ROLL_DIST = 170
 ROLL_DUR = 0.28

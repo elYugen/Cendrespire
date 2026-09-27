@@ -22,7 +22,7 @@
       "attack": {
         "kind": "melee",
         "name": "Frappe brutale",
-        "mult": 1.12,
+        "mult": 1.0,
         "range": 64,
         "arc": 120,
         "cd": 0.62,
@@ -31,16 +31,7 @@
         "icon": "axe"
       },
       "spells": ["tourbillon", "cri_guerre", "bond", "seisme"],
-      "weapons": [
-        "Hache de guerre",
-        "Épée longue",
-        "Masse d'armes",
-        "Fléau",
-        "Hache d'armes",
-        "Marteau de guerre",
-        "Masse à ailettes",
-        "Grande hache"
-      ],
+      "weapons": ["Hache de guerre", "Épée longue", "Masse d'armes", "Fléau", "Hache d'armes", "Marteau de guerre", "Masse à ailettes", "Grande hache"],
       "legendary": ["Brise-Monde", "Hurlement du Chef de guerre", "Faucheuse des Steppes"],
       "headgear_name": "Casque cornu",
       "look_defaults": {
@@ -110,7 +101,7 @@
       "attack": {
         "kind": "projectile",
         "name": "Trait arcanique",
-        "mult": 0.9,
+        "mult": 0.82,
         "speed": 640,
         "cd": 0.55,
         "color": [170, 120, 255],
@@ -119,16 +110,7 @@
         "icon": "orb"
       },
       "spells": ["boule_feu", "nova_givre", "teleport", "meteore"],
-      "weapons": [
-        "Bâton",
-        "Baguette",
-        "Orbe",
-        "Sceptre",
-        "Bâton de chêne-noir",
-        "Sceptre de cristal",
-        "Bâton des arcanes",
-        "Férule de braise"
-      ],
+      "weapons": ["Bâton", "Baguette", "Orbe", "Sceptre", "Bâton de chêne-noir", "Sceptre de cristal", "Bâton des arcanes", "Férule de braise"],
       "legendary": ["Bâton de l'Archimage", "Œil du Vide", "Sceptre des Mille Flammes"],
       "headgear_name": "Chapeau de mage",
       "look_defaults": {
@@ -192,7 +174,7 @@
       "attack": {
         "kind": "projectile",
         "name": "Flèche",
-        "mult": 0.95,
+        "mult": 0.78,
         "speed": 820,
         "cd": 0.5,
         "color": [235, 215, 165],
@@ -202,14 +184,7 @@
         "icon": "arrow"
       },
       "spells": ["tir_multiple", "piege", "fleche_perforante", "pluie_fleches"],
-      "weapons": [
-        "Arc court",
-        "Arc long",
-        "Arbalète",
-        "Arc composite",
-        "Arc de chasse",
-        "Arc elfique"
-      ],
+      "weapons": ["Arc court", "Arc long", "Arbalète", "Arc composite", "Arc de chasse", "Arc elfique"],
       "legendary": ["Murmure-du-Vent", "Chant de la Traque", "Corde de l'Éclipse"],
       "headgear_name": "Capuche",
       "look_defaults": {
@@ -275,7 +250,7 @@
       "attack": {
         "kind": "melee",
         "name": "Coup sacré",
-        "mult": 1.4,
+        "mult": 1.02,
         "range": 58,
         "arc": 110,
         "cd": 0.66,
@@ -284,15 +259,7 @@
         "icon": "sword"
       },
       "spells": ["charge_bouclier", "consecration", "egide", "jugement"],
-      "weapons": [
-        "Épée bâtarde",
-        "Marteau de guerre",
-        "Masse bénie",
-        "Lame de l'Aube",
-        "Lame bénie",
-        "Masse de templier",
-        "Épée du croisé"
-      ],
+      "weapons": ["Épée bâtarde", "Marteau de guerre", "Masse bénie", "Lame de l'Aube", "Lame bénie", "Masse de templier", "Épée du croisé"],
       "legendary": ["Aube Éternelle", "Serment du Porte-Lumière", "Marteau du Jugement"],
       "headgear_name": "Heaume",
       "look_defaults": {
@@ -362,7 +329,7 @@
       "attack": {
         "kind": "projectile",
         "name": "Trait d'os",
-        "mult": 0.85,
+        "mult": 0.82,
         "speed": 600,
         "cd": 0.58,
         "color": [170, 255, 190],
@@ -371,16 +338,7 @@
         "icon": "bone"
       },
       "spells": ["lance_os", "squelettes", "malediction", "moisson"],
-      "weapons": [
-        "Faux",
-        "Faucille d'os",
-        "Sceptre d'os",
-        "Faux funéraire",
-        "Faux d'os",
-        "Sceptre funéraire",
-        "Bâton du caveau",
-        "Faux de la moisson"
-      ],
+      "weapons": ["Faux", "Faucille d'os", "Sceptre d'os", "Faux funéraire", "Faux d'os", "Sceptre funéraire", "Bâton du caveau", "Faux de la moisson"],
       "legendary": ["Moissonneuse d'Âmes", "Faux du Dernier Souffle", "Sceptre du Roi-Liche"],
       "headgear_name": "Capuche d'ombre",
       "look_defaults": {
@@ -447,7 +405,7 @@
       "attack": {
         "kind": "melee",
         "name": "Estafilade",
-        "mult": 0.68,
+        "mult": 0.66,
         "range": 50,
         "arc": 95,
         "cd": 0.42,

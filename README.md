@@ -102,7 +102,7 @@ Classes, sorts, talents, effets temporaires, artefacts, monstres, boss, anima, e
   - Nécromancien : lève des squelettes alliés, maudit (+30% de dégâts subis), moissonne les âmes pour se soigner ;
   - Assassin : deux dagues, pas de l'ombre dans le dos de la cible, lames empoisonnées, danse des lames.
 - **Talents** (touche N) : 3 branches par classe, 4 paliers par branche. Un palier demande 3 points de plus dans sa branche ; le 4e est un talent ultime. 1 point de talent tous les 2 niveaux. Clic pour apprendre ; clic droit pour retirer un point, ou « Réinitialiser » contre de l'or, uniquement au campement.
-- **Caractéristiques** : 5 points à répartir à chaque niveau.
+- **Caractéristiques** : 1 point à répartir à chaque niveau.
 - **Enchantements** : les objets Magiques, Rares et Légendaires ont 1, 2 ou 3 emplacements. Pour chacun, on choisit 1 enchantement parmi 3, puis on l'améliore jusqu'au niveau III. On gagne 1 point d'enchantement par niveau. Les points investis sont rendus quand on vend ou recycle l'objet.
 - **Artefacts** : 9 objets actifs avec temps de recharge, à trouver en butin ou chez le marchand. Par exemple : Pierre d'orage, Totem de régénération, Crâne infernal, Lanterne des âmes (qui invoque un feu follet allié)…
 - **Pouvoirs d'anima** : ils sont rares. Les orbes tombent parfois sur les élites et dans les coffres. Chaque orbe propose 3 pouvoirs, avec une rareté Commun, Rare ou Épique qui multiplie leur effet. Ils durent jusqu'à la fin de l'ascension.

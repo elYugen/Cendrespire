@@ -19,6 +19,20 @@ ANIMS = {
     "attack_melee": "Sword_Slash", "attack_ranged": "Gun_Shoot", "attack_cast": "Punch_Right",
     "cast": "Punch_Left", "hit": "HitRecieve", "death": "Death", "work": "Sword_Slash", "wave": "Wave",
 }
+# autres packs (monstres Quaternius) : noms de remplacement, essayés dans l'ordre si le modèle n'a pas l'animation
+FALLBACK = {
+    "idle": ("Idle", "Flying_Idle", "Spider_Idle", "Rat_Idle"),
+    "idle_melee": ("Idle_Sword", "Idle", "Flying_Idle", "Spider_Idle"),
+    "run": ("Run", "Walk", "Fast_Flying", "Spider_Walk", "Rat_Run"),
+    "walk": ("Walk", "Run", "Fast_Flying", "Spider_Walk", "Rat_Walk"),
+    "attack_melee": ("Sword_Slash", "Sword", "Punch", "Headbutt", "Spider_Attack", "Rat_Attack"),
+    "attack_ranged": ("Gun_Shoot", "Punch", "Spider_Attack"),
+    "attack_cast": ("Punch_Right", "Punch", "Headbutt", "Spider_Attack"),
+    "cast": ("Punch_Left", "Punch", "Headbutt", "Spider_Attack"),
+    "hit": ("HitRecieve", "HitReact"),
+    "death": ("Death", "Spider_Death", "Rat_Death"),
+    "work": ("Sword_Slash", "Sword", "Punch"),
+}
 ONE_SHOT = {"roll", "attack_melee", "attack_ranged", "attack_cast", "cast", "hit", "death"}
 HEIGHT = 50.0          # hauteur d'un héros en unités logiques (un peu plus d'une case)
 CLOCK = [0.0]          # horloge de rendu (animations de repos des PNJ et des aperçus)
@@ -29,9 +43,21 @@ def model_for(spec):
     return skinned.load(r["model"]) if r else None
 
 
+def anim_name(model, spec, state):
+    """Animation jouée pour un état : choix de la spécification (rig « anims »), nom du pack des héros, puis
+    noms équivalents des autres packs (FALLBACK)."""
+    forced = spec["rig"].get("anims", {}).get(state)
+    if forced in model.anims:
+        return forced
+    for name in (ANIMS.get(state, "Idle"),) + FALLBACK.get(state, ()) + FALLBACK["idle"]:
+        if name in model.anims:
+            return name
+    return next(iter(model.anims), None)
+
+
 def anim_duration(spec, state):
     m = model_for(spec)
-    return m.duration(ANIMS.get(state, "Idle")) if m else 0.5
+    return m.duration(anim_name(m, spec, state)) if m else 0.5
 
 
 def _bone(M, world, i):
@@ -50,11 +76,11 @@ def draw(fr, x, y, z0, facing, spec, state, t, sc=1.0, flash=False, tint_col=Non
     model = model_for(spec)
     if model is None:
         return False
-    anim = ANIMS.get(state, "Idle")
+    anim = anim_name(model, spec, state)
     loop = state not in ONE_SHOT
-    joints, world = model.pose(anim, t, loop=loop)
+    joints, world = model.pose(anim, t * spec["rig"].get("speed", 1.0), loop=loop)
     build = spec.get("build", 1.0)
-    k = HEIGHT * sc * U / model.height
+    k = HEIGHT * sc * spec["rig"].get("height", 1.0) * U / model.height
     th = math.pi / 2 - facing           # le modèle regarde vers +Z : on l'aligne sur l'orientation logique
     c, s = math.cos(th), math.sin(th)
     R = np.array([[c, 0, s, 0], [0, 1, 0, 0], [-s, 0, c, 0], [0, 0, 0, 1]], dtype="f4")
@@ -112,8 +138,10 @@ def _equipment(fr, M3, model, Mw, world, spec, facing, sc, flash, tint_col, stat
     """Armes et bouclier (modèles 3D importés) dans les mains, et lueurs magiques."""
     f, s = M3.frame_axes(facing)
     bone = {}
-    for name in ("Wrist.R", "Wrist.L"):
+    for name, alt in (("Wrist.R", "Middle1.R"), ("Wrist.L", "Middle1.L")):
         i = model.node(name)
+        if i < 0:
+            i = model.node(alt)     # packs de monstres : pas d'os de poignet, la main finit aux doigts
         if i >= 0:
             bone[name] = _bone(Mw, world, i)
     tint = (1.0, 1.0, 1.0, 0.65) if flash else ((tint_col[0] / 255, tint_col[1] / 255, tint_col[2] / 255, 0.45)

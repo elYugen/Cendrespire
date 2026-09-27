@@ -614,8 +614,12 @@ class Monster:
             tint = tuple(min(255, c + 40) for c in self.burn_col)
         rise = min(1.0, self.spawn_t / 0.35) if self.minion else 1.0
         z = -40 * sc * (1 - rise) + self.lift()
+        anim = anim_t = None
+        if self.state == "windup":           # modèles animés : le coup se prépare pendant l'avertissement
+            anim = "attack_ranged" if self.d.get("ai") in ("ranged", "caster") else "attack_melee"
+            anim_t = max(0.0, self.d.get("windup", 0.5) - self.windup) * 1.4
         models.humanoid(fr, self.x, self.y, z, self.facing, self.phase, models.MONSTER_SPECS[self.spec_id], sc=sc,
-                        flash=self.flash > 0, tint_col=tint, moving=self.moving)
+                        flash=self.flash > 0, tint_col=tint, moving=self.moving, anim=anim, anim_t=anim_t)
         if self.curse > 0:
             fr.decal(self.x, self.y, self.r * 1.7, self.r * 1.7, (170, 90, 230), 0.55, kind=1, inner=0.7, rot=t)
             fr.glow(self.x, self.y, self.height() + 10 + 3 * math.sin(t * 5), 12, (190, 110, 255), 0.8)

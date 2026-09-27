@@ -10,3 +10,9 @@ Crédit facultatif : merci à Quaternius.
 
 Personnage sous licence CC-BY 3.0 (attribution requise) :
   witch.glb         « Witch » par Quaternius, CC-BY 3.0, https://poly.pizza/m/QBEOV9ZUT8
+Monstres (Quaternius, via poly.pizza) :
+  ghost.glb         Ghost          (Ultimate Monsters Bundle)  CC0 1.0   https://poly.pizza/m/Iip30bDHmu
+  ghost_skull.glb   Ghost Skull    (Ultimate Monsters Bundle)  CC0 1.0   https://poly.pizza/m/TX8r9WBXpe
+  orc.glb           Orc                                        CC0 1.0   https://poly.pizza/m/5vO2YJsPEf
+  spider.glb        Spider         (Animated Enemies)          CC0 1.0   https://poly.pizza/m/yRYJiAJyiM
+  zombie.glb        « Zombie » par Quaternius, CC-BY 3.0 (attribution requise), https://poly.pizza/m/22K0aSZkHV

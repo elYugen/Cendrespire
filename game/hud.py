@@ -439,10 +439,21 @@ def _markers(surf, world, cx, cy, scale, clip):
         if m.boss:
             ui.circle(surf, (255, 70, 70), (x, y), 6)
             ui.circle(surf, WHITE, (x, y), 6, 1)
+        elif getattr(m, "keeper", False):
+            ui.circle(surf, (255, 210, 90), (x, y), 5)
+            ui.circle(surf, (80, 40, 10), (x, y), 5, 1)
         elif math.hypot(m.x - p.x, m.y - p.y) < 560:
             ui.circle(surf, (255, 180, 60) if m.elite else (240, 80, 70), (x, y), 3 if m.elite else 2.2)
     for o in world.interactables:
         name = o.__class__.__name__
+        mc = getattr(o, "map_color", None)
+        if mc and o.can_interact(world) and (int(o.x // 40), int(o.y // 40)) in seen:   # objectifs du sceau
+            x, y = pos(o.x, o.y)
+            if _in_disc(clip, x, y):
+                pts = [(x, y - 6), (x + 5, y), (x, y + 6), (x - 5, y)]
+                ui.polygon(surf, mc, pts)
+                ui.polygon(surf, (20, 20, 20), pts, 1)
+            continue
         if name not in ("Portal", "Chest", "NPC") or (int(o.x // 40), int(o.y // 40)) not in seen:
             continue
         x, y = pos(o.x, o.y)

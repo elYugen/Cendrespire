@@ -630,8 +630,8 @@ class Deathstrake(Boss):
 
     def use_lightning(self, world):
         """Pierre d'orage : des éclairs s'abattent l'un après l'autre sur la position du héros."""
-        n = 5 if self.phase_n == 1 else 8
-        dmg = self.roll_dmg() * 0.9
+        n = 4 if self.phase_n == 1 else 6
+        dmg = self.roll_dmg() * 0.45
 
         def strike(w):
             p = w.player

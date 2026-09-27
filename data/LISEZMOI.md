@@ -110,6 +110,12 @@ Chaque classe peut utiliser un personnage animé (fichier `.glb` de `assets/mode
 
 `colors` associe un matériau du modèle à `skin` (teint), `hair` (cheveux), `main` / `second` (couleurs de tenue choisies par le joueur), éventuellement assombries (`main:0.7`), ou `hide` pour le masquer. `skip` retire des pièces d'équipement que le modèle possède déjà (capuche…). Sans `rig`, ou si le fichier manque, le héros procédural est utilisé.
 
+Les monstres et les boss peuvent aussi avoir un `rig` dans leur `model` (`monsters.json`, `bosses.json`) : le modèle procédural reste utilisé si le fichier manque. Options en plus :
+
+- `height` : taille par rapport à un héros (0.5 = moitié) ; `speed` : vitesse des animations.
+- `anims` : animation à jouer pour un état (`idle`, `run`, `attack_melee`, `attack_ranged`, `hit`, `death`), par exemple `{"attack_melee": "Headbutt"}`. Sans précision, le jeu choisit l'équivalent du modèle (Punch, Spider_Attack, Flying_Idle...).
+- Modèles de monstres fournis : `zombie`, `orc`, `ghost`, `ghost_skull`, `spider` (assets/models/characters).
+
 ## Ajouter une classe
 
 Ajoutez une entrée dans `classes.json` (copier une classe existante est le plus simple), avec ses 4 sorts dans `spells.json` et son arbre dans `talents.json` sous le même identifiant. Dans `model`, `"main"` et `"second"` désignent les deux couleurs de tenue choisies par le joueur. Les pièces possibles sont : `robe`, `cape`, `hood`, `hat`, `helmet`, `horns`, `mask`, `pauldrons`, `tabard`, `shield`, `quiver`, `orb`, `fur`, `gloves`, `bracers`, `belt`, etc. `weapon` vaut `axe`, `staff`, `bow`, `sword`, `scythe` ou `daggers`. Le champ `headgear` liste les pièces affichées quand le couvre-chef est visible.

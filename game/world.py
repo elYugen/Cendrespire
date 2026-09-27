@@ -5,7 +5,7 @@ from collections import deque
 
 import pygame
 
-from . import artifacts, hud, nav, quests, save, sfx, spells, ui
+from . import artifacts, gamepad, hud, nav, quests, save, sfx, spells, ui
 from .data import ANIMA_POWERS, ANIMA_TIERS, BAG_SIZE, POINTS_PER_LEVEL, SPELLS
 from .dungeon import WALL, BARRIER, Minimap
 from .entities import Loot
@@ -166,13 +166,18 @@ class World(Scene):
         return mx * VIEW.s, my * VIEW.s
 
     def aim_point(self):
+        if gamepad.PAD.active:
+            return gamepad.aim_point(self)
         return self.cam.ray_ground(*self.mouse_px(), height=22)
 
     def ground_point(self):
+        if gamepad.PAD.active:
+            return gamepad.aim_point(self)
         return self.cam.ray_ground(*self.mouse_px(), height=0)
 
     def is_moving(self):
-        return any(s in self.keys for s in SC_UP + SC_DOWN + SC_LEFT + SC_RIGHT) or bool(self.nav and self.path)
+        return (any(s in self.keys for s in SC_UP + SC_DOWN + SC_LEFT + SC_RIGHT) or bool(self.nav and self.path)
+                or gamepad.move_dir(self) is not None)
 
     def schedule(self, delay, fn):
         self.scheduled.append([delay, fn])
@@ -859,6 +864,18 @@ class World(Scene):
         self.update_hover()
         if p.attack_lock > 0:            # le coup part : le héros reste planté un court instant
             return
+        if gamepad.PAD.active:           # manette : stick gauche pour marcher, gâchette ou A pour frapper
+            sx, sy = gamepad.PAD.stick("left")
+            attack = gamepad.attack_held()
+            if sx or sy:
+                self.nav, self.path = None, []
+                dx, dy = self.cam.screen_to_world_dir(sx, sy)
+                self.step_player(dx, dy, dt)
+            if attack:
+                self.nav, self.path = None, []
+                self.attack_toward(*self.aim_point())
+            if sx or sy or attack:
+                return
         if mx or my:
             self.nav, self.path = None, []
             dx, dy = self.cam.screen_to_world_dir(mx, my)
@@ -1234,7 +1251,6 @@ class World(Scene):
                     mark = self.npc_marker(o)
                     if mark:
                         bob = 3 * math.sin(self.time * 3 + o.x)
-                        ui.glow(surf, pt[0], r.y - 20 + bob, 20, ui.darker(mark[1], 0.45))
                         ui.draw_text(surf, mark[0], (pt[0], r.y - 2 + bob), 40, mark[1], "title", anchor="midbottom")
         for l in self.loot:
             if l.kind == "item" and (l.item["rarity"] != "commun" or math.hypot(l.x - p.x, l.y - p.y) < 160):

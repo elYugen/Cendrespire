@@ -247,6 +247,54 @@ def esplanade(mb, geo, tile):
         objmodels.put(mb, "grave", x + ox, 0.0, z + 1.2, 0.0, 1.6, 1.0, "pillar-obelisk")
 
 
+def arena(mb, geo, rng, tile):
+    """Arène au sud de la ville : gradins de pierre en couronne, ouverts au nord sur l'avenue, braseros, bannières."""
+    cx, cz = T.ARENA
+    r0 = T.ARENA_R
+    n = 72
+    for i in range(n):
+        a = (i + 0.5) / n * math.tau
+        # entrée nord (vers la ville) : direction -z
+        if abs((a + math.pi / 2 + math.pi) % math.tau - math.pi) < T.ARENA_GATE:
+            continue
+        c, s = math.cos(a), math.sin(a)
+        half = math.pi * (r0 + 1.5) / n + 0.06
+        for step in range(3):
+            r = r0 + 0.2 + step * 0.9
+            h = 0.35 + step * 0.4
+            px, pz = cx + c * (r + 0.45), cz + s * (r + 0.45)
+            mb.mat = mb.STONE
+            mb.add("cube", (px, h / 2, pz), (c * 0.46, 0, s * 0.46),
+                   (0, h / 2, 0), (-s * half, 0, c * half), shade(WALL_STONE, 0.92 - step * 0.06), 1.0)
+        mb.mat = 0
+    # mur d'enceinte extérieur
+    for i in range(n):
+        a = (i + 0.5) / n * math.tau
+        if abs((a + math.pi / 2 + math.pi) % math.tau - math.pi) < T.ARENA_GATE:
+            continue
+        c, s = math.cos(a), math.sin(a)
+        r = r0 + 3.0
+        half = math.pi * r / n + 0.05
+        mb.mat = mb.BRICK
+        mb.add("cube", (cx + c * r, 0.9, cz + s * r), (c * 0.3, 0, s * 0.3), (0, 0.9, 0), (-s * half, 0, c * half),
+               WALL_STONE, 1.0)
+        mb.mat = 0
+    # piliers de l'entrée, bannières, braseros
+    for side in (-1, 1):
+        a = -math.pi / 2 + side * (T.ARENA_GATE + 0.05)
+        x, z = cx + math.cos(a) * (r0 + 1.6), cz + math.sin(a) * (r0 + 1.6)
+        _tower(mb, x, z, 0.55, 2.4, (0.5, 0.14, 0.12))
+    for x, z in T.ARENA_BRAZIERS:
+        objmodels.put(mb, "grave", x, 0.0, z, 0.0, 1.6, 0.0, "fire-basket")
+        geo.torches.append((x * tile, z * tile, 0.9 * tile))
+    for i in range(6):
+        a = math.pi / 2 + (i - 2.5) * 0.42
+        camp.banner(mb, cx + math.cos(a) * (r0 + 2.9), cz + math.sin(a) * (r0 + 2.9), (0.55, 0.12, 0.12))
+    # emblème au centre de la piste
+    mb.add("cylinder", (cx, 0.01, cz), (1.6, 0, 0), (0, 0.01, 0), (0, 0, 1.6), (0.46, 0.34, 0.24))
+    mb.add("cylinder", (cx, 0.02, cz), (1.2, 0, 0), (0, 0.01, 0), (0, 0, 1.2), (0.62, 0.48, 0.32))
+
+
 def build(mb, geo, d, rng, tile):
     ramparts(mb, rng)
     for hx, hz, n, fl, rot, roof in T.HOUSES:
@@ -259,3 +307,4 @@ def build(mb, geo, d, rng, tile):
     streets(mb, geo, tile, rng)
     esplanade(mb, geo, tile)
     training(mb, rng)
+    arena(mb, geo, rng, tile)

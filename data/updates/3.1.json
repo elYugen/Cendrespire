@@ -1,0 +1,27 @@
+{
+  "version": "3.1",
+  "date": "2026-09-27",
+  "title": "Manette et nouveaux visages",
+  "sections": [
+    {"name": "Manette", "notes": [
+      "Le jeu se joue à la manette (Xbox, PlayStation, Switch Pro...), branchable à tout moment.",
+      "Stick gauche : se déplacer ; stick droit : viser, sinon visée automatique sur l'ennemi le plus proche ; A : interagir ou attaquer ; RT : attaquer ; X, Y, B, RB : sorts ; LB : roulade ; LT : potion ; croix : artefacts et carte ; Start : menu.",
+      "Dans les menus, le stick déplace le curseur, A clique, B revient en arrière, LB et RB changent de page.",
+      "Le rappel des commandes (Système > Commandes) affiche celles de la manette quand elle est branchée."
+    ]},
+    {"name": "Cendreval", "notes": [
+      "Au sud de la porte sud, une arène aux gradins de pierre attend le futur mode joueur contre joueur. Varek, son maître, y guette déjà les candidats."
+    ]},
+    {"name": "Nouveaux modèles", "notes": [
+      "Squelettes et archers squelettes ont un nouveau modèle animé.",
+      "Chaque gardien a désormais son modèle : le Boucher en géant, le Golem d'ossements en colosse de pierre, Mal'zahar en démon au trident, les Jumeaux d'Ombre en démons violets, la Mère des Cendres en démone ailée et la Sentinelle Radieuse en reine dorée."
+    ]},
+    {"name": "Interface", "notes": [
+      "Nouvelles polices : Philosopher pour les titres et les noms, Fira Sans pour les textes.",
+      "Les ombres portées et les halos sous les textes sont supprimés."
+    ]},
+    {"name": "Crédits", "notes": [
+      "Nouveaux modèles : Quaternius (CC0). Polices : Fira Sans et Philosopher (licence SIL Open Font)."
+    ]}
+  ]
+}

@@ -228,10 +228,10 @@ def build_hub():
         for x in range(T.W):
             d.tiles[y][x] = FLOOR if (x, y) in walk else WALL
     d.tower_tiles = set(T.TOWER_CELLS)
-    d.house_cells = T.house_cells()
+    d.house_cells = T.house_cells() | (T.arena_ring_cells() - walk)     # sol dégagé sous les gradins de l'arène
     d.rampart = T.rampart_cells()
     d.plaza = T.street_cells() & walk          # pavés
-    d.paths = T.training_cells() & walk         # terre battue de la cour d'entraînement
+    d.paths = (T.training_cells() | T.arena_cells()) & walk     # terre battue : cour d'entraînement, arène
     rng = random.Random(3)
     near_obs = {(int(x), int(y)) for x, y, _r in T.obstacles()}
     for y in range(T.H):

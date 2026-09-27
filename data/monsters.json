@@ -26,7 +26,13 @@
         "skull": true,
         "weapon": "sword",
         "eyes": [255, 80, 40],
-        "ribs": true
+        "ribs": true,
+        "rig": {
+          "model": "skel_a",
+          "weapons": {
+            "right": ["sword", 20]
+          }
+        }
       }
     },
     "zombie": {
@@ -79,7 +85,13 @@
         "skull": true,
         "weapon": "bow",
         "eyes": [255, 120, 40],
-        "hood": [74, 64, 54]
+        "hood": [74, 64, 54],
+        "rig": {
+          "model": "skel_a",
+          "weapons": {
+            "left": ["bow", 26]
+          }
+        }
       }
     },
     "diablotin": {

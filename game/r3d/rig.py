@@ -21,17 +21,18 @@ ANIMS = {
 }
 # autres packs (monstres Quaternius) : noms de remplacement, essayés dans l'ordre si le modèle n'a pas l'animation
 FALLBACK = {
-    "idle": ("Idle", "Flying_Idle", "Spider_Idle", "Rat_Idle"),
-    "idle_melee": ("Idle_Sword", "Idle", "Flying_Idle", "Spider_Idle"),
-    "run": ("Run", "Walk", "Fast_Flying", "Spider_Walk", "Rat_Run"),
-    "walk": ("Walk", "Run", "Fast_Flying", "Spider_Walk", "Rat_Walk"),
-    "attack_melee": ("Sword_Slash", "Sword", "Punch", "Headbutt", "Spider_Attack", "Rat_Attack"),
-    "attack_ranged": ("Gun_Shoot", "Punch", "Spider_Attack"),
-    "attack_cast": ("Punch_Right", "Punch", "Headbutt", "Spider_Attack"),
-    "cast": ("Punch_Left", "Punch", "Headbutt", "Spider_Attack"),
+    "idle": ("Idle", "Flying_Idle", "Spider_Idle", "Rat_Idle", "Skeleton_Idle"),
+    "idle_melee": ("Idle_Sword", "Idle", "Flying_Idle", "Spider_Idle", "Skeleton_Idle"),
+    "run": ("Run", "Walk", "Fast_Flying", "Spider_Walk", "Rat_Run", "Skeleton_Running"),
+    "walk": ("Walk", "Run", "Fast_Flying", "Spider_Walk", "Rat_Walk", "Skeleton_Running"),
+    "attack_melee": ("Sword_Slash", "Sword", "Weapon", "Attack", "Punch", "Headbutt", "Spider_Attack", "Rat_Attack",
+                     "Skeleton_Attack"),
+    "attack_ranged": ("Gun_Shoot", "Punch", "Attack", "Spider_Attack", "Skeleton_Attack"),
+    "attack_cast": ("Punch_Right", "Punch", "Headbutt", "Attack", "Spider_Attack", "Skeleton_Attack"),
+    "cast": ("Punch_Left", "Punch", "Headbutt", "Attack", "Spider_Attack", "Skeleton_Attack"),
     "hit": ("HitRecieve", "HitReact"),
-    "death": ("Death", "Spider_Death", "Rat_Death"),
-    "work": ("Sword_Slash", "Sword", "Punch"),
+    "death": ("Death", "Spider_Death", "Rat_Death", "Skeleton_Death"),
+    "work": ("Sword_Slash", "Sword", "Punch", "Attack"),
 }
 ONE_SHOT = {"roll", "attack_melee", "attack_ranged", "attack_cast", "cast", "hit", "death"}
 HEIGHT = 50.0          # hauteur d'un héros en unités logiques (un peu plus d'une case)
@@ -138,10 +139,14 @@ def _equipment(fr, M3, model, Mw, world, spec, facing, sc, flash, tint_col, stat
     """Armes et bouclier (modèles 3D importés) dans les mains, et lueurs magiques."""
     f, s = M3.frame_axes(facing)
     bone = {}
-    for name, alt in (("Wrist.R", "Middle1.R"), ("Wrist.L", "Middle1.L")):
+    # packs de monstres : pas d'os de poignet ; la main finit aux doigts, au bout du bras, ou porte un autre nom
+    hands = {"Wrist.R": ("Middle1.R", "Arm.R_end", "R.DownLeg.001"), "Wrist.L": ("Middle1.L", "Arm.L_end", "L.DownLeg.001")}
+    for name, alts in hands.items():
         i = model.node(name)
-        if i < 0:
-            i = model.node(alt)     # packs de monstres : pas d'os de poignet, la main finit aux doigts
+        for alt in alts:
+            if i >= 0:
+                break
+            i = model.node(alt)
         if i >= 0:
             bone[name] = _bone(Mw, world, i)
     tint = (1.0, 1.0, 1.0, 0.65) if flash else ((tint_col[0] / 255, tint_col[1] / 255, tint_col[2] / 255, 0.45)

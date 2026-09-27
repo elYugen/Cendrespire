@@ -54,9 +54,9 @@ def font(size, kind="text"):
     key = (px, kind)
     f = _fonts.get(key)
     if f is None:
-        path, idx = FONT_FILES.get(kind, FONT_FILES["text"])
+        path, idx, k = FONT_FILES.get(kind, FONT_FILES["text"])
         try:
-            f = ft.Font(path, px, font_index=idx)
+            f = ft.Font(path, max(6, int(round(px * k))), font_index=idx)
         except Exception:
             f = ft.Font(None, px)   # police intégrée à pygame, en dernier recours
         f.origin = True
@@ -111,7 +111,7 @@ def text_size(text, size, kind="text"):
     return s.get_width() / VIEW.s, s.get_height() / VIEW.s
 
 
-def draw_text(surf, text, pos, size=18, color=TEXT, kind="text", anchor="topleft", shadow=True, alpha=255):
+def draw_text(surf, text, pos, size=18, color=TEXT, kind="text", anchor="topleft", shadow=False, alpha=255):
     """Dessine un texte ; renvoie son rectangle en coordonnées de conception."""
     s = text_surf(text, size, color, kind)
     x, y = pos[0] * VIEW.s, pos[1] * VIEW.s

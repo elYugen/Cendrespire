@@ -50,11 +50,13 @@ if content.ERROR is not None and __name__ == "__main__":
     content_error_screen(content.ERROR)
     sys.exit(1)
 
-from game import discord, sfx  # noqa: E402
+from game import discord, gamepad, sfx  # noqa: E402
 from game.r3d.renderer import Renderer, Frame  # noqa: E402
 from game.settings import SCREEN_W, SCREEN_H, FPS, TITLE, VIEW, WINDOW_SIZE  # noqa: E402
 
 MOUSE_EVENTS = (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP, pygame.MOUSEMOTION)
+PAD_EVENTS = (pygame.CONTROLLERDEVICEADDED, pygame.CONTROLLERDEVICEREMOVED, pygame.CONTROLLERAXISMOTION,
+              pygame.CONTROLLERBUTTONDOWN, pygame.CONTROLLERBUTTONUP)
 
 
 def window_size():
@@ -99,6 +101,7 @@ class Game:
         if size is None:
             size, mode = ((SCREEN_W, SCREEN_H), None) if headless else window_size()
         sfx.init()
+        gamepad.PAD.init()
         self.headless = headless
         if headless:
             self.window = None
@@ -243,8 +246,18 @@ class Game:
                 self.refresh_view()
             elif e.type == pygame.KEYDOWN and e.key == pygame.K_F11:
                 self.toggle_fullscreen()
+            elif e.type in PAD_EVENTS:
+                for synth in gamepad.PAD.handle(e, self):      # menus : curseur et touches simulés
+                    if not self.fading_out:
+                        self.scene.handle_event(synth)
             elif not self.fading_out:
+                if e.type in (pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN) or (
+                        e.type == pygame.MOUSEMOTION and gamepad.PAD.cursor is None):
+                    gamepad.PAD.active = False          # retour au clavier et à la souris
                 self.scene.handle_event(self.convert_event(e))
+        gamepad.PAD.update(dt, self)
+        if self.window:
+            pygame.mouse.set_visible(not (gamepad.PAD.active and not gamepad.in_menu(self)))
         if self.fading_out:
             self.fade = min(1.0, self.fade + dt * 4)
             if self.fade >= 1.0:

@@ -24,7 +24,8 @@ STRIDE = 3 + 3 + 1 + 3 + 4 + 4    # position, normale, matériau, couleur, artic
 SKIP_MESHES = {"Backpack"}
 # étalonnage des couleurs par modèle (saturation, luminosité, rotation de teinte en degrés) : les modèles à texture
 # ne se recolorent pas par matériau
-GRADE = {"zombie": (0.75, 0.95, -115.0)}     # zombie bleu du pack -> goule verdâtre        # accessoires encombrants du pack, remplacés par l'équipement du jeu
+GRADE = {"zombie": (0.75, 0.95, -115.0),      # zombie bleu du pack -> goule verdâtre
+         "yeti_block": (0.12, 0.92, 0.0)}      # yéti bleu et blanc -> golem d'os et de pierre        # accessoires encombrants du pack, remplacés par l'équipement du jeu
 _COMP = {5120: "b", 5121: "B", 5122: "h", 5123: "H", 5125: "I", 5126: "f"}
 _NCOMP = {"SCALAR": 1, "VEC2": 2, "VEC3": 3, "VEC4": 4, "MAT4": 16}
 _models = {}

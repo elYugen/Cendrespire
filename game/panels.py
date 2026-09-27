@@ -1393,7 +1393,9 @@ class MenuScreen(Panel):
     def draw_controls(self, surf):
         ui.veil(surf, (0, 0, 0), 200)
         box = ui.botw_box(surf, (SCREEN_W // 2 - 330, 92, 660, 576), 255, FRAME, radius=4, fill=(12, 16, 20))
-        ui.draw_text(surf, "Commandes", (box.centerx, box.y + 16), 22, WHITE, "title", anchor="midtop")
+        from . import gamepad
+        ui.draw_text(surf, "Commandes" + (" · manette" if gamepad.PAD.connected else ""), (box.centerx, box.y + 16),
+                     22, WHITE, "title", anchor="midtop")
         ui.rect(surf, (110, 112, 108), (box.x + 24, box.y + 54, box.w - 48, 1))
         controls = [
             ("Clic gauche au sol", "Se déplacer (maintenu : suivre le curseur)"),
@@ -1405,6 +1407,15 @@ class MenuScreen(Panel):
             ("← →", "Changer de page du menu"),
             ("Échap", "Menu Système / fermer"), ("F11", "Plein écran"),
         ]
+        from . import gamepad
+        if gamepad.PAD.connected:          # manette branchée : ses commandes à la place du clavier
+            controls = [
+                ("Stick gauche", "Se déplacer (menus : curseur)"), ("Stick droit", "Viser (sinon : ennemi le plus proche)"),
+                ("A", "Interagir, sinon attaquer (menus : clic)"), ("RT", "Attaquer (maintenu)"),
+                ("X · Y · B · RB", "Sorts 1 à 4 (menus : B = retour)"), ("LB", "Roulade (menus : page précédente)"),
+                ("LT", "Potion"), ("Croix ← ↑ →", "Artefacts R · T · G"), ("Croix ↓ · Select", "Carte"),
+                ("Start", "Menu Système / fermer"), ("RB (menus)", "Page suivante"),
+            ]
         y = box.y + 68
         for i, (k, v) in enumerate(controls):
             if i % 2 == 0:

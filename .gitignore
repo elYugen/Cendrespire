@@ -5,3 +5,5 @@ backup/
 version.txt
 __pycache__/
 saves/
+crash.log
+updater.log

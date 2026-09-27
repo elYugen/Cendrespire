@@ -15,11 +15,12 @@ dungeon.build_hub() en tire la grille praticable, r3d/city.py le décor 3D et hu
    │ maisons            avenue           maisons  │
    └──────────────── porte sud ─────────────────┘
    La rue du marché sort par la porte est vers la zone d'entraînement (mannequin, cibles, râteliers).
+   Au sud de la porte sud, l'avenue mène à l'arène (futur mode joueur contre joueur).
 """
 import math
 
 NAME = "Cendreval"
-W, H = 60, 46                              # la zone d'entraînement s'étend à l'est des remparts
+W, H = 60, 64                              # zone d'entraînement à l'est des remparts, arène au sud
 
 # ---------------------------------------------------------------- remparts et portes
 WALL_X0, WALL_X1, WALL_Y0, WALL_Y1 = 2, 44, 9, 43
@@ -33,7 +34,7 @@ PORTAL = (23.0, 5.4)
 
 # ---------------------------------------------------------------- rues (rectangles de cases, bornes incluses)
 STREETS = [
-    (21, 2, 25, 45),        # avenue nord-sud, de la tour à la porte sud
+    (21, 2, 25, 49),        # avenue nord-sud, de la tour à l'entrée de l'arène
     (16, 3, 30, 8),         # esplanade de la tour
     (3, 16, 43, 17),        # rue haute
     (3, 25, 43, 27),        # rue du marché
@@ -99,6 +100,12 @@ TARGETS = [(56.2, 21.0), (56.2, 31.0)]     # cibles de paille (décor)
 RACKS = [(48.7, 20.3), (48.7, 31.7)]       # râteliers d'armes
 TRAINING_SIGN = (48.4, 24.3)
 
+# ---------------------------------------------------------------- arène (au sud de la porte sud)
+ARENA = (23.0, 55.0)                       # centre de la piste de sable
+ARENA_R = 6.3                              # rayon de la piste (cases)
+ARENA_GATE = 0.85                          # demi-ouverture de l'entrée nord (radians), dans l'axe de l'avenue
+ARENA_BRAZIERS = [(ARENA[0] + 5.6 * math.cos(a), ARENA[1] + 5.6 * math.sin(a)) for a in (0.35, 1.2, 1.95, 2.8)]
+
 # ---------------------------------------------------------------- personnages
 SPAWN = (23.0, 32.3)
 MERCHANT = (11.0, 21.2, 0.0)               # devant son étal, face à la place (et non plus caché derrière)
@@ -133,6 +140,10 @@ VILLAGERS = [
          palette={"Blue": (70, 80, 60), "Gold": "hide"},
          line="Je fais ma ronde, jour et nuit. Rien ne sort de la tour sans que je le voie.",
          route=[(8.0, 16.1), (38.0, 16.1)]),
+    dict(id="varek", pos=(20.4, 49.6), facing=0.9, name="Varek le Maître de l'arène", model="knight",
+         palette={"Blue": (60, 60, 64), "Gold": (200, 160, 70)},
+         line="Bientôt, les aventuriers de Cendreval s'affronteront ici même. Entraînez-vous : l'arène n'aime "
+              "pas les faibles."),
     dict(id="brunhild", pos=(50.6, 23.6), facing=0.4, name="Brunhild la Maîtresse d'armes", model="knight",
          palette={"Blue": (110, 40, 36), "Gold": "hide"},
          line="Frappez ce mannequin autant qu'il vous plaira : lui ne rend jamais les coups. Regardez vos dégâts "
@@ -179,6 +190,18 @@ def street_cells():
     return cells
 
 
+def arena_cells():
+    cx, cy = ARENA
+    return {(x, y) for x in range(W) for y in range(H) if math.hypot(x + 0.5 - cx, y + 0.5 - cy) < ARENA_R}
+
+
+def arena_ring_cells():
+    """Couronne des gradins autour de la piste : sol dégagé (ni talus ni arbres) où sont posés les gradins."""
+    cx, cy = ARENA
+    return {(x, y) for x in range(W) for y in range(H)
+            if ARENA_R <= math.hypot(x + 0.5 - cx, y + 0.5 - cy) < ARENA_R + 3.6}
+
+
 def training_cells():
     x0, y0, x1, y1 = TRAINING
     return {(x, y) for x in range(x0, x1 + 1) for y in range(y0, y1 + 1)}
@@ -188,7 +211,8 @@ def walkable_cells():
     """Intérieur des remparts, esplanade, route du sud et zone d'entraînement, moins les maisons, les remparts
     et la tour."""
     inside = {(x, y) for x in range(WALL_X0 + 1, WALL_X1) for y in range(WALL_Y0 + 1, WALL_Y1)}
-    return (inside | street_cells() | training_cells()) - house_cells() - rampart_cells() - TOWER_CELLS
+    return ((inside | street_cells() | training_cells() | arena_cells()) - house_cells() - rampart_cells()
+            - TOWER_CELLS)
 
 
 def obstacles():
@@ -202,4 +226,5 @@ def obstacles():
     obs += [(x, y, 0.6) for x, y, _ in CARTS]
     obs += [(*DUMMY, 0.45), (*TRAINING_SIGN, 0.25)] + [(x, y, 0.55) for x, y in TARGETS]
     obs += [(x, y, 0.45) for x, y in RACKS]
+    obs += [(x, y, 0.4) for x, y in ARENA_BRAZIERS if math.hypot(x - ARENA[0], y - ARENA[1]) < ARENA_R]
     return obs

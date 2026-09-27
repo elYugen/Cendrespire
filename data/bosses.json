@@ -25,7 +25,13 @@
         "eyes": [255, 50, 30],
         "bulky": true,
         "belt": [74, 42, 30],
-        "hunch": true
+        "hunch": true,
+        "rig": {
+          "model": "giant",
+          "weapons": {
+            "right": ["axe_double", 34]
+          }
+        }
       },
       "melee": true,
       "keep": 0,
@@ -98,7 +104,10 @@
         "weapon": null,
         "eyes": [255, 150, 40],
         "rocky": true,
-        "cracks": [255, 120, 30]
+        "cracks": [255, 120, 30],
+        "rig": {
+          "model": "yeti_block"
+        }
       },
       "melee": true,
       "keep": 0,
@@ -132,7 +141,15 @@
         "bulky": true,
         "wings": [56, 20, 56],
         "pauldrons": [44, 40, 50],
-        "cape": [116, 22, 32]
+        "cape": [116, 22, 32],
+        "rig": {
+          "model": "demon_trident",
+          "palette": {
+            "Demon_Main": [128, 26, 32],
+            "Black": [34, 22, 26],
+            "Eye_White": [255, 200, 80]
+          }
+        }
       },
       "melee": true,
       "keep": 0,
@@ -210,7 +227,21 @@
         "orb": [255, 230, 140],
         "eyes": [255, 240, 160],
         "cape": [196, 156, 70],
-        "aura": [255, 220, 120]
+        "aura": [255, 220, 120],
+        "rig": {
+          "model": "king",
+          "weapons": {
+            "right": ["staff", 40]
+          },
+          "palette": {
+            "Blue": [232, 222, 192],
+            "Metal": [236, 214, 140],
+            "Metal_Dark": [200, 168, 90],
+            "Gold": [255, 222, 110],
+            "DarkBrown": [150, 122, 76],
+            "Beige": [245, 238, 214]
+          }
+        }
       },
       "melee": false,
       "keep": 230,
@@ -245,7 +276,14 @@
         "blade": [170, 110, 255],
         "eyes": [190, 130, 255],
         "cape": [70, 40, 110],
-        "aura": [170, 110, 255]
+        "aura": [170, 110, 255],
+        "rig": {
+          "model": "blue_demon",
+          "palette": {
+            "BlueDemon_Main": [66, 44, 96],
+            "BlueDemon_Secondary": [150, 116, 210]
+          }
+        }
       },
       "melee": true,
       "keep": 0,
@@ -281,7 +319,15 @@
         "orb": [255, 140, 40],
         "eyes": [255, 200, 80],
         "wings": [140, 40, 30],
-        "aura": [255, 120, 40]
+        "aura": [255, 120, 40],
+        "rig": {
+          "model": "demon_wings",
+          "palette": {
+            "Demon_Main": [206, 92, 32],
+            "Black": [52, 26, 18],
+            "Eye_White": [255, 224, 120]
+          }
+        }
       },
       "melee": false,
       "keep": 210,

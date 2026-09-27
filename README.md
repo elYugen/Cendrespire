@@ -72,10 +72,25 @@ Les sauvegardes (`saves/`, ou `%APPDATA%\Cendrespire` pour la version installée
 | R · T · G | Artefacts (un seul exemplaire de chaque artefact) |
 | F | Potion de soins (illimitée, avec temps de recharge) |
 | E | Interagir |
-| I · C · N · Échap | Menu : pages Inventaire · Personnage · Talents · Système (met le jeu en pause) |
+| I · C · N · J · Échap | Menu : pages Inventaire · Personnage · Talents · Quêtes · Système (met le jeu en pause) |
 | Tab | Grande carte |
 
-Les commandes sont aussi affichées en jeu : menu Système > Commandes.
+**Manette** (Xbox, PlayStation, Switch Pro… reconnue par SDL, branchable en cours de partie ; voir `game/gamepad.py`) :
+
+| Bouton | En jeu | Dans les menus |
+|---|---|---|
+| Stick gauche | Se déplacer | Déplacer le curseur |
+| Stick droit | Viser (sinon : l'ennemi le plus proche devant soi) | |
+| A | Interagir, sinon attaquer | Clic |
+| RT | Attaquer (maintenu) | |
+| X · Y · B · RB | Sorts 1 à 4 | B : retour · RB : page suivante |
+| LB | Roulade | Page précédente |
+| LT | Potion | |
+| Croix ← ↑ → | Artefacts R · T · G | Curseur |
+| Croix ↓ · Select | Carte | Retour |
+| Start | Menu | Fermer |
+
+Les commandes sont aussi affichées en jeu : menu Système > Commandes (celles de la manette quand elle est branchée).
 
 Le menu Système > Options règle le volume général, la musique et les effets sonores (enregistrés dans `options.json`, à côté des sauvegardes). Les musiques sont dans `assets/music` : `title` (écran titre), `hub` (campement) et `inside` (tour), aux formats .opus, .ogg, .mp3, .flac ou .wav.
 

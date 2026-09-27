@@ -49,11 +49,13 @@ VIEW = View()
 # Police embarquée (Lato, licence OFL, assets/fonts) : rendu identique sur toutes les machines,
 # sans dépendre des polices du système.
 _FONTS_DIR = os.path.join(ASSETS_DIR, "fonts")
+# Fira Sans (textes) et Philosopher (titres, noms) : licence OFL (assets/fonts/OFL-*.txt).
+# (fichier, index dans le fichier, facteur de taille : les mises en page ont été conçues pour Lato, plus étroite)
 FONT_FILES = {
-    "text": (os.path.join(_FONTS_DIR, "Lato-Regular.ttf"), 0),
-    "bold": (os.path.join(_FONTS_DIR, "Lato-Bold.ttf"), 0),
-    "title": (os.path.join(_FONTS_DIR, "Lato-Regular.ttf"), 0),
-    "title_bold": (os.path.join(_FONTS_DIR, "Lato-Bold.ttf"), 0),
+    "text": (os.path.join(_FONTS_DIR, "FiraSans-Regular.ttf"), 0, 0.94),
+    "bold": (os.path.join(_FONTS_DIR, "FiraSans-SemiBold.ttf"), 0, 0.94),
+    "title": (os.path.join(_FONTS_DIR, "Philosopher-Regular.ttf"), 0, 1.0),
+    "title_bold": (os.path.join(_FONTS_DIR, "Philosopher-Bold.ttf"), 0, 1.0),
 }
 
 # Palette

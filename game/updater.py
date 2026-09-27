@@ -6,7 +6,10 @@
   Les sauvegardes et le contenu personnalisé ne sont jamais touchés : ils sont dans saves/ (version de
   développement) ou dans %APPDATA%\\Cendrespire (version installée), et ces dossiers sont exclus de la copie.
   En cas d'erreur pendant la copie, l'ancienne version est restaurée.
+- Chaque vérification et chaque installation sont racontées dans updater.log (à côté de crash.log : dossier du jeu
+  en développement, %APPDATA%\\Cendrespire pour la version installée), avec la trace complète d'une erreur.
 """
+import filecmp
 import io
 import json
 import os
@@ -16,6 +19,8 @@ import ssl
 import sys
 import tempfile
 import threading
+import time
+import traceback
 import urllib.request
 import zipfile
 
@@ -32,6 +37,23 @@ ROOT_FILES = ("main.py", "README.md", "requirements.txt")
 NEVER = {"saves", ".git", ".venv", "runtime", "build", "dist", "installer", "backup"}
 
 state = {"status": "idle", "latest": None, "notes": "", "zip": None, "error": None, "progress": 0.0}
+LOG_FILE = os.path.join(os.path.dirname(SAVE_DIR), "updater.log")
+_log_lock = threading.Lock()
+
+
+def log(msg):
+    """Ajoute une ligne horodatée à updater.log (jamais bloquant : une erreur d'écriture est ignorée)."""
+    try:
+        with _log_lock:
+            os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
+            with open(LOG_FILE, "a", encoding="utf-8") as f:
+                f.write(time.strftime("%Y-%m-%d %H:%M:%S ") + msg.rstrip() + "\n")
+    except OSError:
+        pass
+
+
+def log_error(step):
+    log(f"ERREUR pendant « {step} » :\n" + traceback.format_exc())
 
 
 def parse(v):
@@ -80,6 +102,8 @@ def is_dev_checkout():
 
 def _check():
     try:
+        log(f"--- vérification : version actuelle {current_version()}, dossier du jeu {ROOT_DIR}, "
+            f"Python {sys.version.split()[0]}, {sys.platform}")
         with _get(API) as r:
             rel = json.load(r)
         version = release_version(rel)
@@ -90,8 +114,10 @@ def _check():
             state["status"] = "available"
         else:
             state["status"] = "uptodate"
+        log(f"release publiée : {version or '?'} (tag {rel.get('tag_name')}) -> {state['status']}")
     except Exception as e:          # pas de réseau, dépôt sans release, limite de l'API... : on joue simplement
         state["status"], state["error"] = "offline", str(e)
+        log_error("vérification")
 
 
 def check():
@@ -122,24 +148,61 @@ def _safe_under(base, path):
     return os.path.realpath(path).startswith(base + os.sep) or os.path.realpath(path) == base
 
 
+def _merge_tree(src, dst):
+    """Copie src dans dst sans toucher aux fichiers identiques. Sous Windows, un fichier ouvert par le jeu
+    (musique en cours, police) ne peut pas être remplacé : il est gardé tel quel au lieu de faire échouer la mise
+    à jour (les ressources restent utilisables). Renvoie (nombre de fichiers copiés, fichiers conservés)."""
+    copied, kept = 0, []
+    skip = {"__pycache__", ".DS_Store"} | NEVER
+    for base, dirs, files in os.walk(src):
+        dirs[:] = [d for d in dirs if d not in skip]
+        out = os.path.join(dst, os.path.relpath(base, src))
+        os.makedirs(out, exist_ok=True)
+        for fn in files:
+            if fn in skip or fn.endswith(".pyc"):
+                continue
+            s, d = os.path.join(base, fn), os.path.join(out, fn)
+            if os.path.isfile(d) and os.path.getsize(d) == os.path.getsize(s) and filecmp.cmp(s, d, shallow=False):
+                continue
+            for attempt in range(3):
+                try:
+                    shutil.copy2(s, d)
+                    copied += 1
+                    break
+                except PermissionError:
+                    if attempt == 2:
+                        kept.append(os.path.relpath(d, dst))
+                    else:
+                        time.sleep(0.3)
+    return copied, kept
+
+
 def _apply():
     backup = None
+    step = "préparation"
     try:
+        log(f"--- installation de la version {state['latest']} depuis {state['zip']}")
+        log(f"dossier du jeu : {ROOT_DIR} ; sauvegardes : {SAVE_DIR}")
+        step = "téléchargement"
         state["status"] = "downloading"
         data = _download(state["zip"])
+        log(f"archive téléchargée : {data.getbuffer().nbytes} octets")
+        step = "extraction de l'archive"
         state["status"] = "installing"
         tmp = tempfile.mkdtemp(prefix="cendrespire_maj_")
         with zipfile.ZipFile(data) as z:
             for member in z.namelist():
                 if not _safe_under(tmp, os.path.join(tmp, member)):
-                    raise ValueError("archive invalide (chemin hors du dossier)")
+                    raise ValueError(f"archive invalide (chemin hors du dossier : {member})")
             z.extractall(tmp)
         tops = [d for d in os.listdir(tmp) if os.path.isdir(os.path.join(tmp, d))]
         src = os.path.join(tmp, tops[0]) if len(tops) == 1 else tmp
+        log(f"archive extraite dans {src} : {sorted(os.listdir(src))}")
         if not (os.path.isfile(os.path.join(src, "main.py")) and os.path.isdir(os.path.join(src, "game"))):
             raise ValueError("la release ne contient pas le code du jeu (main.py, game/)")
         saves_real = os.path.realpath(SAVE_DIR)
         # sauvegarde de l'ancienne version (pour revenir en arrière en cas d'erreur)
+        step = "copie de secours de l'ancienne version"
         backup = os.path.join(ROOT_DIR, "backup", "avant-" + current_version())
         if os.path.exists(backup):
             shutil.rmtree(backup)
@@ -148,20 +211,28 @@ def _apply():
             p = os.path.join(ROOT_DIR, name)
             if os.path.exists(p):
                 (shutil.copytree if os.path.isdir(p) else shutil.copy2)(p, os.path.join(backup, name))
+        log(f"copie de secours : {backup}")
         ignore = shutil.ignore_patterns("__pycache__", "*.pyc", *NEVER)
         for name in REPLACE_DIRS:
+            step = f"remplacement de {name}/"
             s, d = os.path.join(src, name), os.path.join(ROOT_DIR, name)
             if not os.path.isdir(s):
+                log(f"{name}/ absent de la release : conservé")
                 continue
             if saves_real.startswith(os.path.realpath(d) + os.sep):
                 raise ValueError(f"les sauvegardes sont dans {name}/ : copie refusée")
             if os.path.isdir(d):
                 shutil.rmtree(d)
             shutil.copytree(s, d, ignore=ignore)
+            log(f"{name}/ remplacé")
         for name in MERGE_DIRS:
+            step = f"fusion de {name}/"
             s = os.path.join(src, name)
             if os.path.isdir(s):
-                shutil.copytree(s, os.path.join(ROOT_DIR, name), dirs_exist_ok=True, ignore=ignore)
+                copied, kept = _merge_tree(s, os.path.join(ROOT_DIR, name))
+                log(f"{name}/ fusionné : {copied} fichier(s) copié(s)"
+                    + (f", {len(kept)} fichier(s) en cours d'utilisation conservé(s) : {kept}" if kept else ""))
+        step = "fichiers principaux"
         for name in ROOT_FILES:
             s = os.path.join(src, name)
             if os.path.isfile(s):
@@ -171,8 +242,10 @@ def _apply():
         shutil.rmtree(tmp, ignore_errors=True)
         state["progress"] = 1.0
         state["status"] = "done"
+        log(f"version {state['latest']} installée")
     except Exception as e:
-        state["status"], state["error"] = "failed", str(e)
+        state["status"], state["error"] = "failed", f"{step} : {e.__class__.__name__} : {e}"
+        log_error(step)
         if backup and os.path.isdir(backup):          # retour à l'ancienne version
             for name in os.listdir(backup):
                 s, d = os.path.join(backup, name), os.path.join(ROOT_DIR, name)
@@ -184,12 +257,15 @@ def _apply():
                     else:
                         shutil.copy2(s, d)
                 except OSError:
-                    pass
+                    log_error(f"restauration de {name}")
+            log("ancienne version restaurée")
 
 
 def apply():
     if state["status"] != "available":
         return
+    from . import sfx
+    sfx.stop_music()          # sous Windows, le fichier de la musique en cours est verrouillé : on le libère
     state["status"] = "downloading"
     threading.Thread(target=_apply, daemon=True).start()
 

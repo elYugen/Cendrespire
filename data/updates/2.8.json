@@ -1,0 +1,16 @@
+{
+  "version": "2.8",
+  "date": "2026-09-27",
+  "title": "Le camp des rescapés",
+  "sections": [
+    {"name": "Étages de Deathstrake", "notes": [
+      "Hilda la Forgeronne a installé son enclume dans la salle d'entrée des étages 10 et 20 : améliorez votre équipement avant d'affronter l'esprit de la tour.",
+      "Oswin le Rescapé, seul survivant de sa compagnie, vous met en garde et partage ce qu'il a vu du combat."
+    ]},
+    {"name": "Mises à jour", "notes": [
+      "Corrigé : sous Windows, l'installation d'une mise à jour échouait (la musique de l'écran titre bloquait la copie des fichiers).",
+      "En cas d'échec, l'écran titre indique l'étape en cause et un journal détaillé est écrit dans updater.log.",
+      "Si votre version ne parvient pas à se mettre à jour, réinstallez-la une fois avec ce nouvel installeur : les suivantes s'installeront d'elles-mêmes."
+    ]}
+  ]
+}

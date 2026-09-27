@@ -6,16 +6,23 @@ from . import sfx
 from .bosses import make_boss
 from .data import MONSTERS, ELITE_AFFIXES, floor_name, floor_boss, boss_floor
 from .dungeon import Dungeon, FLOOR, WALL
-from .entities import Monster, Chest, Portal, Loot, SecretWall, AnimaShrine, SpikeTrap
+from .entities import Monster, Chest, Portal, Loot, SecretWall, AnimaShrine, SpikeTrap, NPC, Prop
 from .fx import RingFX
 from .items import generate_item
-from .panels import DeathPanel
-from .r3d import level
+from .panels import DeathPanel, ForgePanel
+from .r3d import level, models
 from .settings import TILE, GOLD_BRIGHT, WHITE
 from .world import World
 
 
 TOWER_MUSIC = ("inside", "inside2", "inside3")    # une au hasard à chaque étage, jouée en boucle
+SURVIVOR_LINES = (
+    "C'est un monstre... Il est beaucoup trop puissant. Je l'ai vu balayer une compagnie entière.",
+    "Des boules de feu, des éclairs, du givre... comme s'il avait volé les pouvoirs de tous ceux qui sont tombés ici.",
+    "S'il plante un totem vert, détruisez-le tout de suite, ou il se relèvera encore et encore.",
+    "Quand il lève son écu doré, vos coups glissent sur lui. Attendez que ça passe.",
+    "Et quand il s'enrage... reculez. Croyez-moi. Moi, je ne remets plus les pieds dans cette arène.",
+)
 
 
 class TowerScene(World):
@@ -74,9 +81,9 @@ class TowerScene(World):
     def populate(self):
         rng, f, d = self.rng, self.floor, self.dungeon
         self.traps = []
-        if self.arena:            # l'esprit de la tour, seul ; un coffre dans la salle d'entrée
+        if self.arena:            # l'esprit de la tour, seul ; la forgeronne, un rescapé et un coffre à l'entrée
             self.total, self.seal_needed = 0, 1
-            self.interactables.append(Chest(*self.random_point(d.start_room, 24)))
+            self.add_camp(d.start_room)
             bx, by = d.boss_room.center_px
             self.boss = make_boss(floor_boss(f), bx, by, f, d.boss_room)
             self.monsters.append(self.boss)
@@ -112,6 +119,33 @@ class TowerScene(World):
         bx, by = d.boss_room.center_px
         self.boss = make_boss(floor_boss(f), bx, by, f, d.boss_room)
         self.monsters.append(self.boss)
+
+    def add_camp(self, room):
+        """Salle d'entrée d'un étage BOSS : Hilda la forgeronne (améliorations) et un rescapé terrifié."""
+        cx, cy = room.center_px
+        sx, sy = cx - 70, cy - 20
+        self.interactables.append(NPC(sx, sy, "Hilda la Forgeronne", "Forge", models.NPC_SPECS["forgeronne"],
+                                      self.open_forge, facing=0.0, work=True))
+        self.interactables.append(Prop(sx + 34, sy, models.anvil))
+        self.anvil = (sx + 34, sy)
+        spec = dict(detailed=True, body=(96, 84, 70), skin=(214, 176, 140),
+                    rig={"model": "hooded", "palette": {"Black": (70, 62, 56), "LightBrown": (150, 132, 104)}})
+        lines = iter(())
+
+        def talk(world):
+            nonlocal lines
+            line = next(lines, None)
+            if line is None:
+                lines = iter(SURVIVOR_LINES)
+                line = next(lines)
+            world.message(f"Oswin le Rescapé : « {line} »", (235, 225, 200), 7)
+        self.interactables.append(NPC(cx + 80, cy + 10, "Oswin le Rescapé", "Parler", spec, talk, facing=math.pi))
+        self.interactables.append(Chest(cx, cy + 90))
+
+    def open_forge(self, world):
+        self.left_panel = ForgePanel(self)
+        self.show_inv = True
+        sfx.play("chest")
 
     # ------------------------------------------------------------------ progression
     def hud_title(self):
@@ -153,6 +187,15 @@ class TowerScene(World):
 
     def update_extra(self, dt):
         p = self.player
+        if self.left_panel and not any(isinstance(o, NPC) and math.hypot(o.x - p.x, o.y - p.y) < 140
+                                       for o in self.interactables):
+            self.close_panels()           # forge fermée quand on s'éloigne de Hilda
+        if self.arena:                    # étincelles de l'enclume de Hilda
+            hit = math.sin(self.time * 2.6)
+            if hit < 0 <= getattr(self, "_last_hit", 0.0):
+                self.particles.emit(*self.anvil, (255, 190, 90), n=7, speed=70, life=0.5, size=2, up=90, z=16,
+                                    zs=0.3)
+            self._last_hit = hit
         for trap in self.traps:
             if abs(trap.x - p.x) < 600 and abs(trap.y - p.y) < 600:
                 trap.update(dt, self)

@@ -2,7 +2,7 @@
  "name": "Sakou",
  "cls": "barbare",
  "level": 16,
- "xp": 2340,
+ "xp": 5541,
  "alloc": {
   "force": 23,
   "dex": 1,
@@ -10,15 +10,20 @@
   "vit": 51
  },
  "points": 0,
- "gold": 13797,
- "max_floor": 7,
+ "gold": 131,
+ "max_floor": 12,
  "cleared": [
   1,
   2,
   3,
   4,
   5,
-  6
+  6,
+  7,
+  8,
+  9,
+  10,
+  11
  ],
  "equipment": {
   "arme": {
@@ -26,7 +31,7 @@
    "slot": "arme",
    "rarity": "legendaire",
    "ilvl": 1,
-   "upgrade": 2,
+   "upgrade": 5,
    "affixes": {
     "cdr": 3,
     "dmg_pct": 5,
@@ -122,7 +127,7 @@
    "slot": "torse",
    "rarity": "rare",
    "ilvl": 7,
-   "upgrade": 4,
+   "upgrade": 5,
    "affixes": {
     "force": 12,
     "mana_regen": 3,
@@ -218,7 +223,7 @@
    "slot": "amulette",
    "rarity": "legendaire",
    "ilvl": 6,
-   "upgrade": 0,
+   "upgrade": 4,
    "affixes": {
     "cdr": 4,
     "force": 11,
@@ -263,7 +268,7 @@
    "slot": "anneau",
    "rarity": "legendaire",
    "ilvl": 6,
-   "upgrade": 0,
+   "upgrade": 1,
    "affixes": {
     "cdr": 4,
     "mana": 32,
@@ -352,10 +357,376 @@
    "base": "Artefact",
    "name": "Totem de régénération",
    "ench": []
+  },
+  {
+   "uid": 13249839614915,
+   "slot": "bottes",
+   "rarity": "rare",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {
+    "armure": 23,
+    "vit": 9,
+    "mana": 17
+   },
+   "base": "Sandales du pèlerin",
+   "armor": 21,
+   "name": "Murmure de Sang",
+   "ench": [
+    {
+     "choices": [
+      "vitalite",
+      "recharge",
+      "rempart"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "potion_vive",
+      "agilite",
+      "recharge"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 226768190561607,
+   "slot": "gants",
+   "rarity": "commun",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {},
+   "base": "Mitaines cloutées",
+   "armor": 11,
+   "name": "Mitaines cloutées",
+   "ench": []
+  },
+  {
+   "uid": 230279543055319,
+   "slot": "artefact",
+   "art": "lanterne",
+   "rarity": "rare",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {},
+   "base": "Artefact",
+   "name": "Lanterne des âmes",
+   "ench": []
+  },
+  {
+   "uid": 216009916146719,
+   "slot": "torse",
+   "rarity": "commun",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {},
+   "base": "Robe de sacre",
+   "armor": 27,
+   "name": "Robe de sacre",
+   "ench": []
+  },
+  {
+   "uid": 66550616387036,
+   "slot": "arme",
+   "rarity": "rare",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {
+    "dex": 13,
+    "int": 9,
+    "armure": 24
+   },
+   "wclass": "barbare",
+   "base": "Épée longue",
+   "dmg": [
+    29,
+    43
+   ],
+   "name": "Ruine des Âmes",
+   "ench": [
+    {
+     "choices": [
+      "echo",
+      "acuite",
+      "tempete"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "chaine",
+      "tranchant",
+      "vampirisme"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 122095013741122,
+   "slot": "bottes",
+   "rarity": "magique",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {
+    "move_speed": 5,
+    "mana_regen": 3
+   },
+   "base": "Sandales du pèlerin",
+   "armor": 15,
+   "name": "Sandales du pèlerin du Vent",
+   "ench": [
+    {
+     "choices": [
+      "agilite",
+      "rempart",
+      "esquive"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 202873423272232,
+   "slot": "bottes",
+   "rarity": "commun",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {},
+   "base": "Sandales du pèlerin",
+   "armor": 16,
+   "name": "Sandales du pèlerin",
+   "ench": []
+  },
+  {
+   "uid": 42266605749410,
+   "slot": "amulette",
+   "rarity": "rare",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {
+    "int": 8,
+    "mana_regen": 3,
+    "crit": 3,
+    "mana": 24
+   },
+   "base": "Médaillon",
+   "name": "Ruine du Bourreau",
+   "ench": [
+    {
+     "choices": [
+      "recharge",
+      "riposte",
+      "vitalite"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "riposte",
+      "esquive",
+      "celerite"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 24141823694562,
+   "slot": "torse",
+   "rarity": "legendaire",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {
+    "dex": 16,
+    "mana_regen": 4,
+    "gold_find": 27,
+    "crit": 5,
+    "force": 15
+   },
+   "base": "Pourpoint clouté",
+   "armor": 43,
+   "name": "Haubert de la Citadelle",
+   "ench": [
+    {
+     "choices": [
+      "ame_soin",
+      "agilite",
+      "potion_vive"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "recharge",
+      "potion_vive",
+      "epines"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "riposte",
+      "agilite",
+      "vitalite"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 281014576317894,
+   "slot": "arme",
+   "rarity": "commun",
+   "ilvl": 7,
+   "upgrade": 0,
+   "affixes": {},
+   "wclass": "barbare",
+   "base": "Hache d'armes",
+   "dmg": [
+    23,
+    36
+   ],
+   "name": "Hache d'armes",
+   "ench": []
+  },
+  {
+   "uid": 89045751822408,
+   "slot": "anneau",
+   "rarity": "legendaire",
+   "ilvl": 10,
+   "upgrade": 0,
+   "affixes": {
+    "cdr": 8,
+    "gold_find": 24,
+    "crit": 4,
+    "dex": 17,
+    "armure": 26
+   },
+   "base": "Sceau",
+   "name": "Sceau de l'Oublié",
+   "ench": [
+    {
+     "choices": [
+      "rempart",
+      "esquive",
+      "epines"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "rempart",
+      "potion_vive",
+      "agilite"
+     ],
+     "id": null,
+     "lvl": 0
+    },
+    {
+     "choices": [
+      "celerite",
+      "potion_vive",
+      "agilite"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 145113434801764,
+   "slot": "arme",
+   "rarity": "magique",
+   "ilvl": 10,
+   "upgrade": 0,
+   "affixes": {
+    "dex": 11
+   },
+   "wclass": "barbare",
+   "base": "Hache de guerre",
+   "dmg": [
+    32,
+    46
+   ],
+   "name": "Hache de guerre du Faucon",
+   "ench": [
+    {
+     "choices": [
+      "entrave",
+      "tempete",
+      "chaine"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 79785361679723,
+   "slot": "artefact",
+   "art": "talisman",
+   "rarity": "commun",
+   "ilvl": 10,
+   "upgrade": 0,
+   "affixes": {},
+   "base": "Artefact",
+   "name": "Talisman de fer",
+   "ench": []
+  },
+  {
+   "uid": 136390927028571,
+   "slot": "gants",
+   "rarity": "magique",
+   "ilvl": 10,
+   "upgrade": 0,
+   "affixes": {
+    "mana": 31
+   },
+   "base": "Manchettes runiques",
+   "armor": 18,
+   "name": "Manchettes runiques d'Arcane",
+   "ench": [
+    {
+     "choices": [
+      "agilite",
+      "potion_vive",
+      "rempart"
+     ],
+     "id": null,
+     "lvl": 0
+    }
+   ]
+  },
+  {
+   "uid": 156599694751561,
+   "slot": "anneau",
+   "rarity": "commun",
+   "ilvl": 10,
+   "upgrade": 0,
+   "affixes": {
+    "dmg_pct": 9
+   },
+   "base": "Bague",
+   "name": "Bague",
+   "ench": []
   }
  ],
- "kills": 972,
- "deaths": 3,
+ "kills": 1018,
+ "deaths": 4,
  "created_at": 1790432904.3347578,
  "look": {
   "skin": 1,
@@ -378,7 +749,7 @@
   "os_sans_repos": {
    "state": "active",
    "n": [
-    0
+    7
    ]
   },
   "saluer_gorvan": {
@@ -388,11 +759,11 @@
    ]
   },
   "le_seuil": {
-   "state": "ready",
+   "state": "done",
    "n": [
     0
    ]
   }
  },
- "saved_at": 1790539008.9608076
+ "saved_at": 1790539740.1235197
 }

@@ -55,6 +55,18 @@ def pick_music(names):
     return random.choice(others or list(names))
 
 
+def stop_music():
+    """Arrête la musique et libère son fichier (pour que la mise à jour puisse le remplacer)."""
+    if not _enabled:
+        return
+    try:
+        pygame.mixer.music.stop()
+        pygame.mixer.music.unload()
+    except pygame.error:
+        pass
+    _current[0] = None
+
+
 def music(name, fade_ms=1200, restart=False):
     """Joue en boucle assets/music/<name>.* (avec fondu) ; ne fait rien si ce morceau passe déjà
     (sauf restart : il reprend du début)."""

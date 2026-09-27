@@ -112,7 +112,7 @@ class TitleScene(Scene):
 
     # ------------------------------------------------------------------ mise à jour
     def update_box(self):
-        return pygame.Rect(SCREEN_W // 2 - 260, 24, 520, 64)
+        return pygame.Rect(SCREEN_W // 2 - 310, 24, 620, 66)
 
     def update_click(self, pos=None):
         st = updater.state["status"]
@@ -151,7 +151,9 @@ class TitleScene(Scene):
         else:
             ui.draw_text(surf, "La mise à jour a échoué : l'ancienne version est conservée.", (r.centerx, r.y + 20),
                          16, (255, 150, 130), "bold", anchor="center")
-            ui.draw_text(surf, (st["error"] or "")[:90], (r.centerx, r.y + 44), 12, (214, 218, 218), anchor="center")
+            ui.draw_text(surf, (st["error"] or "")[:110], (r.centerx, r.y + 40), 12, (214, 218, 218), anchor="center")
+            ui.draw_text(surf, f"Détails : {updater.LOG_FILE}", (r.centerx, r.y + 56), 11, (160, 166, 166),
+                         anchor="center")
 
     def item_rects(self):
         return [pygame.Rect(SCREEN_W // 2 - 150, 392 + i * 54, 300, 44) for i in range(len(self.items))]

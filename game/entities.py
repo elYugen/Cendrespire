@@ -550,6 +550,8 @@ class Monster:
             if (dist < 340 and self.has_los) or dist < 110:
                 self.aggro = True
                 world.alert(self)
+                if not getattr(self, "boss", False) and random.random() < 0.6:
+                    sfx.play("growl", 0.35 + 0.4 * (1 - dist / 340))     # il vous a vu
             else:
                 self._wander(dt, world)
                 return

@@ -1,4 +1,7 @@
-"""Son du jeu : effets synthétisés à la volée, musiques (assets/music) et réglages de volume.
+"""Son du jeu : effets sonores (assets/sfx, sinon synthétisés à la volée), musiques (assets/music) et volumes.
+
+Chaque effet a plusieurs variantes (assets/sfx/<effet>/*.ogg), tirées au hasard sans répéter la précédente.
+Les sons viennent de packs sous licence CC0 (voir assets/sfx/CREDITS.txt).
 
 Les volumes (général, musique, effets) sont enregistrés dans options.json, à côté des sauvegardes.
 """
@@ -14,7 +17,14 @@ import pygame
 from .settings import ASSETS_DIR, SAVE_DIR
 
 _sounds = {}
+_bank = {}                  # effet : [variantes] (fichiers de assets/sfx)
+_last_variant = {}
 _last = {}
+SFX_DIR = os.path.join(ASSETS_DIR, "sfx")
+# volume propre à chaque effet (les fichiers sont déjà harmonisés ; on ajuste le ressenti en jeu)
+GAIN = {"click": 0.55, "swing": 0.7, "hit": 0.8, "step_stone": 0.45, "step_grass": 0.5, "step_wood": 0.45,
+        "growl": 0.6, "page": 0.7, "open": 0.6, "close": 0.6, "pickup": 0.8, "error": 0.6}
+MIN_GAP = {"step_stone": 0.12, "step_grass": 0.12, "step_wood": 0.12, "hit": 0.05, "growl": 0.4}
 _enabled = False
 MUSIC_DIR = os.path.join(ASSETS_DIR, "music")
 MUSIC_EXT = (".opus", ".ogg", ".mp3", ".flac", ".wav")
@@ -101,8 +111,9 @@ def init():
         freq, size, ch = pygame.mixer.get_init()
         if size != -16:
             return
-        pygame.mixer.set_num_channels(24)
+        pygame.mixer.set_num_channels(32)
         _build(freq, ch)
+        _load_bank()
         _enabled = True
     except Exception:
         _enabled = False
@@ -171,15 +182,44 @@ def _build(freq, ch):
                             * math.sin(math.pi * p), 0.4)
 
 
+def _load_bank():
+    """Variantes enregistrées de chaque effet ; un fichier illisible est simplement ignoré."""
+    if not os.path.isdir(SFX_DIR):
+        return
+    for ev in sorted(os.listdir(SFX_DIR)):
+        folder = os.path.join(SFX_DIR, ev)
+        if not os.path.isdir(folder):
+            continue
+        sounds = []
+        for f in sorted(os.listdir(folder)):
+            if f.endswith((".ogg", ".wav")):
+                try:
+                    sounds.append(pygame.mixer.Sound(os.path.join(folder, f)))
+                except Exception as e:
+                    print(f"[sfx] {ev}/{f} ignoré : {e}")
+        if sounds:
+            _bank[ev] = sounds
+
+
 def play(name, vol=1.0):
     if not _enabled:
         return
-    s = _sounds.get(name)
+    variants = _bank.get(name)
+    if variants:
+        i = random.randrange(len(variants))
+        if len(variants) > 1 and i == _last_variant.get(name):
+            i = (i + 1) % len(variants)
+        _last_variant[name] = i
+        s = variants[i]
+        vol *= GAIN.get(name, 1.0)
+    else:
+        s = _sounds.get(name)
     if s is None:
         return
     now = time.monotonic()
-    if now - _last.get(name, 0) < 0.04:
+    if now - _last.get(name, 0) < MIN_GAP.get(name, 0.04):
         return
     _last[name] = now
-    s.set_volume(vol * volumes["master"] * volumes["sfx"])
-    s.play()
+    ch = s.play()
+    if ch:
+        ch.set_volume(min(1.0, vol * volumes["master"] * volumes["sfx"]))

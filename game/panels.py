@@ -231,7 +231,7 @@ class MenuScreen(Panel):
             self.ctx = None
             self.spell_pick = None
             self.sys_sub = None
-            sfx.play("click")
+            sfx.play("page")
 
     # ------------------------------------------------------------------ inventaire : données
     def entries(self):

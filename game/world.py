@@ -189,6 +189,8 @@ class World(Scene):
         self.flashes.append([x, y, r, color, dur, dur])
 
     def message(self, text, color=TEXT, dur=5.0):
+        if color == RED:
+            sfx.play("error", 0.7)              # refus : pas assez d'argent, sac plein...
         self.messages.append([text, color, dur])
         self.messages = self.messages[-8:]
 
@@ -535,7 +537,7 @@ class World(Scene):
             if old:
                 p.inventory.insert(from_idx, old)
         p.recompute()
-        sfx.play("pickup")
+        sfx.play("equip")
 
     def bag_right_click(self, idx):
         self.equip(self.player.inventory[idx], idx)
@@ -573,7 +575,7 @@ class World(Scene):
                 p.inventory.insert(idx, old)
         p.equipment[slot] = item
         p.recompute()
-        sfx.play("pickup")
+        sfx.play("equip")
 
     def unequip(self, slot):
         p = self.player
@@ -583,7 +585,7 @@ class World(Scene):
         p.inventory.append(p.equipment[slot])
         p.equipment[slot] = None
         p.recompute()
-        sfx.play("click")
+        sfx.play("equip")
 
     def destroy_item(self, idx):
         it = self.player.inventory.pop(idx)
@@ -664,6 +666,8 @@ class World(Scene):
 
     # ------------------------------------------------------------------ panneaux
     def close_modal(self):
+        if self.modal and not isinstance(self.modal, DeathPanel):
+            sfx.play("close", 0.7)
         self.modal = None
         self.click_block = True
 
@@ -674,7 +678,7 @@ class World(Scene):
     def open_pause(self):
         """Échap : menu principal, directement sur la page Système."""
         self.modal = MenuScreen(self, PAGE_SYS)
-        sfx.play("click")
+        sfx.play("open")
 
     def save(self):
         save.save_data(self.player.to_save())
@@ -728,7 +732,7 @@ class World(Scene):
             if act in MENU_KEYS:
                 self.close_panels()
                 self.modal = MenuScreen(self, MENU_KEYS[act])
-                sfx.play("click")
+                sfx.play("open")
                 return
             if act == "map":
                 self.big_map = not self.big_map
@@ -844,7 +848,23 @@ class World(Scene):
         self.update_ambient(dt)
         p = self.player
         self.minimap.reveal(int(p.x // TILE), int(p.y // TILE))
+        self.footsteps(p)
         self.update_extra(dt)
+
+    def footsteps(self, p):
+        """Un bruit de pas toutes les ~70 unités parcourues (rien pendant une roulade ou un saut)."""
+        last = getattr(self, "_step_pos", (p.x, p.y))
+        moved = math.hypot(p.x - last[0], p.y - last[1])
+        self._step_pos = (p.x, p.y)
+        if moved > 30 or p.dead or p.dash or p.leap:
+            return
+        self._step_acc = getattr(self, "_step_acc", 0.0) + moved
+        if self._step_acc > 72:
+            self._step_acc = 0.0
+            sfx.play(self.step_sound(p), 0.8)
+
+    def step_sound(self, p):
+        return "step_stone"
 
     def update_extra(self, dt):
         pass

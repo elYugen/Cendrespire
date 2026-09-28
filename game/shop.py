@@ -181,7 +181,6 @@ class ShopScreen:
         pos = e.pos
         if e.button == 1 and (self.close_btn.collidepoint(pos) or not self.W.collidepoint(pos)):
             w.close_modal()
-            sfx.play("click")
             return True
         for i, rc in enumerate(self.tab_rects):
             if e.button == 1 and rc.collidepoint(pos) and self.tab != i:

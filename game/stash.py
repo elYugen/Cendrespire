@@ -70,7 +70,6 @@ class StashScreen:
             return True
         if e.button == 1 and (self.close_btn.collidepoint(e.pos) or not self.W.collidepoint(e.pos)):
             w.close_modal()
-            sfx.play("click")
             return True
         if e.button == 1 and self.sort_btn.collidepoint(e.pos):
             self.sort()

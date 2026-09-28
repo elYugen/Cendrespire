@@ -1,0 +1,12 @@
+Effets sonores de Cendrespire
+=============================
+
+Tous les sons de ce dossier sont sous licence Creative Commons Zero (CC0, domaine public) :
+libres d'usage, y compris commercial, sans obligation de citer. Merci à leurs auteurs.
+
+- Kenney (www.kenney.nl) : RPG Audio, Impact Sounds, Interface Sounds, Sci-fi Sounds, Digital Audio
+- artisticdude (opengameart.org/content/rpg-sound-pack) : RPG Sound Pack
+
+Les fichiers ont été découpés, ramenés en mono et leur volume harmonisé.
+Un dossier par effet (le nom utilisé dans le code, sfx.play("...")) ; chaque fichier est une variante,
+tirée au hasard. Ajouter un .ogg dans un dossier suffit pour enrichir un effet.

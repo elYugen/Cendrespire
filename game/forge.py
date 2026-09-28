@@ -86,7 +86,6 @@ class ForgeScreen:
             return True
         if self.close_btn.collidepoint(e.pos) or not self.W.collidepoint(e.pos):
             w.close_modal()
-            sfx.play("click")
             return True
         if self.btn.collidepoint(e.pos):
             self.upgrade()

@@ -156,6 +156,12 @@ class HubScene(World):
         self.modal = ForgeScreen(self)
         sfx.play("chest")
 
+    def step_sound(self, p):
+        """En ville : pavés dans les rues, herbe et terre ailleurs."""
+        from .settings import TILE
+        cell = (int(p.x // TILE), int(p.y // TILE))
+        return "step_stone" if cell in getattr(self.dungeon, "plaza", ()) else "step_grass"
+
     def open_stash(self, world):
         from .stash import StashScreen
         self.close_panels()

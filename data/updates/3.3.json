@@ -50,6 +50,12 @@
       "Les monstres donnent moins d'expérience.",
       "L'écran de mort est épuré : « Vous êtes mort » s'affiche quelques secondes, puis le héros se réveille au campement."
     ]},
+    {"name": "Son", "notes": [
+      "Tous les effets sonores sont remplacés par de vrais enregistrements : coups d'épée, impacts, sorts, explosions, givre, pièces, potion, coffres, portail, grognements des monstres et rugissements des gardiens.",
+      "Chaque effet a plusieurs variantes, jouées au hasard pour éviter la répétition.",
+      "Nouveaux sons : bruits de pas (pavés, herbe, pierre de la tour), grognement d'un monstre qui vous repère, cliquetis de l'équipement, pages du menu, ouverture et fermeture des fenêtres, refus (pas assez d'argent, sac plein).",
+      "Sons : Kenney et artisticdude, licence CC0."
+    ]},
     {"name": "Options", "notes": [
       "Un écran Options, depuis l'écran titre et depuis le menu Système : volumes, mode d'affichage, résolution et commandes.",
       "Toutes les commandes du clavier et de la manette peuvent être modifiées.",

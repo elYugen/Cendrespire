@@ -1,0 +1,11 @@
+{
+  "version": "3.7",
+  "date": "2026-09-28",
+  "title": "Mise à jour fiable",
+  "sections": [
+    {"name": "Mises à jour", "notes": [
+      "Corrige l'échec de l'installation d'une mise à jour sous Windows (« le fichier est utilisé par un autre processus ») : l'écran titre relisait les notes de mise à jour à chaque image et verrouillait ces fichiers pendant leur remplacement.",
+      "Si un fichier est brièvement verrouillé (antivirus, indexation), l'installation patiente quelques instants au lieu d'échouer."
+    ]}
+  ]
+}

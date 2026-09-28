@@ -68,8 +68,20 @@ def release_version(rel):
     return max(cands, key=lambda v: (len(v.split(".")), parse(v))) if cands else ""
 
 
+_current = None
+
+
 def current_version():
-    """Version installée : la plus récente entre les notes de mise à jour et version.txt (écrit par apply)."""
+    """Version installée : la plus récente entre les notes de mise à jour et version.txt (écrit par apply).
+    Lue une seule fois : l'écran titre l'affiche à chaque image, et relire data/updates/ 60 fois par seconde
+    verrouillait ces fichiers sous Windows pendant que la mise à jour remplaçait data/ (WinError 32)."""
+    global _current
+    if _current is None:
+        _current = _read_version()
+    return _current
+
+
+def _read_version():
     best = updates.current_version()
     try:
         with open(VERSION_FILE, encoding="utf-8") as f:
@@ -177,6 +189,19 @@ def _merge_tree(src, dst):
     return copied, kept
 
 
+def _rmtree(path):
+    """shutil.rmtree qui réessaie quelques instants : sous Windows, un fichier ouvert ailleurs (antivirus,
+    indexation, lecture en cours) ne peut pas être supprimé, mais le verrou ne dure en général qu'un instant."""
+    for attempt in range(8):
+        try:
+            shutil.rmtree(path)
+            return
+        except PermissionError:
+            if attempt == 7:
+                raise
+            time.sleep(0.4)
+
+
 def _apply():
     backup = None
     step = "préparation"
@@ -205,7 +230,7 @@ def _apply():
         step = "copie de secours de l'ancienne version"
         backup = os.path.join(ROOT_DIR, "backup", "avant-" + current_version())
         if os.path.exists(backup):
-            shutil.rmtree(backup)
+            _rmtree(backup)
         os.makedirs(backup)
         for name in REPLACE_DIRS + ROOT_FILES:
             p = os.path.join(ROOT_DIR, name)
@@ -222,7 +247,7 @@ def _apply():
             if saves_real.startswith(os.path.realpath(d) + os.sep):
                 raise ValueError(f"les sauvegardes sont dans {name}/ : copie refusée")
             if os.path.isdir(d):
-                shutil.rmtree(d)
+                _rmtree(d)
             shutil.copytree(s, d, ignore=ignore)
             log(f"{name}/ remplacé")
         for name in MERGE_DIRS:
@@ -252,7 +277,7 @@ def _apply():
                 try:
                     if os.path.isdir(s):
                         if os.path.isdir(d):
-                            shutil.rmtree(d)
+                            _rmtree(d)
                         shutil.copytree(s, d)
                     else:
                         shutil.copy2(s, d)

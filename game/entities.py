@@ -3,13 +3,16 @@ import math
 import random
 from collections import defaultdict
 
-from . import looks, sfx, talents
-from .data import (CLASSES, SPELLS, BUFFS, MONSTERS, ATTRS, ELITE_AFFIXES, MAX_LEVEL, POINTS_PER_LEVEL, ANIMA_POWERS,
-                   POTION_CD, POTION_HEAL, ROLL_CD, ROLL_DUR, ROLL_DIST, xp_needed, floor_scaling)
+from . import coins, looks, sfx, talents
+from .data import (ATTR_K, CLASSES, SPELLS, BUFFS, MONSTERS, ATTRS, ELITE_AFFIXES, MAX_LEVEL, MONSTER_XP,
+                   POINTS_PER_LEVEL, ANIMA_POWERS, POTION_CD, POTION_HEAL, ROLL_CD, ROLL_DUR, ROLL_DIST, xp_needed,
+                   floor_scaling)
 from .fx import RingFX
 from .items import SLOTS, ART_SLOTS, EQUIP_SLOTS, item_stats, ench_stats, ench_spent
 from .r3d import models
 from .settings import RARITY_COLORS
+
+SPELL_SLOTS = 4          # sorts équipés (touches 1 à 4)
 
 
 # =========================================================================== joueur
@@ -25,10 +28,13 @@ class Player:
         self.xp = data.get("xp", 0)
         self.alloc = {a: data.get("alloc", {}).get(a, 0) for a in ATTRS}
         self.points = data.get("points", 0)
-        self.talents = talents.clean(data.get("talents"), self.cls_id)
+        self.tears = data.get("tears", 0)          # Larmes d'oubli : réinitialisation des attributs
+        self.talents = talents.clean(data.get("talents"), self.cls_id, self.level)
+        self.loadout = list(data.get("loadout") or [])
         self.tal = {}
         self.stand_used = False
-        self.gold = data.get("gold", 0)
+        # bourse en pièces de cuivre (anciennes sauvegardes : une seule monnaie, l'or, convertie)
+        self.money = data["money"] if "money" in data else int(data.get("gold", 0) * coins.OLD_GOLD)
         self.max_floor = data.get("max_floor", 1)
         self.cleared = set(data.get("cleared", []))
         eq = data.get("equipment", {})
@@ -84,18 +90,40 @@ class Player:
         return CLASSES[self.cls_id]
 
     @property
+    def known_spells(self):
+        """Sorts de la classe, puis ceux débloqués par les talents."""
+        return list(self.cls["spells"]) + [s for s in talents.spells_of(self.talents) if s not in self.cls["spells"]]
+
+    @property
     def spells(self):
-        return self.cls["spells"]
+        """Les 4 sorts équipés (touches 1 à 4) ; un emplacement vide reçoit le premier sort connu non équipé."""
+        known = self.known_spells
+        out = [s for i, s in enumerate(self.loadout) if s in known and s not in self.loadout[:i]][:SPELL_SLOTS]
+        out += [s for s in known if s not in out][:SPELL_SLOTS - len(out)]
+        self.loadout = out
+        return out
+
+    def equip_spell(self, slot, sid):
+        """Place un sort connu dans l'emplacement ; s'il était déjà équipé ailleurs, les deux sorts s'échangent."""
+        lo = list(self.spells)
+        if sid not in self.known_spells or not 0 <= slot < len(lo):
+            return
+        if sid in lo:
+            j = lo.index(sid)
+            lo[j], lo[slot] = lo[slot], sid
+        else:
+            lo[slot] = sid
+        self.loadout = lo
 
     def all_items(self):
         return [it for it in list(self.equipment.values()) + self.inventory if it]
 
     def to_save(self):
         return {"name": self.name, "cls": self.cls_id, "level": self.level, "xp": self.xp, "alloc": self.alloc,
-                "points": self.points, "gold": self.gold, "max_floor": self.max_floor,
+                "points": self.points, "tears": self.tears, "money": self.money, "max_floor": self.max_floor,
                 "cleared": sorted(self.cleared), "equipment": self.equipment, "inventory": self.inventory,
                 "kills": self.kills, "deaths": self.deaths, "created_at": self.created_at, "look": dict(self.look),
-                "talents": dict(self.talents), "quests": self.quests,
+                "talents": dict(self.talents), "loadout": list(self.spells), "quests": self.quests,
                 "tutorial": self.tutorial}
 
     @property
@@ -171,30 +199,44 @@ class Player:
         av = self.av
         self.tal = tal = talents.effects(self.talents)
         tv = tal.get
-        s = {k: c["attrs"][k] + self.alloc[k] + gear[k] for k in ATTRS}
-        s["max_hp"] = ((c["hp"] + c["hp_lvl"] * (self.level - 1) + s["vit"] * 5 + gear["vie"])
+        s = {k: c["attrs"].get(k, 0) + self.alloc[k] + gear[k] for k in ATTRS}
+        s["max_hp"] = ((c["hp"] + c["hp_lvl"] * (self.level - 1) + s["vit"] * ATTR_K["vit_hp"] + gear["vie"])
                        * (1 + av("vigueur") / 100) * (1 + ench["vitalite"] / 100) * (1 + tv("max_hp_pct", 0) / 100))
-        s["max_mana"] = ((c["mana"] + c["mana_lvl"] * (self.level - 1) + s["int"] * 1.5 + gear["mana"])
+        s["max_mana"] = ((c["mana"] + c["mana_lvl"] * (self.level - 1) + s["int"] * ATTR_K["int_mana"] + gear["mana"])
                          * (1 + tv("mana_pct", 0) / 100))
-        s["armor"] = (armor + gear["armure"] + s["force"] * 0.5) * (1 + tv("armor_pct", 0) / 100)
+        s["armor"] = ((armor + gear["armure"] + s["force"] * ATTR_K["force_armor"] + s["resistance"] * ATTR_K["res_armor"])
+                      * (1 + tv("armor_pct", 0) / 100))
         s["dmg_min"], s["dmg_max"] = dmin, dmax
         s["dmg_pct"] = gear["dmg_pct"] + av("rage") + ench["tranchant"] + tv("dmg_pct", 0)
         s["dmg_mult"] = (1 + s[c["primary"]] / 100) * (1 + s["dmg_pct"] / 100)
-        s["crit"] = min(60, 5 + s["dex"] * 0.05 + gear["crit"] + av("precision") + ench["acuite"] + tv("crit", 0))
+        s["crit"] = min(60, 5 + s["dex"] * ATTR_K["dex_crit"] + s["chance"] * ATTR_K["chance_crit"] + gear["crit"] + av("precision") + ench["acuite"] + tv("crit", 0))
         s["crit_mult"] = 1.75 + tv("crit_dmg", 0) / 100
-        s["atk_speed"] = gear["atk_speed"] + av("frenesie") + ench["vivacite"] + tv("atk_speed", 0)
+        s["atk_speed"] = s["dex"] * ATTR_K["dex_speed"] + gear["atk_speed"] + av("frenesie") + ench["vivacite"] + tv("atk_speed", 0)
         s["lifesteal"] = gear["lifesteal"] + av("soif") + tv("lifesteal", 0)
-        s["mana_regen"] = ((c["mana_regen"] + gear["mana_regen"]) * (1 + av("flux") / 100)
-                           * (1 + tv("mana_regen_pct", 0) / 100))
-        s["move_speed"] = gear["move_speed"] + av("ombre") + ench["celerite"] + tv("move_speed", 0)
-        s["cdr"] = min(50, gear["cdr"] + av("esprit") + ench["recharge"] + tv("cdr", 0))
-        s["gold_find"] = gear["gold_find"] + av("cupidite") + tv("gold_find", 0)
+        s["mana_regen"] = ((c["mana_regen"] + gear["mana_regen"] + s["harmonie"] * ATTR_K["harm_regen"])
+                           * (1 + av("flux") / 100)
+                           * (1 + (tv("mana_regen_pct", 0) + s["int"] * ATTR_K["int_regen"]) / 100))
+        # chaque attribut sert toutes les classes (l'attribut principal ajoute en plus +1% de dégâts par point)
+        s["basic_pct"] = s["force"] * ATTR_K["force_basic"] + tv("basic_pct", 0)
+        s["spell_pct"] = s["int"] * ATTR_K["int_spell"] + tv("spell_pct", 0)
+        s["hp_regen"] = s["vit"] * ATTR_K["vit_regen"] + s["max_hp"] * tv("hp_regen", 0) / 100
+        s["move_speed"] = (s["endurance"] * ATTR_K["end_move"] + gear["move_speed"] + av("ombre") + ench["celerite"]
+                           + tv("move_speed", 0))
+        s["mana_cost"] = min(40, s["harmonie"] * ATTR_K["harm_cost"])      # -% de coût en mana des sorts
+        s["snare_res"] = min(60, s["resistance"] * ATTR_K["res_snare"])    # entraves plus courtes
+        s["cdr"] = min(50, s["foi"] * ATTR_K["foi_cdr"] + gear["cdr"] + av("esprit") + ench["recharge"] + tv("cdr", 0))
+        s["gold_find"] = s["chance"] * ATTR_K["chance_gold"] + gear["gold_find"] + av("cupidite") + tv("gold_find", 0)
+        s["heal_pct"] = s["foi"] * ATTR_K["foi_heal"]            # efficacité des soins reçus
+        s["loot_pct"] = s["chance"] * ATTR_K["chance_drop"]       # chances de butin en plus
         s["speed"] = c["speed"] * (1 + s["move_speed"] / 100)
-        s["dr_bonus"] = av("carapace") / 100 + ench["rempart"] / 100 + tv("dr", 0) / 100
+        s["dr_bonus"] = (av("carapace") + ench["rempart"] + tv("dr", 0) + s["resistance"] * ATTR_K["res_dr"]) / 100
         s["ench"] = dict(ench)
         self.stats = s
-        self.potion_total = POTION_CD * (1 - ench["potion_vive"] / 100)
-        self.roll_total = ROLL_CD * (1 - ench["agilite"] / 100) * (1 - tv("roll_cd", 0) / 100)
+        end_roll = min(40, s["endurance"] * ATTR_K["end_roll"])
+        end_potion = min(40, s["endurance"] * ATTR_K["end_potion"])
+        self.potion_total = POTION_CD * (1 - ench["potion_vive"] / 100) * (1 - end_potion / 100)
+        self.roll_total = (ROLL_CD * (1 - ench["agilite"] / 100) * (1 - tv("roll_cd", 0) / 100)
+                           * (1 - end_roll / 100))
         self.hp = min(self.hp, s["max_hp"])
         self.mana = min(self.mana, s["max_mana"])
 
@@ -222,7 +264,7 @@ class Player:
     def dps_estimate(self):
         s = self.stats
         avg = (s["dmg_min"] + s["dmg_max"]) / 2 * s["dmg_mult"] * (1 + s["crit"] / 100 * (s["crit_mult"] - 1))
-        mult = self.cls["attack"]["mult"] * (1 + self.t("basic_pct") / 100)
+        mult = self.cls["attack"]["mult"] * (1 + s["basic_pct"] / 100)
         return avg * mult / (self.cls["attack"]["cd"] / (1 + s["atk_speed"] / 100))
 
     def roll_damage(self, mult, crit_bonus=0.0):
@@ -237,8 +279,13 @@ class Player:
             d *= s["crit_mult"]
         return d, crit
 
+    def mana_cost(self, sid):
+        """Coût en mana d'un sort, allégé par l'Harmonie."""
+        return round(SPELLS[sid]["mana"] * (1 - self.stats.get("mana_cost", 0) / 100))
+
     def heal(self, amount):
-        self.hp = min(self.stats["max_hp"], self.hp + amount)
+        """Soin reçu (potion, vol de vie, sorts...), renforcé par la Foi."""
+        self.hp = min(self.stats["max_hp"], self.hp + amount * (1 + self.stats.get("heal_pct", 0) / 100))
 
     def speed(self):
         return self.stats["speed"] * (1 + self.buff_sum("move_pct") / 100) * (0.45 if self.snare > 0 else 1.0)
@@ -361,13 +408,15 @@ class Player:
         self.atk_cd = max(0.0, self.atk_cd - dt)
         self.attack_lock = max(0.0, self.attack_lock - dt)
         self.clock += dt
-        self.snare = max(0.0, self.snare - dt)
+        self.snare = max(0.0, self.snare - dt / (1 - self.stats.get("snare_res", 0) / 100))
         self.invuln = max(0.0, self.invuln - dt)
         self.flash = max(0.0, self.flash - dt)
         self.potion_cd = max(0.0, self.potion_cd - dt)
         self.roll_cd = max(0.0, self.roll_cd - dt)
         self.swing = self.swing * max(0, 1 - dt * 12)
         self.mana = min(self.stats["max_mana"], self.mana + self.stats["mana_regen"] * dt)
+        if not self.dead:
+            self.hp = min(self.stats["max_hp"], self.hp + self.stats["hp_regen"] * dt)
 
     def render(self, fr, t):
         lift = 0.0
@@ -415,7 +464,7 @@ class Monster:
         self.speed = d["speed"]
         self.r = d["radius"]
         self.atk_cd = d["cd"]
-        self.xp = d["xp"] * (1 + 0.4 * (floor - 1))
+        self.xp = d["xp"] * MONSTER_XP * (1 + 0.4 * (floor - 1))
         self.leech = 0
         self.elite = elite
         if elite:
@@ -758,7 +807,7 @@ class Loot:
     def render(self, fr, t):
         x, y, z = self.x, self.y, self.z
         if self.kind == "gold":
-            for i in range(min(5, 1 + self.amount // 8)):
+            for i in range(min(5, 1 + self.amount // 80)):
                 ox, oy = (i % 3) * 5 - 5, (i // 3) * 5
                 fr.part("cylinder", (x + ox, y + oy, z + 1.2 + i * 0.4), (4, 0, 0), (0, 0, 1.2), (0, 4, 0),
                         (240, 196, 70), 0.3)
@@ -769,6 +818,11 @@ class Loot:
             fr.glow(x, y, zz, 30, (255, 60, 60), 0.8)
         elif self.kind == "item":
             models.loot_item(fr, x, y, z, RARITY_COLORS[self.item["rarity"]], self.t, self.item["rarity"])
+        elif self.kind == "tear":
+            zz = z + 14 + 3 * math.sin(self.t * 3)
+            fr.part("sphere", (x, y, zz), (4, 0, 0), (0, 0, 6), (0, 4, 0), (200, 170, 255), 1.0)
+            fr.part("cone", (x, y, zz + 8), (3, 0, 0), (0, 0, 5), (0, 3, 0), (200, 170, 255), 1.0)
+            fr.glow(x, y, zz, 40, (170, 120, 255), 0.9)
         elif self.kind == "anima":
             zz = z + 20 + 4 * math.sin(self.t * 3)
             col = (120, 190, 255)
@@ -853,6 +907,12 @@ class NPC(Interactable):
         self.leg = 1 % max(1, len(self.route))
         self.pause = random.uniform(0.5, 3.0)
         self.walking = False
+        self.bubble = None           # (texte, fin) : bulle de dialogue au-dessus de la tête
+        self.greet_at = 0.0          # prochain salut possible (temps du monde)
+
+    def say(self, world, text, duration=None):
+        """Affiche une réplique dans une bulle (durée selon la longueur du texte)."""
+        self.bubble = (text, world.time + (duration or min(9.0, 2.5 + len(text) / 22)))
 
     def interact(self, world):
         self.action(world)

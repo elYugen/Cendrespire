@@ -82,11 +82,4 @@ RARITY_COLORS = {
 }
 RARITY_NAMES = {"commun": "Commun", "magique": "Magique", "rare": "Rare", "legendaire": "Légendaire"}
 
-# Scancodes physiques : fonctionnent en AZERTY comme en QWERTY
-SC_UP = (26, 82)        # Z (AZERTY) / W (QWERTY), flèche haut
-SC_LEFT = (4, 80)       # Q / A, flèche gauche
-SC_DOWN = (22, 81)      # S, flèche bas
-SC_RIGHT = (7, 79)      # D, flèche droite
-SC_SPELLS = ((30, 89), (31, 90), (32, 91), (33, 92))  # 1 2 3 4 (rangée du haut ou pavé numérique)
-SC_POTION = 9           # F
-SC_INTERACT = 8         # E
+# Touches du clavier et boutons de la manette : game/controls.py (modifiables dans Options)

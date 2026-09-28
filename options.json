@@ -1,5 +1,45 @@
 {
-  "master": 0.8,
-  "music": 0.13,
-  "sfx": 0.6
+  "master": 0.74,
+  "music": 0.05,
+  "sfx": 0.48,
+  "keys": {
+    "up": 26,
+    "down": 22,
+    "left": 4,
+    "right": 7,
+    "spell1": 30,
+    "spell2": 31,
+    "spell3": 32,
+    "spell4": 33,
+    "roll": 44,
+    "potion": 9,
+    "interact": 8,
+    "art1": 21,
+    "art2": 23,
+    "art3": 10,
+    "inventory": 12,
+    "character": 6,
+    "talents": 17,
+    "quests": 13,
+    "map": 43
+  },
+  "pad": {
+    "attack": "rt",
+    "interact": "a",
+    "spell1": "x",
+    "spell2": "y",
+    "spell3": "b",
+    "spell4": "rb",
+    "roll": "lb",
+    "potion": "lt",
+    "art1": "left",
+    "art2": "up",
+    "art3": "right",
+    "map": "down",
+    "pause": "start"
+  },
+  "display": {
+    "fullscreen": true,
+    "size": null
+  }
 }

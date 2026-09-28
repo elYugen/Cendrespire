@@ -1,6 +1,7 @@
 """Génération d'équipement : raretés, affixes, noms, valeurs."""
 import random
 
+from . import coins
 from .content import CONTENT
 from .data import CLASSES, ARTIFACTS, ENCHANTS, ENCH_SLOTS, ench_value
 from .settings import RARITIES, RARITY_COLORS, RARITY_NAMES, TEXT, TEXT_DIM, GOLD, RED
@@ -36,6 +37,11 @@ AFFIX_DEF = {
     "dex": ("+{v} Dextérité", 3, 1.4, None),
     "int": ("+{v} Intelligence", 3, 1.4, None),
     "vit": ("+{v} Vitalité", 3, 1.4, None),
+    "foi": ("+{v} Foi", 3, 1.4, None),
+    "chance": ("+{v} Chance", 3, 1.4, None),
+    "endurance": ("+{v} Endurance", 3, 1.4, None),
+    "resistance": ("+{v} Résistance", 3, 1.4, None),
+    "harmonie": ("+{v} Harmonie", 3, 1.4, None),
     "vie": ("+{v} Vie", 12, 9, None),
     "mana": ("+{v} Mana", 8, 3, None),
     "armure": ("+{v} Armure", 5, 3, None),
@@ -55,7 +61,8 @@ AFFIX_ALLOWED = {
     "cdr": {"casque", "amulette", "anneau", "arme"},
 }
 SUFFIXES = {
-    "force": "de l'Ours", "dex": "du Faucon", "int": "du Sage", "vit": "du Colosse", "vie": "de Vitalité",
+    "force": "de l'Ours", "dex": "du Faucon", "int": "du Sage", "vit": "du Colosse", "foi": "du Pèlerin", "chance": "du Trèfle",
+    "endurance": "du Coureur", "resistance": "du Roc", "harmonie": "de l'Accord", "vie": "de Vitalité",
     "mana": "d'Arcane", "armure": "du Rempart", "dmg_pct": "du Carnage", "crit": "de Précision",
     "atk_speed": "de Célérité", "lifesteal": "du Vampire", "mana_regen": "de Clarté", "move_speed": "du Vent",
     "gold_find": "de Fortune", "cdr": "de l'Instant",
@@ -195,7 +202,7 @@ def item_stats(item):
 
 def item_value(item):
     k = 1.5 if item["slot"] == "artefact" else 1.0
-    return int((6 + item["ilvl"] * 4) * RARITY_VALUE[item["rarity"]] * (1 + 0.25 * item.get("upgrade", 0)) * k)
+    return int((60 + item["ilvl"] * 40) * RARITY_VALUE[item["rarity"]] * (1 + 0.25 * item.get("upgrade", 0)) * k)
 
 
 def buy_price(item):
@@ -204,7 +211,7 @@ def buy_price(item):
 
 def upgrade_cost(item):
     u = item.get("upgrade", 0)
-    return int(30 * (u + 1) ** 1.7 * (1 + item["ilvl"] * 0.35) * (1 + RARITY_VALUE[item["rarity"]] / 10))
+    return int(300 * (u + 1) ** 1.7 * (1 + item["ilvl"] * 0.35) * (1 + RARITY_VALUE[item["rarity"]] / 10))
 
 
 def item_lines(item, player=None, header=None):
@@ -221,7 +228,7 @@ def item_lines(item, player=None, header=None):
     if item["slot"] == "artefact":
         lines.append((art_desc(item), (240, 240, 240), 16))
         lines.append((f"Recharge : {ARTIFACTS[item['art']]['cd']} s", (140, 200, 255), 15))
-        lines.append((f"Valeur : {item_value(item)} or", GOLD, 14))
+        lines.append((f"Valeur : {coins.text(item_value(item))}", GOLD, 14))
         return lines
     st = item_stats(item)
     if "dmg" in st:
@@ -242,5 +249,5 @@ def item_lines(item, player=None, header=None):
     if free:
         lines.append((f"{free} emplacement(s) d'enchantement libre(s)", (170, 130, 230), 14))
     lines.append((f"Niveau d'objet : {item['ilvl']}", TEXT_DIM, 14))
-    lines.append((f"Valeur : {item_value(item)} or", GOLD, 14))
+    lines.append((f"Valeur : {coins.text(item_value(item))}", GOLD, 14))
     return lines

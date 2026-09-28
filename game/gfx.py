@@ -46,6 +46,11 @@ def glow(surf, x, y, r, color):
     surf.blit(tex, (x - tex.get_width() // 2, y - tex.get_height() // 2), special_flags=pygame.BLEND_RGB_ADD)
 
 
+def _paste(surf, s, pos):
+    """Colle une forme translucide (alpha classique) sur le calque d'interface, qui est en alpha prémultiplié."""
+    surf.blit(s.premul_alpha(), pos, special_flags=pygame.BLEND_PREMULTIPLIED)
+
+
 def _temp(w, h):
     return pygame.Surface((max(1, int(w)), max(1, int(h))), pygame.SRCALPHA)
 
@@ -55,7 +60,7 @@ def alpha_ellipse(surf, color, alpha, center, a, b, width=0):
         return
     s = _temp(a * 2 + 4, b * 2 + 4)
     pygame.draw.ellipse(s, (*color[:3], int(alpha)), (2, 2, a * 2, b * 2), int(width))
-    surf.blit(s, (center[0] - a - 2, center[1] - b - 2))
+    _paste(surf, s, (center[0] - a - 2, center[1] - b - 2))
 
 
 def alpha_annulus(surf, color, alpha, center, a, b, a_in, b_in):
@@ -65,7 +70,7 @@ def alpha_annulus(surf, color, alpha, center, a, b, a_in, b_in):
     pygame.draw.ellipse(s, (*color[:3], int(alpha)), (2, 2, a * 2, b * 2))
     if a_in > 1 and b_in > 1:
         pygame.draw.ellipse(s, (0, 0, 0, 0), (2 + a - a_in, 2 + b - b_in, a_in * 2, b_in * 2))
-    surf.blit(s, (center[0] - a - 2, center[1] - b - 2))
+    _paste(surf, s, (center[0] - a - 2, center[1] - b - 2))
 
 
 def alpha_polygon(surf, color, alpha, pts, width=0):
@@ -79,7 +84,7 @@ def alpha_polygon(surf, color, alpha, pts, width=0):
         return
     s = _temp(w, h)
     pygame.draw.polygon(s, (*color[:3], int(alpha)), [(p[0] - x0, p[1] - y0) for p in pts], int(width))
-    surf.blit(s, (x0, y0))
+    _paste(surf, s, (x0, y0))
 
 
 def mix(c, d, k):

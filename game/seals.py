@@ -6,7 +6,8 @@ Chaque étage (sauf le premier et les étages BOSS) tire une condition au hasard
   elites    : abattre des champions (monstres d'élite)
   braziers  : allumer des brasiers ; chacun réveille une embuscade
   keeper    : traquer le Geôlier du sceau, puis ramasser la clé qu'il laisse tomber
-TowerScene.seal_count() donne l'avancement, seal_needed le total.
+TowerScene.seal_count() donne l'avancement, seal_needed le total. La condition n'est jamais annoncée au joueur :
+il la découvre en explorant (seule la jauge du sceau, près de la minicarte, montre qu'il avance).
 """
 import math
 
@@ -15,14 +16,6 @@ from .entities import Interactable, Monster
 from .fx import RingFX
 from .settings import TILE
 
-KINDS = {
-    "kills": ("Massacre", "Éliminez les créatures de l'étage pour briser le sceau du gardien."),
-    "shards": ("Fragments", "Le sceau s'est brisé en éclats : retrouvez-les dans l'étage (E pour les ramasser)."),
-    "elites": ("Champions", "Le sceau puise sa force dans les champions de l'étage : abattez-les."),
-    "braziers": ("Brasiers", "Allumez les brasiers de l'étage pour consumer le sceau. Attention, chacun réveille "
-                 "les créatures alentour."),
-    "keeper": ("Geôlier", "Le Geôlier du sceau garde la clé de l'arène : trouvez-le et reprenez-la."),
-}
 WEIGHTS = {"kills": 3, "shards": 3, "elites": 2, "braziers": 2, "keeper": 2}
 SHARD_COL = (150, 220, 255)
 FIRE_COL = (255, 150, 60)
@@ -35,18 +28,6 @@ def pick(rng, floor):
         return "kills"
     kinds = list(WEIGHTS)
     return rng.choices(kinds, weights=[WEIGHTS[k] for k in kinds])[0]
-
-
-def label(kind, have, need):
-    if kind == "kills":
-        return f"Sceau du gardien : {min(have, need)} / {need} créatures"
-    if kind == "shards":
-        return f"Fragments du sceau : {min(have, need)} / {need}"
-    if kind == "elites":
-        return f"Champions abattus : {min(have, need)} / {need}"
-    if kind == "braziers":
-        return f"Brasiers allumés : {min(have, need)} / {need}"
-    return "Clé du sceau : récupérée" if have else "Le Geôlier du sceau rôde dans l'étage"
 
 
 def far_rooms(world, n):
@@ -79,7 +60,7 @@ class SealShard(Interactable):
         world.seal_have += 1
         world.particles.emit(self.x, self.y, SHARD_COL, n=30, speed=150, life=0.6, size=4, up=120, z=30)
         world.effects.append(RingFX(self.x, self.y, 10, 90, 0.4, SHARD_COL, 5))
-        world.message(f"Fragment du sceau récupéré ({world.seal_have} / {world.seal_needed})", SHARD_COL, 4)
+        world.message("Le fragment vibre entre vos mains : quelque chose se fissure au loin...", SHARD_COL, 4)
         sfx.play("seal", 0.5)
 
     def render(self, fr, t):
@@ -113,7 +94,7 @@ class Brazier(Interactable):
         world.flash_light(self.x, self.y, 300, FIRE_COL, 0.5)
         world.particles.emit(self.x, self.y, FIRE_COL, n=40, speed=160, life=0.7, size=4, up=200, z=40)
         sfx.play("fire", 0.8)
-        world.message(f"Brasier allumé ({world.seal_have} / {world.seal_needed}) : des créatures surgissent !",
+        world.message("Le brasier s'embrase : des créatures surgissent !",
                       FIRE_COL, 4)
         world.ambush(self.x, self.y, self.room)
 

@@ -6,7 +6,7 @@ import random
 
 import pygame
 
-from . import looks, save, sfx, ui, updater, updates
+from . import coins, looks, save, sfx, ui, updater, updates
 from .data import CLASSES, SPELLS, ATTR_NAMES, ATTRS
 from .entities import Player
 from .r3d import models
@@ -102,8 +102,16 @@ class TitleScene(Scene):
         self.items.append(("Nouvelle partie", lambda: game.change_scene(CreateScene(game))))
         if self.saves:
             self.items.append(("Charger une partie", lambda: game.change_scene(LoadScene(game))))
-        self.items.append(("Plein écran", game.toggle_fullscreen))
+        self.items.append(("Options", self.open_options))
+        self.options = None            # écran des options (son, affichage, commandes) ouvert par-dessus le menu
         self.items.append(("Quitter", game.quit))
+
+    def open_options(self):
+        from .options_menu import OptionsScreen
+        self.options = OptionsScreen(self.game, self.close_options)
+
+    def close_options(self):
+        self.options = None
 
     def start(self, data):
         from .hub import HubScene
@@ -164,6 +172,9 @@ class TitleScene(Scene):
         if e.type == pygame.MOUSEBUTTONDOWN and e.button == 1 and self.update_click(e.pos):
             return
         if e.type == pygame.KEYDOWN and e.key == pygame.K_u and self.update_click():
+            return
+        if self.options:
+            self.options.handle_event(e)
             return
         if self.phase == "press":
             if e.type in (pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN) and self.t > 0.6:
@@ -234,6 +245,9 @@ class TitleScene(Scene):
                 ui.draw_text(surf, info, (SCREEN_W / 2, SCREEN_H - 34), 14, (214, 208, 190), anchor="center",
                              alpha=int(220 * e))
         self.draw_update(surf)
+        if self.options:
+            self.options.draw(surf)
+            return
         for i, line in enumerate((f"Ver. {updater.current_version()}", TITLE, "© 2026 Saku Game")):
             ui.draw_text(surf, line, (SCREEN_W - 30, SCREEN_H - 70 + i * 19), 13, (226, 222, 204), anchor="topright",
                          alpha=190)
@@ -250,9 +264,10 @@ def smallcaps(surf, text, center, size, color, alpha=255):
             pieces.append((word[1:].upper(), size * 0.78))
     widths = [ui.text_size(t, sz, "title")[0] for t, sz in pieces]
     x = center[0] - sum(widths) / 2
-    base = center[1] + size * 0.36
+    top, bottom = ui.cap_box(size, "title")
+    base = center[1] + (bottom - top) / 2              # ligne de base : les capitales centrées sur center
     for (t, sz), w in zip(pieces, widths):
-        ui.draw_text(surf, t, (x, base), sz, color, "title", anchor="bottomleft", alpha=alpha)
+        ui.draw_text(surf, t, (x, base - ui.cap_box(sz, "title")[1]), sz, color, "title", alpha=alpha)
         x += w
 
 
@@ -335,8 +350,9 @@ class LoadScene(Scene):
             ui.circle(surf, c["color"], (r.x + 36, r.centery), 22, 2)
             ui.draw_text(surf, c["name"][0], (r.x + 36, r.centery), 20, WHITE, "title_bold", anchor="center")
             ui.draw_text(surf, d["name"], (r.x + 74, r.y + 9), 21, WHITE, "title")
+            money = d["money"] if "money" in d else d.get("gold", 0) * coins.OLD_GOLD
             ui.draw_text(surf, f"{c['name']} · niveau {d.get('level', 1)} · étage max {d.get('max_floor', 1)} · "
-                               f"{d.get('gold', 0)} or", (r.x + 74, r.y + 40), 14, SOFT)
+                               f"{coins.text(money)}", (r.x + 74, r.y + 40), 14, SOFT)
             when = d.get("saved_at")
             if when:
                 ui.draw_text(surf, datetime.datetime.fromtimestamp(when).strftime("%d/%m/%Y  %H:%M"),
@@ -560,10 +576,10 @@ class CreateScene(Scene):
         y = ui.draw_wrapped(surf, c["desc"], box.x + 22, box.y + 16, box.w - 44, 16, SOFT)
         y += 10
         for i, a in enumerate(ATTRS):
-            v = c["attrs"][a]
-            yy = y + i * 24
-            ui.draw_text(surf, ATTR_NAMES[a], (box.x + 22, yy), 14, WHITE if a != c["primary"] else GOLD_BRIGHT, "bold")
-            bar = pygame.Rect(box.x + 140, yy + 6, 160, 7)
+            v = c["attrs"].get(a, 0)
+            yy = y + i * 17
+            ui.draw_text(surf, ATTR_NAMES[a], (box.x + 22, yy), 12, WHITE if a != c["primary"] else GOLD_BRIGHT, "bold")
+            bar = pygame.Rect(box.x + 140, yy + 5, 160, 6)
             ui.rect(surf, (0, 0, 0, 180), bar.inflate(2, 2), 0, 4)
             ui.rect(surf, c["color"], (bar.x, bar.y, bar.w * v / 24, bar.h), 0, 4)
         ui.draw_text(surf, "Sorts", (box.x + 330, y - 2), 15, WHITE, "bold")

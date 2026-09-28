@@ -15,13 +15,20 @@ from .settings import TILE, GOLD_BRIGHT, WHITE
 from .world import World
 
 
-TOWER_MUSIC = ("inside", "inside2", "inside3")    # une au hasard à chaque étage, jouée en boucle
+TOWER_MUSIC = ("inside4", "inside5")    # une au hasard à chaque étage, jouée en boucle
+TOWER_MUSIC_PAUSED = ("inside", "inside2", "inside3")    # en suspens : à remettre dans TOWER_MUSIC pour les rejouer
 SURVIVOR_LINES = (
     "C'est un monstre... Il est beaucoup trop puissant. Je l'ai vu balayer une compagnie entière.",
     "Des boules de feu, des éclairs, du givre... comme s'il avait volé les pouvoirs de tous ceux qui sont tombés ici.",
     "S'il plante un totem vert, détruisez-le tout de suite, ou il se relèvera encore et encore.",
     "Quand il lève son écu doré, vos coups glissent sur lui. Attendez que ça passe.",
     "Et quand il s'enrage... reculez. Croyez-moi. Moi, je ne remets plus les pieds dans cette arène.",
+)
+
+SMITH_LINES = (
+    "Encore debout ? Montrez-moi cette arme, je vais lui redonner du mordant.",
+    "Le gardien n'attend que vous. Autant y aller avec une lame affûtée.",
+    "Mon enclume a fait tout le chemin jusqu'ici. Servez-vous-en !",
 )
 
 
@@ -63,9 +70,8 @@ class TowerScene(World):
             self.show_banner(floor_name(floor), f"Étage {floor} · étage du boss", (200, 140, 255), 4.5)
             self.message(f"{self.boss.name}, {self.boss.title.lower()}, vous attend dans l'arène.", (210, 170, 255), 8)
         else:
-            name, text = seals.KINDS[self.seal_kind]
-            self.show_banner(floor_name(floor), f"Étage {floor} · Sceau : {name}", WHITE, 4.5)
-            self.message(text, (220, 214, 200), 9)
+            # la condition du sceau n'est pas annoncée : au joueur de la découvrir (la jauge avance sans explication)
+            self.show_banner(floor_name(floor), f"Étage {floor}", WHITE, 4.5)
         sfx.play("portal")
         sfx.music(sfx.pick_music(TOWER_MUSIC), restart=True)
 
@@ -167,8 +173,10 @@ class TowerScene(World):
         """Salle d'entrée d'un étage BOSS : Hilda la forgeronne (améliorations) et un rescapé terrifié."""
         cx, cy = room.center_px
         sx, sy = cx - 70, cy - 20
-        self.interactables.append(NPC(sx, sy, "Hilda la Forgeronne", "Forge", models.NPC_SPECS["forgeronne"],
-                                      self.open_forge, facing=0.0, work=True))
+        hilda = NPC(sx, sy, "Hilda la Forgeronne", "Forge", models.NPC_SPECS["forgeronne"], self.open_forge,
+                    facing=0.0, work=True)
+        hilda.greeting = self.rng.choice(SMITH_LINES)
+        self.interactables.append(hilda)
         self.interactables.append(Prop(sx + 34, sy, models.anvil))
         self.anvil = (sx + 34, sy)
         spec = dict(detailed=True, body=(96, 84, 70), skin=(214, 176, 140),
@@ -181,8 +189,10 @@ class TowerScene(World):
             if line is None:
                 lines = iter(SURVIVOR_LINES)
                 line = next(lines)
-            world.message(f"Oswin le Rescapé : « {line} »", (235, 225, 200), 7)
-        self.interactables.append(NPC(cx + 80, cy + 10, "Oswin le Rescapé", "Parler", spec, talk, facing=math.pi))
+            oswin.say(world, line)
+        oswin = NPC(cx + 80, cy + 10, "Oswin le Rescapé", "Parler", spec, talk, facing=math.pi)
+        oswin.greeting = "Vous... vous êtes bien réel ? Approchez, il faut que je vous prévienne."
+        self.interactables.append(oswin)
         self.interactables.append(Chest(cx, cy + 90))
 
     def open_forge(self, world):
@@ -200,7 +210,7 @@ class TowerScene(World):
         if self.barrier_active:
             if any(isinstance(o, seals.SealKey) for o in self.interactables):
                 return title, "Le Geôlier est tombé : ramassez la clé du sceau."
-            return title, seals.label(self.seal_kind, self.seal_count(), self.seal_needed)
+            return title, ""
         if self.arena:
             return title, f"{self.boss.name} vous attend dans l'arène."
         return title, "Le sceau est brisé : le gardien vous attend."
@@ -224,7 +234,6 @@ class TowerScene(World):
         self.kills += 1
         if self.seal_kind == "elites" and m.elite and self.barrier_active:
             self.seal_have += 1
-            self.message(f"Champion abattu ({self.seal_have} / {self.seal_needed})", (255, 200, 90), 4)
         if getattr(m, "keeper", False):
             self.interactables.append(seals.SealKey(m.x, m.y))
             self.message("Le Geôlier lâche la clé du sceau !", seals.KEY_COL, 5)
@@ -238,6 +247,9 @@ class TowerScene(World):
 
     def update_extra(self, dt):
         p = self.player
+        for o in self.interactables:
+            if isinstance(o, NPC):
+                self.greet(o)
         if self.left_panel and not any(isinstance(o, NPC) and math.hypot(o.x - p.x, o.y - p.y) < 140
                                        for o in self.interactables):
             self.close_panels()           # forge fermée quand on s'éloigne de Hilda
@@ -295,6 +307,7 @@ class TowerScene(World):
         if first:
             self.loot.append(Loot(x, y, "item", generate_item(f, rarity="legendaire", cls_id=p.cls_id)))
         self.loot.append(Loot(x, y, "orb"))
+        self.loot.append(Loot(x, y, "tear"))
         self.particles.emit(x, y, (255, 130, 70), n=90, speed=300, life=1.1, size=5, up=260, z=30)
         self.effects.append(RingFX(x, y, 20, 340, 0.8, (255, 200, 120), 8))
         self.flash_light(x, y, 600, (255, 180, 120), 0.8)
@@ -331,7 +344,7 @@ class TowerScene(World):
 
     def death_penalty(self):
         lost = self.run_gold // 2
-        self.player.gold = max(0, self.player.gold - lost)
+        self.player.money = max(0, self.player.money - lost)
         self.modal = DeathPanel(self, lost)
         self.save()
 

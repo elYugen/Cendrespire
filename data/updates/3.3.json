@@ -1,0 +1,53 @@
+{
+  "version": "3.3",
+  "date": "2026-09-28",
+  "title": "Le grand arbre",
+  "sections": [
+    {"name": "Talents", "notes": [
+      "Un seul grand arbre par classe, qui se parcourt à la molette ou en le faisant glisser : il part d'une racine et s'étend dans trois domaines, reliés entre eux par des talents « ponts ».",
+      "Un talent s'apprend s'il touche un talent déjà appris : on peut passer d'un domaine à l'autre. Les rangées profondes demandent un certain nombre de points dépensés dans l'arbre.",
+      "52 talents par classe, jusqu'au niveau 100. Un point de talent par niveau à partir du niveau 10.",
+      "L'orbe à droite de l'arbre montre les points à dépenser et se remplit avec l'expérience ; le nom d'un talent et son domaine apparaissent au survol.",
+      "Théodric l'Érudit, à la bibliothèque, efface l'arbre contre des pièces. Le retrait d'un point au clic droit disparaît.",
+      "Les anciennes sauvegardes sont rattachées automatiquement au nouvel arbre."
+    ]},
+    {"name": "Sorts", "notes": [
+      "30 nouveaux sorts appris par les talents, dont Hurlement terrifiant, Chaîne d'éclairs, Faucon de chasse, Bénédiction, Explosion de cadavre et Frénésie.",
+      "Chaque classe peut connaître jusqu'à 9 sorts et en équiper 4 : clic sur un sort de la page Personnage pour le changer."
+    ]},
+    {"name": "Attributs", "notes": [
+      "Tous les attributs servent désormais toutes les classes ; l'attribut principal ajoute en plus 1% de dégâts par point.",
+      "Cinq nouveaux attributs : Endurance (roulade, potion, déplacement), Résistance (dégâts subis, armure, entraves plus courtes), Harmonie (coût en mana des sorts, mana par seconde), Foi (soins reçus, recharge des sorts) et Chance (or, critiques, butin).",
+      "Un point d'attribut par niveau. Les objets peuvent porter les nouveaux attributs.",
+      "Oriane, Gardienne de l'Oubli, rend tous les points d'attribut contre une Larme d'oubli, lâchée par les champions et les gardiens de la tour.",
+      "Les infobulles des attributs sont plus compactes : une ligne par effet."
+    ]},
+    {"name": "Cendreval", "notes": [
+      "La ville s'agrandit : un quartier du Temple avec sa place des oracles, un sanctuaire, une bibliothèque et de nouvelles maisons.",
+      "Nouveaux habitants et 8 nouvelles quêtes.",
+      "Les habitants parlent dans des bulles au-dessus de leur tête et saluent le héros qui s'approche, en ville comme dans les camps de la tour.",
+      "Nouvelle fenêtre de marchand : étal, fiche de l'objet choisi comparée à l'équipement porté, sac à côté ; double-clic ou clic droit pour acheter ou vendre, rachat des objets vendus, vente du commun en un clic.",
+      "Nouvelle fenêtre de quête en livre ouvert : la réplique de l'habitant à gauche, les objectifs et les récompenses à droite."
+    ]},
+    {"name": "Monnaie", "notes": [
+      "Trois monnaies : cuivre, argent et or (100 cuivre = 1 argent, 100 argent = 1 or). Les prix des marchands et de la forge suivent.",
+      "Les bourses des anciennes sauvegardes sont converties."
+    ]},
+    {"name": "Tour", "notes": [
+      "Le moyen de briser le sceau d'un étage n'est plus affiché : à vous de le découvrir.",
+      "Deux nouvelles musiques accompagnent l'ascension.",
+      "Les monstres donnent moins d'expérience.",
+      "L'écran de mort est épuré : « Vous êtes mort » s'affiche quelques secondes, puis le héros se réveille au campement."
+    ]},
+    {"name": "Options", "notes": [
+      "Un écran Options, depuis l'écran titre et depuis le menu Système : volumes, mode d'affichage, résolution et commandes.",
+      "Toutes les commandes du clavier et de la manette peuvent être modifiées.",
+      "À la manette, l'interface affiche les boutons (A, B, X, Y, gâchettes) à la place des touches du clavier ; les artefacts se rangent autour d'une croix directionnelle, chacun du côté de sa flèche."
+    ]},
+    {"name": "Corrections", "notes": [
+      "Cliquer sur un monstre n'envoie plus le héros vers un monstre situé de l'autre côté d'un mur.",
+      "Les textes, noms et icônes ne sont plus crénelés ni trop gras au-dessus du décor.",
+      "Le message « Échap : menu » à l'arrivée en ville est supprimé."
+    ]}
+  ]
+}

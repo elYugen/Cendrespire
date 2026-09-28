@@ -11,7 +11,12 @@
         "force": 20,
         "dex": 10,
         "int": 6,
-        "vit": 16
+        "vit": 16,
+        "endurance": 12,
+        "resistance": 12,
+        "harmonie": 5,
+        "foi": 6,
+        "chance": 7
       },
       "hp": 140,
       "hp_lvl": 14,
@@ -90,7 +95,12 @@
         "force": 6,
         "dex": 10,
         "int": 22,
-        "vit": 12
+        "vit": 12,
+        "endurance": 7,
+        "resistance": 7,
+        "harmonie": 16,
+        "foi": 8,
+        "chance": 8
       },
       "hp": 100,
       "hp_lvl": 10,
@@ -163,7 +173,12 @@
         "force": 9,
         "dex": 22,
         "int": 8,
-        "vit": 13
+        "vit": 13,
+        "endurance": 13,
+        "resistance": 8,
+        "harmonie": 8,
+        "foi": 7,
+        "chance": 12
       },
       "hp": 115,
       "hp_lvl": 12,
@@ -239,7 +254,12 @@
         "force": 18,
         "dex": 8,
         "int": 12,
-        "vit": 18
+        "vit": 18,
+        "endurance": 9,
+        "resistance": 14,
+        "harmonie": 10,
+        "foi": 16,
+        "chance": 6
       },
       "hp": 150,
       "hp_lvl": 15,
@@ -318,7 +338,12 @@
         "force": 7,
         "dex": 9,
         "int": 22,
-        "vit": 13
+        "vit": 13,
+        "endurance": 7,
+        "resistance": 9,
+        "harmonie": 14,
+        "foi": 10,
+        "chance": 7
       },
       "hp": 105,
       "hp_lvl": 11,
@@ -394,7 +419,12 @@
         "force": 10,
         "dex": 22,
         "int": 8,
-        "vit": 12
+        "vit": 12,
+        "endurance": 14,
+        "resistance": 7,
+        "harmonie": 8,
+        "foi": 6,
+        "chance": 12
       },
       "hp": 110,
       "hp_lvl": 11,

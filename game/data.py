@@ -10,11 +10,15 @@ if CONTENT is None:
     raise ContentError(ERROR)
 
 
-ATTRS = ["force", "dex", "int", "vit"]
-ATTR_NAMES = {"force": "Force", "dex": "Dextérité", "int": "Intelligence", "vit": "Vitalité"}
-MAX_LEVEL = 60
+ATTRS = ["force", "dex", "int", "vit", "endurance", "resistance", "harmonie", "foi", "chance"]
+ATTR_NAMES = {"force": "Force", "dex": "Dextérité", "int": "Intelligence", "vit": "Vitalité",
+              "endurance": "Endurance", "resistance": "Résistance", "harmonie": "Harmonie", "foi": "Foi",
+              "chance": "Chance"}
+MAX_LEVEL = 100
 BAG_SIZE = 40
 POINTS_PER_LEVEL = 1         # point de caractéristique gagné à chaque niveau
+TEAR_DROP = {"elite": 0.12, "brute": 0.02, "cultiste": 0.015}   # chances de Larme d'oubli (+1 par gardien)
+MONSTER_XP = 0.6            # part de l'expérience de base donnée par les monstres (et les gardiens)
 
 # Mécaniques inspirées de Minecraft Dungeons
 POTION_CD = 22.0          # potion de soin illimitée, avec temps de recharge
@@ -55,12 +59,36 @@ ANIMA_POWERS = CONTENT["anima"]
 ANIMA_TIERS = [(t["name"], t["color"], t["value"], t["weight"]) for t in CONTENT["anima_tiers"]]
 _SC = CONTENT["scaling"]
 
-_ATTR_EFFECT = {"force": "+0,5 armure par point", "dex": "+0,05% de critique par point",
-                "int": "+1,5 mana par point", "vit": "+5 points de vie par point"}
-ATTR_DESC = {}
-for _a in ATTRS:
-    _users = [c["name"] for c in CLASSES.values() if c["primary"] == _a]
-    ATTR_DESC[_a] = (f"Dégâts du {' et du '.join(_users)}, " if _users else "") + _ATTR_EFFECT[_a]
+# effet de chaque point d'attribut, pour toutes les classes
+ATTR_K = {"force_armor": 0.5, "force_basic": 0.3, "dex_crit": 0.1, "dex_speed": 0.2,
+          "int_mana": 1.5, "int_spell": 0.3, "int_regen": 1.0, "vit_hp": 5, "vit_regen": 0.1,
+          "foi_heal": 0.6, "foi_cdr": 0.1, "chance_gold": 0.8, "chance_crit": 0.05, "chance_drop": 0.6,
+          "end_roll": 0.4, "end_potion": 0.25, "end_move": 0.1,        # Endurance (plafond : -40% de recharge)
+          "res_dr": 0.08, "res_armor": 0.3, "res_snare": 0.8,          # Résistance
+          "harm_cost": 0.25, "harm_regen": 0.04}                        # Harmonie (plafond : -40% de coût)
+# effets d'un point, une ligne chacun (infobulles de la page Personnage)
+ATTR_LINES = {"force": ["+0,5 armure", "+0,3% de dégâts de l'attaque de base"],
+              "dex": ["+0,1% de chances de critique", "+0,2% de vitesse d'attaque"],
+              "int": ["+1,5 mana", "+0,3% de dégâts des sorts", "+1% de régénération de mana"],
+              "vit": ["+5 points de vie", "+0,1 vie par seconde"],
+              "endurance": ["-0,4% de recharge de la roulade", "-0,25% de recharge de la potion",
+                            "+0,1% de vitesse de déplacement"],
+              "resistance": ["+0,08% de réduction des dégâts subis", "+0,3 armure",
+                             "Entraves et ralentissements 0,8% plus courts"],
+              "harmonie": ["-0,25% de coût en mana des sorts", "+0,04 mana par seconde"],
+              "foi": ["+0,6% d'efficacité des soins reçus", "-0,1% de temps de recharge des sorts"],
+              "chance": ["+0,8% d'or trouvé", "+0,05% de chances de critique", "+0,6% de chances de butin"]}
+ATTR_LORE = {"force": "La puissance brute des bras et des épaules.",
+             "dex": "La précision du geste et la vivacité de la main.",
+             "int": "La maîtrise des arts arcaniques.",
+             "vit": "La robustesse du corps.",
+             "endurance": "Le souffle qui permet de rouler et de courir encore.",
+             "resistance": "La peau tannée par les coups, qui ne cède plus.",
+             "harmonie": "L'accord entre l'esprit et la magie : chaque sort coûte moins.",
+             "foi": "La confiance en une lumière plus grande que soi.",
+             "chance": "Le hasard qui sourit aux audacieux."}
+ATTR_USERS = {a: [c["name"] for c in CLASSES.values() if c["primary"] == a] for a in ATTRS}
+ATTR_DESC = {a: " · ".join(ATTR_LINES[a]) + " par point" for a in ATTRS}
 
 
 def floor_name(f):

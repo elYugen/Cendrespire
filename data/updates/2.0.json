@@ -5,8 +5,8 @@
   "sections": [
     {"name": "Nouveautés", "notes": [
       "Rendu 3D complet (OpenGL) : ombres, lumières dynamiques, particules.",
-      "Interface, cœurs et écran titre inspirés de Breath of the Wild.",
-      "Mécaniques à la Minecraft Dungeons : roulade, artefacts, enchantements, potion à recharge.",
+      "Nouvelle interface, cœurs de vie et écran titre redessinés.",
+      "Nouvelles mécaniques : roulade, artefacts, enchantements, potion à recharge.",
       "Pouvoirs d'anima classés par rareté.",
       "Trois nouvelles classes : Paladin, Nécromancien et Assassin.",
       "Arbres de talents : 3 branches par classe, réinitialisables au campement.",

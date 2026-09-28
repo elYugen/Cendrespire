@@ -1,725 +1,4241 @@
 {
-  "_info": "Arbres de talents : 3 branches par classe, 4 paliers (rangs max dans 'ranks'). Effets : [\"stat\", clé, valeur par rang], [\"sd\"|\"sc\", id_sort, valeur], [\"flag\", clé, valeur].",
-  "tier_cost": 3,
-  "ranks": [3, 3, 2, 1],
+  "_info": "Un grand arbre de talents par classe. Nœuds : x, y (grille), max (rangs), branch (domaine : indice de « branches », -1 : racine ou pont), links (talents voisins : un talent s'apprend s'il touche un talent appris ; la racine s'apprend seule), req (talent à maîtriser d'abord). La ligne y demande row_cost x (y - 1) points dépensés dans l'arbre. Effets : [\"stat\", clé, valeur par rang], [\"sd\"|\"sc\", id_sort, valeur], [\"flag\", clé, valeur], [\"spell\", id_sort, 1] (débloque un sort à équiper).",
+  "row_cost": 3,
   "trees": {
-    "barbare": [
-      {
-        "name": "Carnage",
-        "color": [230, 80, 60],
-        "icon": "sword",
-        "talents": [
-          {
-            "id": "ba_force",
-            "name": "Force brute",
-            "icon": "sword",
-            "effects": [
-              ["stat", "dmg_pct", 4]
-            ]
-          },
-          {
-            "id": "ba_tourb",
-            "name": "Tourbillon sanglant",
-            "icon": "spell:tourbillon",
-            "effects": [
-              ["sd", "tourbillon", 15]
-            ]
-          },
-          {
-            "id": "ba_exec",
-            "name": "Exécution",
-            "icon": "skull",
-            "effects": [
-              ["flag", "execute", 15]
-            ]
-          },
-          {
-            "id": "ba_rage",
-            "name": "Rage sans fin",
-            "icon": "star",
-            "effects": [
-              ["flag", "kill_cdr", 0.5]
-            ]
-          }
-        ]
-      },
-      {
-        "name": "Rempart",
-        "color": [170, 176, 190],
-        "icon": "shield",
-        "talents": [
-          {
-            "id": "ba_peau",
-            "name": "Peau de pierre",
-            "icon": "shield",
-            "effects": [
-              ["stat", "armor_pct", 8]
-            ]
-          },
-          {
-            "id": "ba_vig",
-            "name": "Vigueur des steppes",
-            "icon": "heart",
-            "effects": [
-              ["stat", "max_hp_pct", 5]
-            ]
-          },
-          {
-            "id": "ba_mur",
-            "name": "Dos au mur",
-            "icon": "shield",
-            "effects": [
-              ["flag", "low_hp_dr", 12]
-            ]
-          },
-          {
-            "id": "ba_souffle",
-            "name": "Second souffle",
-            "icon": "star",
-            "effects": [
-              ["flag", "last_stand", 1]
-            ]
-          }
-        ]
-      },
-      {
-        "name": "Fureur",
-        "color": [255, 150, 60],
-        "icon": "bolt",
-        "talents": [
-          {
-            "id": "ba_fren",
-            "name": "Frénésie",
-            "icon": "bolt",
-            "effects": [
-              ["stat", "atk_speed", 4]
-            ]
-          },
-          {
-            "id": "ba_bond",
-            "name": "Bond dévastateur",
-            "icon": "spell:bond",
-            "effects": [
-              ["sd", "bond", 15]
-            ]
-          },
-          {
-            "id": "ba_berz",
-            "name": "Berserker",
-            "icon": "fist",
-            "effects": [
-              ["flag", "berserk", 15]
-            ]
-          },
-          {
-            "id": "ba_seisme",
-            "name": "Séisme primordial",
-            "icon": "spell:seisme",
-            "effects": [
-              ["sd", "seisme", 40],
-              ["sc", "seisme", 25]
-            ]
-          }
-        ]
-      }
-    ],
-    "sorcier": [
-      {
-        "name": "Feu",
-        "color": [255, 120, 40],
-        "icon": "flame",
-        "talents": [
-          {
-            "id": "so_braise",
-            "name": "Braises",
-            "icon": "flame",
-            "effects": [
-              ["stat", "spell_pct", 4]
-            ]
-          },
-          {
-            "id": "so_pyro",
-            "name": "Pyromancie",
-            "icon": "spell:boule_feu",
-            "effects": [
-              ["sd", "boule_feu", 15]
-            ]
-          },
-          {
-            "id": "so_meteor",
-            "name": "Météore ardent",
-            "icon": "spell:meteore",
-            "effects": [
-              ["sd", "meteore", 20]
-            ]
-          },
-          {
-            "id": "so_surch",
-            "name": "Surcharge",
-            "icon": "star",
-            "effects": [
-              ["flag", "free_cast", 20]
-            ]
-          }
-        ]
-      },
-      {
-        "name": "Givre",
-        "color": [130, 210, 255],
-        "icon": "snow",
-        "talents": [
-          {
-            "id": "so_froid",
-            "name": "Esprit froid",
-            "icon": "eye",
-            "effects": [
-              ["stat", "crit", 3]
-            ]
-          },
-          {
-            "id": "so_hiver",
-            "name": "Hiver éternel",
-            "icon": "spell:nova_givre",
-            "effects": [
-              ["sd", "nova_givre", 15]
-            ]
-          },
-          {
-            "id": "so_coeur",
-            "name": "Cœur de glace",
-            "icon": "shield",
-            "effects": [
-              ["stat", "dr", 4]
-            ]
-          },
-          {
-            "id": "so_temps",
-            "name": "Distorsion temporelle",
-            "icon": "clock",
-            "effects": [
-              ["stat", "cdr", 15]
-            ]
-          }
-        ]
-      },
-      {
-        "name": "Arcane",
-        "color": [170, 120, 255],
-        "icon": "orb",
-        "talents": [
-          {
-            "id": "so_reserv",
-            "name": "Réserves",
-            "icon": "orb",
-            "effects": [
-              ["stat", "mana_pct", 8]
-            ]
-          },
-          {
-            "id": "so_flux",
-            "name": "Flux",
-            "icon": "drop",
-            "effects": [
-              ["stat", "mana_regen_pct", 12]
-            ]
-          },
-          {
-            "id": "so_blink",
-            "name": "Clignement",
-            "icon": "spell:teleport",
-            "effects": [
-              ["sc", "teleport", 15]
-            ]
-          },
-          {
-            "id": "so_fontaine",
-            "name": "Fontaine arcanique",
-            "icon": "star",
-            "effects": [
-              ["flag", "heal_on_spell", 2]
-            ]
-          }
-        ]
-      }
-    ],
-    "chasseur": [
-      {
-        "name": "Précision",
-        "color": [250, 220, 110],
-        "icon": "eye",
-        "talents": [
-          {
-            "id": "ch_faucon",
-            "name": "Œil de faucon",
-            "icon": "eye",
-            "effects": [
-              ["stat", "crit", 3]
-            ]
-          },
-          {
-            "id": "ch_acier",
-            "name": "Pointes d'acier",
-            "icon": "spell:fleche_perforante",
-            "effects": [
-              ["sd", "fleche_perforante", 15]
-            ]
-          },
-          {
-            "id": "ch_mortel",
-            "name": "Tir mortel",
-            "icon": "skull",
-            "effects": [
-              ["stat", "crit_dmg", 20]
-            ]
-          },
-          {
-            "id": "ch_elite",
-            "name": "Tireur d'élite",
-            "icon": "star",
-            "effects": [
-              ["flag", "first_strike", 50]
-            ]
-          }
-        ]
-      },
-      {
-        "name": "Survie",
-        "color": [120, 210, 120],
-        "icon": "boot",
-        "talents": [
-          {
-            "id": "ch_pas",
-            "name": "Pas léger",
-            "icon": "boot",
-            "effects": [
-              ["stat", "move_speed", 4]
-            ]
-          },
-          {
-            "id": "ch_acro",
-            "name": "Acrobate",
-            "icon": "bolt",
-            "effects": [
-              ["stat", "roll_cd", 12]
-            ]
-          },
-          {
-            "id": "ch_peau",
-            "name": "Seconde peau",
-            "icon": "heart",
-            "effects": [
-              ["stat", "max_hp_pct", 6]
-            ]
-          },
-          {
-            "id": "ch_instinct",
-            "name": "Instinct de survie",
-            "icon": "star",
-            "effects": [
-              ["flag", "low_hp_dr", 25]
-            ]
-          }
-        ]
-      },
-      {
-        "name": "Pièges",
-        "color": [255, 170, 70],
-        "icon": "trap",
-        "talents": [
-          {
-            "id": "ch_salve",
-            "name": "Salves",
-            "icon": "sword",
-            "effects": [
-              ["stat", "spell_pct", 4]
-            ]
-          },
-          {
-            "id": "ch_poudre",
-            "name": "Poudre noire",
-            "icon": "spell:piege",
-            "effects": [
-              ["sd", "piege", 15]
-            ]
-          },
-          {
-            "id": "ch_deluge",
-            "name": "Déluge",
-            "icon": "spell:pluie_fleches",
-            "effects": [
-              ["sd", "pluie_fleches", 15]
-            ]
-          },
-          {
-            "id": "ch_prime",
-            "name": "Chasseur de primes",
-            "icon": "star",
-            "effects": [
-              ["flag", "mana_on_kill", 6],
-              ["stat", "gold_find", 25]
-            ]
-          }
-        ]
-      }
-    ],
-    "paladin": [
-      {
-        "name": "Justice",
-        "color": [255, 214, 110],
-        "icon": "sword",
-        "talents": [
-          {
-            "id": "pa_juste",
-            "name": "Juste cause",
-            "icon": "sword",
-            "effects": [
-              ["stat", "dmg_pct", 4]
-            ]
-          },
-          {
-            "id": "pa_jugement",
-            "name": "Verdict",
-            "icon": "spell:jugement",
-            "effects": [
-              ["sd", "jugement", 15]
-            ]
-          },
-          {
-            "id": "pa_zele",
-            "name": "Zèle",
-            "icon": "eye",
-            "effects": [
-              ["stat", "crit", 4]
-            ]
-          },
-          {
-            "id": "pa_colere",
-            "name": "Colère divine",
-            "icon": "star",
-            "effects": [
-              ["flag", "execute", 30]
-            ]
-          }
-        ]
-      },
-      {
-        "name": "Protection",
-        "color": [180, 190, 210],
-        "icon": "shield",
-        "talents": [
-          {
-            "id": "pa_plates",
-            "name": "Plates bénies",
-            "icon": "shield",
-            "effects": [
-              ["stat", "armor_pct", 8]
-            ]
-          },
-          {
-            "id": "pa_charge",
-            "name": "Bouclier sacré",
-            "icon": "spell:charge_bouclier",
-            "effects": [
-              ["sd", "charge_bouclier", 20]
-            ]
-          },
-          {
-            "id": "pa_epines",
-            "name": "Représailles",
-            "icon": "shield",
-            "effects": [
-              ["flag", "thorns", 25]
-            ]
-          },
-          {
-            "id": "pa_martyr",
-            "name": "Martyr",
-            "icon": "star",
-            "effects": [
-              ["flag", "last_stand", 1]
-            ]
-          }
-        ]
-      },
-      {
-        "name": "Sainteté",
-        "color": [255, 244, 200],
-        "icon": "heart",
-        "talents": [
-          {
-            "id": "pa_foi",
-            "name": "Foi inébranlable",
-            "icon": "heart",
-            "effects": [
-              ["stat", "max_hp_pct", 4]
-            ]
-          },
-          {
-            "id": "pa_terre",
-            "name": "Terre consacrée",
-            "icon": "spell:consecration",
-            "effects": [
-              ["sd", "consecration", 15]
-            ]
-          },
-          {
-            "id": "pa_lumiere",
-            "name": "Lumière guérisseuse",
-            "icon": "drop",
-            "effects": [
-              ["flag", "heal_on_spell", 1.5]
-            ]
-          },
-          {
-            "id": "pa_egide",
-            "name": "Égide éternelle",
-            "icon": "spell:egide",
-            "effects": [
-              ["sc", "egide", 30]
-            ]
-          }
-        ]
-      }
-    ],
-    "necromancien": [
-      {
-        "name": "Os",
-        "color": [230, 226, 200],
-        "icon": "skull",
-        "talents": [
-          {
-            "id": "ne_moelle",
-            "name": "Moelle noire",
-            "icon": "skull",
-            "effects": [
-              ["stat", "spell_pct", 4]
-            ]
-          },
-          {
-            "id": "ne_lance",
-            "name": "Lance barbelée",
-            "icon": "spell:lance_os",
-            "effects": [
-              ["sd", "lance_os", 15]
-            ]
-          },
-          {
-            "id": "ne_eclats",
-            "name": "Éclats d'os",
-            "icon": "eye",
-            "effects": [
-              ["stat", "crit_dmg", 20]
-            ]
-          },
-          {
-            "id": "ne_ossature",
-            "name": "Ossature",
-            "icon": "star",
-            "effects": [
-              ["flag", "kill_cdr", 0.4]
-            ]
-          }
-        ]
-      },
-      {
-        "name": "Invocation",
-        "color": [130, 255, 170],
-        "icon": "summon",
-        "talents": [
-          {
-            "id": "ne_liens",
-            "name": "Liens d'outre-tombe",
-            "icon": "summon",
-            "effects": [
-              ["stat", "summon_pct", 10]
-            ]
-          },
-          {
-            "id": "ne_appel",
-            "name": "Appel pressant",
-            "icon": "spell:squelettes",
-            "effects": [
-              ["sc", "squelettes", 10]
-            ]
-          },
-          {
-            "id": "ne_fureur",
-            "name": "Fureur des morts",
-            "icon": "summon",
-            "effects": [
-              ["stat", "summon_pct", 15]
-            ]
-          },
-          {
-            "id": "ne_seigneur",
-            "name": "Seigneur des morts",
-            "icon": "star",
-            "effects": [
-              ["flag", "extra_summon", 2]
-            ]
-          }
-        ]
-      },
-      {
-        "name": "Fléau",
-        "color": [170, 90, 230],
-        "icon": "drop",
-        "talents": [
-          {
-            "id": "ne_sang",
-            "name": "Sang corrompu",
-            "icon": "drop",
-            "effects": [
-              ["stat", "lifesteal", 1]
-            ]
-          },
-          {
-            "id": "ne_mal",
-            "name": "Malédiction profonde",
-            "icon": "spell:malediction",
-            "effects": [
-              ["stat", "curse_amp", 10]
-            ]
-          },
-          {
-            "id": "ne_moisson",
-            "name": "Grande moisson",
-            "icon": "spell:moisson",
-            "effects": [
-              ["sd", "moisson", 20]
-            ]
-          },
-          {
-            "id": "ne_devoreur",
-            "name": "Dévoreur d'âmes",
-            "icon": "star",
-            "effects": [
-              ["flag", "kill_heal", 2],
-              ["flag", "mana_on_kill", 5]
-            ]
-          }
-        ]
-      }
-    ],
-    "assassin": [
-      {
-        "name": "Assassinat",
-        "color": [200, 80, 90],
-        "icon": "dagger",
-        "talents": [
-          {
-            "id": "as_lame",
-            "name": "Lame affûtée",
-            "icon": "eye",
-            "effects": [
-              ["stat", "crit", 3]
-            ]
-          },
-          {
-            "id": "as_ombre",
-            "name": "Frappe de l'ombre",
-            "icon": "spell:pas_ombre",
-            "effects": [
-              ["sd", "pas_ombre", 15]
-            ]
-          },
-          {
-            "id": "as_jugul",
-            "name": "Jugulaire",
-            "icon": "skull",
-            "effects": [
-              ["stat", "crit_dmg", 25]
-            ]
-          },
-          {
-            "id": "as_premier",
-            "name": "Premier sang",
-            "icon": "star",
-            "effects": [
-              ["flag", "first_strike", 60]
-            ]
-          }
-        ]
-      },
-      {
-        "name": "Poisons",
-        "color": [120, 230, 90],
-        "icon": "drop",
-        "talents": [
-          {
-            "id": "as_toxine",
-            "name": "Toxines",
-            "icon": "drop",
-            "effects": [
-              ["stat", "dot_pct", 12]
-            ]
-          },
-          {
-            "id": "as_venin",
-            "name": "Réserve de venin",
-            "icon": "spell:venin",
-            "effects": [
-              ["sc", "venin", 10]
-            ]
-          },
-          {
-            "id": "as_eventail",
-            "name": "Pluie d'acier",
-            "icon": "spell:eventail",
-            "effects": [
-              ["sd", "eventail", 20]
-            ]
-          },
-          {
-            "id": "as_mortel",
-            "name": "Venin mortel",
-            "icon": "star",
-            "effects": [
-              ["flag", "execute", 25]
-            ]
-          }
-        ]
-      },
-      {
-        "name": "Ombres",
-        "color": [150, 130, 230],
-        "icon": "boot",
-        "talents": [
-          {
-            "id": "as_furtif",
-            "name": "Furtivité",
-            "icon": "boot",
-            "effects": [
-              ["stat", "move_speed", 4]
-            ]
-          },
-          {
-            "id": "as_vif",
-            "name": "Mains vives",
-            "icon": "bolt",
-            "effects": [
-              ["stat", "atk_speed", 4]
-            ]
-          },
-          {
-            "id": "as_voile",
-            "name": "Voile d'ombre",
-            "icon": "bolt",
-            "effects": [
-              ["stat", "roll_cd", 15]
-            ]
-          },
-          {
-            "id": "as_danse",
-            "name": "Danse macabre",
-            "icon": "spell:danse_lames",
-            "effects": [
-              ["sd", "danse_lames", 40],
-              ["flag", "kill_cdr", 0.3]
-            ]
-          }
-        ]
-      }
-    ]
+    "barbare": {
+      "branches": [
+        {
+          "name": "Carnage",
+          "color": [230, 80, 60],
+          "icon": "sword"
+        },
+        {
+          "name": "Rempart",
+          "color": [170, 176, 190],
+          "icon": "shield"
+        },
+        {
+          "name": "Fureur",
+          "color": [255, 150, 60],
+          "icon": "bolt"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "ba_eveil",
+          "name": "Sang des Hautes-Terres",
+          "icon": "fist",
+          "x": 5,
+          "y": 0,
+          "max": 1,
+          "branch": -1,
+          "effects": [
+            ["stat", "dmg_pct", 2],
+            ["stat", "max_hp_pct", 2]
+          ],
+          "links": []
+        },
+        {
+          "id": "ba_force",
+          "name": "Force brute",
+          "icon": "sword",
+          "x": 0,
+          "y": 1,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["stat", "dmg_pct", 3]
+          ],
+          "links": ["ba_eveil"]
+        },
+        {
+          "id": "ba_crit",
+          "name": "Œil du boucher",
+          "icon": "eye",
+          "x": 2,
+          "y": 1,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["stat", "crit", 2]
+          ],
+          "links": ["ba_eveil"]
+        },
+        {
+          "id": "ba_tourb",
+          "name": "Tourbillon sanglant",
+          "icon": "spell:tourbillon",
+          "x": 0,
+          "y": 2,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["sd", "tourbillon", 15]
+          ],
+          "links": ["ba_force"]
+        },
+        {
+          "id": "ba_tranch",
+          "name": "Tranchant cruel",
+          "icon": "axe",
+          "x": 2,
+          "y": 2,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["stat", "crit_dmg", 12]
+          ],
+          "links": ["ba_crit"]
+        },
+        {
+          "id": "ba_exec",
+          "name": "Exécution",
+          "icon": "skull",
+          "x": 0,
+          "y": 3,
+          "max": 2,
+          "branch": 0,
+          "effects": [
+            ["flag", "execute", 12]
+          ],
+          "links": ["ba_tourb"]
+        },
+        {
+          "id": "ba_titan_s",
+          "name": "Frappe titanesque",
+          "icon": "spell:frappe_titan",
+          "x": 1,
+          "y": 3,
+          "max": 1,
+          "branch": 0,
+          "effects": [
+            ["spell", "frappe_titan", 1]
+          ],
+          "links": ["ba_tourb", "ba_tranch"]
+        },
+        {
+          "id": "ba_soif",
+          "name": "Soif de sang",
+          "icon": "drop",
+          "x": 2,
+          "y": 3,
+          "max": 2,
+          "branch": 0,
+          "effects": [
+            ["stat", "lifesteal", 1]
+          ],
+          "links": ["ba_tranch", "ba_p_brute"]
+        },
+        {
+          "id": "ba_boucher",
+          "name": "Boucher des steppes",
+          "icon": "sword",
+          "x": 0,
+          "y": 4,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["stat", "basic_pct", 6]
+          ],
+          "links": ["ba_exec"]
+        },
+        {
+          "id": "ba_titan",
+          "name": "Poing du titan",
+          "icon": "spell:frappe_titan",
+          "x": 1,
+          "y": 4,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["sd", "frappe_titan", 15],
+            ["sc", "frappe_titan", 8]
+          ],
+          "links": ["ba_titan_s"],
+          "req": "ba_titan_s"
+        },
+        {
+          "id": "ba_carn",
+          "name": "Carnage",
+          "icon": "skull",
+          "x": 2,
+          "y": 4,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["flag", "kill_heal", 1]
+          ],
+          "links": ["ba_soif"]
+        },
+        {
+          "id": "ba_hache",
+          "name": "Hache affamée",
+          "icon": "axe",
+          "x": 0,
+          "y": 5,
+          "max": 2,
+          "branch": 0,
+          "effects": [
+            ["stat", "dmg_pct", 4]
+          ],
+          "links": ["ba_boucher"]
+        },
+        {
+          "id": "ba_cruel",
+          "name": "Cruauté",
+          "icon": "eye",
+          "x": 2,
+          "y": 5,
+          "max": 2,
+          "branch": 0,
+          "effects": [
+            ["flag", "first_strike", 20]
+          ],
+          "links": ["ba_carn", "ba_p_hurlement"]
+        },
+        {
+          "id": "ba_massacre",
+          "name": "Massacre",
+          "icon": "skull",
+          "x": 0,
+          "y": 6,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["stat", "crit_dmg", 10]
+          ],
+          "links": ["ba_hache"]
+        },
+        {
+          "id": "ba_boucherie",
+          "name": "Boucherie",
+          "icon": "axe",
+          "x": 2,
+          "y": 6,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["stat", "dmg_pct", 3]
+          ],
+          "links": ["ba_cruel"]
+        },
+        {
+          "id": "ba_rage",
+          "name": "Rage sans fin",
+          "icon": "star",
+          "x": 1,
+          "y": 7,
+          "max": 1,
+          "branch": 0,
+          "effects": [
+            ["flag", "kill_cdr", 0.5]
+          ],
+          "links": ["ba_massacre", "ba_boucherie"]
+        },
+        {
+          "id": "ba_peau",
+          "name": "Peau de pierre",
+          "icon": "shield",
+          "x": 4,
+          "y": 1,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "armor_pct", 8]
+          ],
+          "links": ["ba_eveil"]
+        },
+        {
+          "id": "ba_sang",
+          "name": "Sang épais",
+          "icon": "heart",
+          "x": 6,
+          "y": 1,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "hp_regen", 0.1]
+          ],
+          "links": ["ba_eveil"]
+        },
+        {
+          "id": "ba_vig",
+          "name": "Vigueur des steppes",
+          "icon": "heart",
+          "x": 4,
+          "y": 2,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "max_hp_pct", 5]
+          ],
+          "links": ["ba_peau"]
+        },
+        {
+          "id": "ba_cri",
+          "name": "Cri tonitruant",
+          "icon": "spell:cri_guerre",
+          "x": 6,
+          "y": 2,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["sc", "cri_guerre", 8]
+          ],
+          "links": ["ba_sang"]
+        },
+        {
+          "id": "ba_mur",
+          "name": "Dos au mur",
+          "icon": "shield",
+          "x": 4,
+          "y": 3,
+          "max": 2,
+          "branch": 1,
+          "effects": [
+            ["flag", "low_hp_dr", 10]
+          ],
+          "links": ["ba_vig", "ba_p_brute"]
+        },
+        {
+          "id": "ba_fer_s",
+          "name": "Peau de fer",
+          "icon": "spell:peau_fer",
+          "x": 5,
+          "y": 3,
+          "max": 1,
+          "branch": 1,
+          "effects": [
+            ["spell", "peau_fer", 1]
+          ],
+          "links": ["ba_vig", "ba_cri"]
+        },
+        {
+          "id": "ba_epines",
+          "name": "Hérissé de pointes",
+          "icon": "shield",
+          "x": 6,
+          "y": 3,
+          "max": 2,
+          "branch": 1,
+          "effects": [
+            ["flag", "thorns", 15]
+          ],
+          "links": ["ba_cri", "ba_p_elan"]
+        },
+        {
+          "id": "ba_roc",
+          "name": "Inébranlable",
+          "icon": "shield",
+          "x": 4,
+          "y": 4,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "dr", 2]
+          ],
+          "links": ["ba_mur"]
+        },
+        {
+          "id": "ba_fer",
+          "name": "Acier trempé",
+          "icon": "spell:peau_fer",
+          "x": 5,
+          "y": 4,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["sc", "peau_fer", 10]
+          ],
+          "links": ["ba_fer_s"],
+          "req": "ba_fer_s"
+        },
+        {
+          "id": "ba_colosse",
+          "name": "Colosse",
+          "icon": "heart",
+          "x": 6,
+          "y": 4,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "max_hp_pct", 4]
+          ],
+          "links": ["ba_epines"]
+        },
+        {
+          "id": "ba_regain",
+          "name": "Regain",
+          "icon": "drop",
+          "x": 4,
+          "y": 5,
+          "max": 2,
+          "branch": 1,
+          "effects": [
+            ["flag", "kill_heal", 1]
+          ],
+          "links": ["ba_roc", "ba_p_hurlement"]
+        },
+        {
+          "id": "ba_garde",
+          "name": "Garde haute",
+          "icon": "shield",
+          "x": 6,
+          "y": 5,
+          "max": 2,
+          "branch": 1,
+          "effects": [
+            ["stat", "armor_pct", 10]
+          ],
+          "links": ["ba_colosse", "ba_p_hache"]
+        },
+        {
+          "id": "ba_montagne",
+          "name": "Montagne",
+          "icon": "heart",
+          "x": 4,
+          "y": 6,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "max_hp_pct", 4]
+          ],
+          "links": ["ba_regain"]
+        },
+        {
+          "id": "ba_forteresse",
+          "name": "Forteresse vivante",
+          "icon": "shield",
+          "x": 6,
+          "y": 6,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "dr", 2]
+          ],
+          "links": ["ba_garde"]
+        },
+        {
+          "id": "ba_souffle",
+          "name": "Second souffle",
+          "icon": "star",
+          "x": 5,
+          "y": 7,
+          "max": 1,
+          "branch": 1,
+          "effects": [
+            ["flag", "last_stand", 1]
+          ],
+          "links": ["ba_montagne", "ba_forteresse"]
+        },
+        {
+          "id": "ba_fren",
+          "name": "Frénésie",
+          "icon": "bolt",
+          "x": 8,
+          "y": 1,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "atk_speed", 3]
+          ],
+          "links": ["ba_eveil"]
+        },
+        {
+          "id": "ba_course",
+          "name": "Course folle",
+          "icon": "boot",
+          "x": 10,
+          "y": 1,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "move_speed", 3]
+          ],
+          "links": ["ba_eveil"]
+        },
+        {
+          "id": "ba_bond",
+          "name": "Bond dévastateur",
+          "icon": "spell:bond",
+          "x": 8,
+          "y": 2,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["sd", "bond", 15]
+          ],
+          "links": ["ba_fren"]
+        },
+        {
+          "id": "ba_roul",
+          "name": "Esquive brutale",
+          "icon": "bolt",
+          "x": 10,
+          "y": 2,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "roll_cd", 8]
+          ],
+          "links": ["ba_course"]
+        },
+        {
+          "id": "ba_berz",
+          "name": "Berserker",
+          "icon": "fist",
+          "x": 8,
+          "y": 3,
+          "max": 2,
+          "branch": 2,
+          "effects": [
+            ["flag", "berserk", 15]
+          ],
+          "links": ["ba_bond", "ba_p_elan"]
+        },
+        {
+          "id": "ba_ruee_s",
+          "name": "Ruée sauvage",
+          "icon": "spell:ruee",
+          "x": 9,
+          "y": 3,
+          "max": 1,
+          "branch": 2,
+          "effects": [
+            ["spell", "ruee", 1]
+          ],
+          "links": ["ba_bond", "ba_roul"]
+        },
+        {
+          "id": "ba_mana",
+          "name": "Fureur bouillonnante",
+          "icon": "orb",
+          "x": 10,
+          "y": 3,
+          "max": 2,
+          "branch": 2,
+          "effects": [
+            ["stat", "mana_regen_pct", 15]
+          ],
+          "links": ["ba_roul"]
+        },
+        {
+          "id": "ba_quake",
+          "name": "Onde de choc",
+          "icon": "spell:seisme",
+          "x": 8,
+          "y": 4,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["sd", "seisme", 12]
+          ],
+          "links": ["ba_berz"]
+        },
+        {
+          "id": "ba_ruee",
+          "name": "Charge du mammouth",
+          "icon": "spell:ruee",
+          "x": 9,
+          "y": 4,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["sd", "ruee", 15],
+            ["sc", "ruee", 8]
+          ],
+          "links": ["ba_ruee_s"],
+          "req": "ba_ruee_s"
+        },
+        {
+          "id": "ba_temp",
+          "name": "Tempête d'acier",
+          "icon": "clock",
+          "x": 10,
+          "y": 4,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "cdr", 3]
+          ],
+          "links": ["ba_mana"]
+        },
+        {
+          "id": "ba_bond2",
+          "name": "Bonds répétés",
+          "icon": "spell:bond",
+          "x": 8,
+          "y": 5,
+          "max": 2,
+          "branch": 2,
+          "effects": [
+            ["sc", "bond", 12]
+          ],
+          "links": ["ba_quake", "ba_p_hache"]
+        },
+        {
+          "id": "ba_rugis",
+          "name": "Rugissement",
+          "icon": "bolt",
+          "x": 10,
+          "y": 5,
+          "max": 2,
+          "branch": 2,
+          "effects": [
+            ["stat", "atk_speed", 4]
+          ],
+          "links": ["ba_temp"]
+        },
+        {
+          "id": "ba_ouragan",
+          "name": "Ouragan d'acier",
+          "icon": "bolt",
+          "x": 8,
+          "y": 6,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "atk_speed", 3]
+          ],
+          "links": ["ba_bond2"]
+        },
+        {
+          "id": "ba_titan2",
+          "name": "Colère du titan",
+          "icon": "fist",
+          "x": 10,
+          "y": 6,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["flag", "berserk", 6]
+          ],
+          "links": ["ba_rugis"]
+        },
+        {
+          "id": "ba_seisme",
+          "name": "Séisme primordial",
+          "icon": "spell:seisme",
+          "x": 9,
+          "y": 7,
+          "max": 1,
+          "branch": 2,
+          "effects": [
+            ["sd", "seisme", 40],
+            ["sc", "seisme", 25]
+          ],
+          "links": ["ba_ouragan", "ba_titan2"]
+        },
+        {
+          "id": "ba_p_brute",
+          "name": "Brute cuirassée",
+          "icon": "shield",
+          "x": 3,
+          "y": 2,
+          "max": 3,
+          "branch": -1,
+          "effects": [
+            ["stat", "armor_pct", 4],
+            ["stat", "dmg_pct", 1]
+          ],
+          "links": ["ba_crit", "ba_peau"]
+        },
+        {
+          "id": "ba_p_elan",
+          "name": "Élan du colosse",
+          "icon": "boot",
+          "x": 7,
+          "y": 2,
+          "max": 3,
+          "branch": -1,
+          "effects": [
+            ["stat", "move_speed", 2],
+            ["stat", "armor_pct", 3]
+          ],
+          "links": ["ba_sang", "ba_fren"]
+        },
+        {
+          "id": "ba_p_hurlement",
+          "name": "Hurlement terrifiant",
+          "icon": "spell:hurlement",
+          "x": 3,
+          "y": 4,
+          "max": 1,
+          "branch": -1,
+          "effects": [
+            ["spell", "hurlement", 1]
+          ],
+          "links": ["ba_soif", "ba_mur", "ba_p_brute"]
+        },
+        {
+          "id": "ba_p_hache",
+          "name": "Hache tournoyante",
+          "icon": "spell:hache_tournoyante",
+          "x": 7,
+          "y": 4,
+          "max": 1,
+          "branch": -1,
+          "effects": [
+            ["spell", "hache_tournoyante", 1]
+          ],
+          "links": ["ba_epines", "ba_berz", "ba_p_elan"]
+        },
+        {
+          "id": "ba_p_sang",
+          "name": "Sang de guerre",
+          "icon": "drop",
+          "x": 3,
+          "y": 6,
+          "max": 3,
+          "branch": -1,
+          "effects": [
+            ["stat", "lifesteal", 1]
+          ],
+          "links": ["ba_cruel", "ba_regain", "ba_p_hurlement"]
+        },
+        {
+          "id": "ba_p_orage",
+          "name": "Orage de fer",
+          "icon": "bolt",
+          "x": 7,
+          "y": 6,
+          "max": 3,
+          "branch": -1,
+          "effects": [
+            ["stat", "atk_speed", 2],
+            ["stat", "max_hp_pct", 2]
+          ],
+          "links": ["ba_garde", "ba_bond2", "ba_p_hache"]
+        }
+      ]
+    },
+    "sorcier": {
+      "branches": [
+        {
+          "name": "Feu",
+          "color": [255, 120, 40],
+          "icon": "flame"
+        },
+        {
+          "name": "Givre",
+          "color": [130, 210, 255],
+          "icon": "snow"
+        },
+        {
+          "name": "Arcane",
+          "color": [170, 120, 255],
+          "icon": "orb"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "so_eveil",
+          "name": "Étincelle primordiale",
+          "icon": "orb",
+          "x": 5,
+          "y": 0,
+          "max": 1,
+          "branch": -1,
+          "effects": [
+            ["stat", "spell_pct", 2],
+            ["stat", "mana_pct", 3]
+          ],
+          "links": []
+        },
+        {
+          "id": "so_braise",
+          "name": "Braises",
+          "icon": "flame",
+          "x": 0,
+          "y": 1,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["stat", "spell_pct", 3]
+          ],
+          "links": ["so_eveil"]
+        },
+        {
+          "id": "so_ardeur",
+          "name": "Ardeur",
+          "icon": "eye",
+          "x": 2,
+          "y": 1,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["stat", "crit", 2]
+          ],
+          "links": ["so_eveil"]
+        },
+        {
+          "id": "so_pyro",
+          "name": "Pyromancie",
+          "icon": "spell:boule_feu",
+          "x": 0,
+          "y": 2,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["sd", "boule_feu", 15]
+          ],
+          "links": ["so_braise"]
+        },
+        {
+          "id": "so_combust",
+          "name": "Combustion",
+          "icon": "flame",
+          "x": 2,
+          "y": 2,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["stat", "dot_pct", 15]
+          ],
+          "links": ["so_ardeur"]
+        },
+        {
+          "id": "so_meteor",
+          "name": "Météore ardent",
+          "icon": "spell:meteore",
+          "x": 0,
+          "y": 3,
+          "max": 2,
+          "branch": 0,
+          "effects": [
+            ["sd", "meteore", 15]
+          ],
+          "links": ["so_pyro"]
+        },
+        {
+          "id": "so_colonne_s",
+          "name": "Colonne de flammes",
+          "icon": "spell:colonne_feu",
+          "x": 1,
+          "y": 3,
+          "max": 1,
+          "branch": 0,
+          "effects": [
+            ["spell", "colonne_feu", 1]
+          ],
+          "links": ["so_pyro", "so_combust"]
+        },
+        {
+          "id": "so_brasier",
+          "name": "Brasier",
+          "icon": "eye",
+          "x": 2,
+          "y": 3,
+          "max": 2,
+          "branch": 0,
+          "effects": [
+            ["stat", "crit_dmg", 15]
+          ],
+          "links": ["so_combust", "so_p_vapeur"]
+        },
+        {
+          "id": "so_incin",
+          "name": "Incinération",
+          "icon": "skull",
+          "x": 0,
+          "y": 4,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["flag", "execute", 10]
+          ],
+          "links": ["so_meteor"]
+        },
+        {
+          "id": "so_colonne",
+          "name": "Pilier infernal",
+          "icon": "spell:colonne_feu",
+          "x": 1,
+          "y": 4,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["sd", "colonne_feu", 15],
+            ["sc", "colonne_feu", 6]
+          ],
+          "links": ["so_colonne_s"],
+          "req": "so_colonne_s"
+        },
+        {
+          "id": "so_meteor2",
+          "name": "Pluie d'étoiles",
+          "icon": "spell:meteore",
+          "x": 2,
+          "y": 4,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["sc", "meteore", 10]
+          ],
+          "links": ["so_brasier"]
+        },
+        {
+          "id": "so_fournaise",
+          "name": "Fournaise",
+          "icon": "flame",
+          "x": 0,
+          "y": 5,
+          "max": 2,
+          "branch": 0,
+          "effects": [
+            ["stat", "spell_pct", 4]
+          ],
+          "links": ["so_incin"]
+        },
+        {
+          "id": "so_cendres",
+          "name": "Cendres vives",
+          "icon": "drop",
+          "x": 2,
+          "y": 5,
+          "max": 2,
+          "branch": 0,
+          "effects": [
+            ["flag", "mana_on_kill", 3]
+          ],
+          "links": ["so_meteor2", "so_p_foudre"]
+        },
+        {
+          "id": "so_phenix",
+          "name": "Cœur de phénix",
+          "icon": "flame",
+          "x": 0,
+          "y": 6,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["stat", "spell_pct", 3]
+          ],
+          "links": ["so_fournaise"]
+        },
+        {
+          "id": "so_brulure",
+          "name": "Brûlure profonde",
+          "icon": "flame",
+          "x": 2,
+          "y": 6,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["stat", "dot_pct", 12]
+          ],
+          "links": ["so_cendres"]
+        },
+        {
+          "id": "so_surch",
+          "name": "Surcharge",
+          "icon": "star",
+          "x": 1,
+          "y": 7,
+          "max": 1,
+          "branch": 0,
+          "effects": [
+            ["flag", "free_cast", 20]
+          ],
+          "links": ["so_phenix", "so_brulure"]
+        },
+        {
+          "id": "so_froid",
+          "name": "Esprit froid",
+          "icon": "eye",
+          "x": 4,
+          "y": 1,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "crit", 2]
+          ],
+          "links": ["so_eveil"]
+        },
+        {
+          "id": "so_givre",
+          "name": "Peau de givre",
+          "icon": "shield",
+          "x": 6,
+          "y": 1,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "armor_pct", 8]
+          ],
+          "links": ["so_eveil"]
+        },
+        {
+          "id": "so_hiver",
+          "name": "Hiver éternel",
+          "icon": "spell:nova_givre",
+          "x": 4,
+          "y": 2,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["sd", "nova_givre", 15]
+          ],
+          "links": ["so_froid"]
+        },
+        {
+          "id": "so_glacier",
+          "name": "Glacier",
+          "icon": "heart",
+          "x": 6,
+          "y": 2,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "max_hp_pct", 4]
+          ],
+          "links": ["so_givre"]
+        },
+        {
+          "id": "so_coeur",
+          "name": "Cœur de glace",
+          "icon": "shield",
+          "x": 4,
+          "y": 3,
+          "max": 2,
+          "branch": 1,
+          "effects": [
+            ["stat", "dr", 3]
+          ],
+          "links": ["so_hiver", "so_p_vapeur"]
+        },
+        {
+          "id": "so_lance_s",
+          "name": "Lance de glace",
+          "icon": "spell:lance_glace",
+          "x": 5,
+          "y": 3,
+          "max": 1,
+          "branch": 1,
+          "effects": [
+            ["spell", "lance_glace", 1]
+          ],
+          "links": ["so_hiver", "so_glacier"]
+        },
+        {
+          "id": "so_eclat",
+          "name": "Éclats gelés",
+          "icon": "eye",
+          "x": 6,
+          "y": 3,
+          "max": 2,
+          "branch": 1,
+          "effects": [
+            ["stat", "crit_dmg", 15]
+          ],
+          "links": ["so_glacier", "so_p_prisme"]
+        },
+        {
+          "id": "so_blizzard",
+          "name": "Blizzard",
+          "icon": "spell:nova_givre",
+          "x": 4,
+          "y": 4,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["sc", "nova_givre", 10]
+          ],
+          "links": ["so_coeur"]
+        },
+        {
+          "id": "so_lance",
+          "name": "Stalactite",
+          "icon": "spell:lance_glace",
+          "x": 5,
+          "y": 4,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["sd", "lance_glace", 15],
+            ["sc", "lance_glace", 6]
+          ],
+          "links": ["so_lance_s"],
+          "req": "so_lance_s"
+        },
+        {
+          "id": "so_calme",
+          "name": "Calme glacial",
+          "icon": "clock",
+          "x": 6,
+          "y": 4,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "cdr", 3]
+          ],
+          "links": ["so_eclat"]
+        },
+        {
+          "id": "so_barriere",
+          "name": "Barrière gelée",
+          "icon": "shield",
+          "x": 4,
+          "y": 5,
+          "max": 2,
+          "branch": 1,
+          "effects": [
+            ["flag", "low_hp_dr", 12]
+          ],
+          "links": ["so_blizzard", "so_p_foudre"]
+        },
+        {
+          "id": "so_hypo",
+          "name": "Hypothermie",
+          "icon": "skull",
+          "x": 6,
+          "y": 5,
+          "max": 2,
+          "branch": 1,
+          "effects": [
+            ["flag", "first_strike", 20]
+          ],
+          "links": ["so_calme", "so_p_bouclier"]
+        },
+        {
+          "id": "so_zero",
+          "name": "Zéro absolu",
+          "icon": "eye",
+          "x": 4,
+          "y": 6,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "crit_dmg", 10]
+          ],
+          "links": ["so_barriere"]
+        },
+        {
+          "id": "so_banquise",
+          "name": "Banquise",
+          "icon": "shield",
+          "x": 6,
+          "y": 6,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "armor_pct", 8]
+          ],
+          "links": ["so_hypo"]
+        },
+        {
+          "id": "so_temps",
+          "name": "Distorsion temporelle",
+          "icon": "clock",
+          "x": 5,
+          "y": 7,
+          "max": 1,
+          "branch": 1,
+          "effects": [
+            ["stat", "cdr", 12]
+          ],
+          "links": ["so_zero", "so_banquise"]
+        },
+        {
+          "id": "so_reserv",
+          "name": "Réserves",
+          "icon": "orb",
+          "x": 8,
+          "y": 1,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "mana_pct", 8]
+          ],
+          "links": ["so_eveil"]
+        },
+        {
+          "id": "so_savoir",
+          "name": "Savoir interdit",
+          "icon": "orb",
+          "x": 10,
+          "y": 1,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "spell_pct", 3]
+          ],
+          "links": ["so_eveil"]
+        },
+        {
+          "id": "so_flux",
+          "name": "Flux",
+          "icon": "drop",
+          "x": 8,
+          "y": 2,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "mana_regen_pct", 12]
+          ],
+          "links": ["so_reserv"]
+        },
+        {
+          "id": "so_blink2",
+          "name": "Pas éthéré",
+          "icon": "spell:teleport",
+          "x": 10,
+          "y": 2,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["sd", "teleport", 20]
+          ],
+          "links": ["so_savoir"]
+        },
+        {
+          "id": "so_blink",
+          "name": "Clignement",
+          "icon": "spell:teleport",
+          "x": 8,
+          "y": 3,
+          "max": 2,
+          "branch": 2,
+          "effects": [
+            ["sc", "teleport", 12]
+          ],
+          "links": ["so_flux", "so_p_prisme"]
+        },
+        {
+          "id": "so_orbe_s",
+          "name": "Orbe arcanique",
+          "icon": "spell:orbe_arcane",
+          "x": 9,
+          "y": 3,
+          "max": 1,
+          "branch": 2,
+          "effects": [
+            ["spell", "orbe_arcane", 1]
+          ],
+          "links": ["so_flux", "so_blink2"]
+        },
+        {
+          "id": "so_resonance",
+          "name": "Résonance",
+          "icon": "drop",
+          "x": 10,
+          "y": 3,
+          "max": 2,
+          "branch": 2,
+          "effects": [
+            ["flag", "mana_on_kill", 3]
+          ],
+          "links": ["so_blink2"]
+        },
+        {
+          "id": "so_concentr",
+          "name": "Concentration",
+          "icon": "eye",
+          "x": 8,
+          "y": 4,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "crit", 2]
+          ],
+          "links": ["so_blink"]
+        },
+        {
+          "id": "so_orbe",
+          "name": "Singularité",
+          "icon": "spell:orbe_arcane",
+          "x": 9,
+          "y": 4,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["sd", "orbe_arcane", 15],
+            ["sc", "orbe_arcane", 5]
+          ],
+          "links": ["so_orbe_s"],
+          "req": "so_orbe_s"
+        },
+        {
+          "id": "so_bouclier",
+          "name": "Bouclier de mana",
+          "icon": "shield",
+          "x": 10,
+          "y": 4,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "dr", 2]
+          ],
+          "links": ["so_resonance"]
+        },
+        {
+          "id": "so_echo",
+          "name": "Écho arcanique",
+          "icon": "star",
+          "x": 8,
+          "y": 5,
+          "max": 2,
+          "branch": 2,
+          "effects": [
+            ["flag", "free_cast", 6]
+          ],
+          "links": ["so_concentr", "so_p_bouclier"]
+        },
+        {
+          "id": "so_vif",
+          "name": "Esprit vif",
+          "icon": "boot",
+          "x": 10,
+          "y": 5,
+          "max": 2,
+          "branch": 2,
+          "effects": [
+            ["stat", "move_speed", 4]
+          ],
+          "links": ["so_bouclier"]
+        },
+        {
+          "id": "so_archimage",
+          "name": "Archimage",
+          "icon": "orb",
+          "x": 8,
+          "y": 6,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "mana_pct", 8]
+          ],
+          "links": ["so_echo"]
+        },
+        {
+          "id": "so_chrono",
+          "name": "Chronomancie",
+          "icon": "clock",
+          "x": 10,
+          "y": 6,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "cdr", 2]
+          ],
+          "links": ["so_vif"]
+        },
+        {
+          "id": "so_fontaine",
+          "name": "Fontaine arcanique",
+          "icon": "star",
+          "x": 9,
+          "y": 7,
+          "max": 1,
+          "branch": 2,
+          "effects": [
+            ["flag", "heal_on_spell", 2]
+          ],
+          "links": ["so_archimage", "so_chrono"]
+        },
+        {
+          "id": "so_p_vapeur",
+          "name": "Vapeur",
+          "icon": "drop",
+          "x": 3,
+          "y": 2,
+          "max": 3,
+          "branch": -1,
+          "effects": [
+            ["stat", "spell_pct", 2]
+          ],
+          "links": ["so_ardeur", "so_froid"]
+        },
+        {
+          "id": "so_p_prisme",
+          "name": "Prisme",
+          "icon": "eye",
+          "x": 7,
+          "y": 2,
+          "max": 3,
+          "branch": -1,
+          "effects": [
+            ["stat", "crit", 1],
+            ["stat", "mana_regen_pct", 4]
+          ],
+          "links": ["so_givre", "so_reserv"]
+        },
+        {
+          "id": "so_p_foudre",
+          "name": "Chaîne d'éclairs",
+          "icon": "spell:chaine_eclairs",
+          "x": 3,
+          "y": 4,
+          "max": 1,
+          "branch": -1,
+          "effects": [
+            ["spell", "chaine_eclairs", 1]
+          ],
+          "links": ["so_brasier", "so_coeur", "so_p_vapeur"]
+        },
+        {
+          "id": "so_p_bouclier",
+          "name": "Bouclier de mana",
+          "icon": "spell:bouclier_mana",
+          "x": 7,
+          "y": 4,
+          "max": 1,
+          "branch": -1,
+          "effects": [
+            ["spell", "bouclier_mana", 1]
+          ],
+          "links": ["so_eclat", "so_blink", "so_p_prisme"]
+        },
+        {
+          "id": "so_p_plasma",
+          "name": "Plasma",
+          "icon": "flame",
+          "x": 3,
+          "y": 6,
+          "max": 3,
+          "branch": -1,
+          "effects": [
+            ["stat", "crit_dmg", 8]
+          ],
+          "links": ["so_cendres", "so_barriere", "so_p_foudre"]
+        },
+        {
+          "id": "so_p_stase",
+          "name": "Stase",
+          "icon": "clock",
+          "x": 7,
+          "y": 6,
+          "max": 3,
+          "branch": -1,
+          "effects": [
+            ["stat", "cdr", 2]
+          ],
+          "links": ["so_hypo", "so_echo", "so_p_bouclier"]
+        }
+      ]
+    },
+    "chasseur": {
+      "branches": [
+        {
+          "name": "Précision",
+          "color": [250, 220, 110],
+          "icon": "eye"
+        },
+        {
+          "name": "Survie",
+          "color": [120, 210, 120],
+          "icon": "boot"
+        },
+        {
+          "name": "Pièges",
+          "color": [255, 170, 70],
+          "icon": "trap"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "ch_eveil",
+          "name": "Instinct sauvage",
+          "icon": "eye",
+          "x": 5,
+          "y": 0,
+          "max": 1,
+          "branch": -1,
+          "effects": [
+            ["stat", "crit", 1],
+            ["stat", "move_speed", 2]
+          ],
+          "links": []
+        },
+        {
+          "id": "ch_faucon",
+          "name": "Œil de faucon",
+          "icon": "eye",
+          "x": 0,
+          "y": 1,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["stat", "crit", 2]
+          ],
+          "links": ["ch_eveil"]
+        },
+        {
+          "id": "ch_corde",
+          "name": "Corde tendue",
+          "icon": "bolt",
+          "x": 2,
+          "y": 1,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["stat", "atk_speed", 3]
+          ],
+          "links": ["ch_eveil"]
+        },
+        {
+          "id": "ch_acier",
+          "name": "Pointes d'acier",
+          "icon": "spell:fleche_perforante",
+          "x": 0,
+          "y": 2,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["sd", "fleche_perforante", 15]
+          ],
+          "links": ["ch_faucon"]
+        },
+        {
+          "id": "ch_visee",
+          "name": "Visée stable",
+          "icon": "sword",
+          "x": 2,
+          "y": 2,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["stat", "basic_pct", 5]
+          ],
+          "links": ["ch_corde"]
+        },
+        {
+          "id": "ch_mortel",
+          "name": "Tir mortel",
+          "icon": "skull",
+          "x": 0,
+          "y": 3,
+          "max": 2,
+          "branch": 0,
+          "effects": [
+            ["stat", "crit_dmg", 15]
+          ],
+          "links": ["ch_acier"]
+        },
+        {
+          "id": "ch_fatal_s",
+          "name": "Tir fatal",
+          "icon": "spell:tir_fatal",
+          "x": 1,
+          "y": 3,
+          "max": 1,
+          "branch": 0,
+          "effects": [
+            ["spell", "tir_fatal", 1]
+          ],
+          "links": ["ch_acier", "ch_visee"]
+        },
+        {
+          "id": "ch_volee",
+          "name": "Volée",
+          "icon": "spell:tir_multiple",
+          "x": 2,
+          "y": 3,
+          "max": 2,
+          "branch": 0,
+          "effects": [
+            ["sd", "tir_multiple", 12]
+          ],
+          "links": ["ch_visee", "ch_p_pistage"]
+        },
+        {
+          "id": "ch_calme",
+          "name": "Sang-froid",
+          "icon": "eye",
+          "x": 0,
+          "y": 4,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["stat", "crit", 2]
+          ],
+          "links": ["ch_mortel"]
+        },
+        {
+          "id": "ch_fatal",
+          "name": "Balistique",
+          "icon": "spell:tir_fatal",
+          "x": 1,
+          "y": 4,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["sd", "tir_fatal", 15],
+            ["sc", "tir_fatal", 8]
+          ],
+          "links": ["ch_fatal_s"],
+          "req": "ch_fatal_s"
+        },
+        {
+          "id": "ch_perf",
+          "name": "Transpercement",
+          "icon": "spell:fleche_perforante",
+          "x": 2,
+          "y": 4,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["sc", "fleche_perforante", 10]
+          ],
+          "links": ["ch_volee"]
+        },
+        {
+          "id": "ch_proie",
+          "name": "Traque",
+          "icon": "skull",
+          "x": 0,
+          "y": 5,
+          "max": 2,
+          "branch": 0,
+          "effects": [
+            ["flag", "execute", 12]
+          ],
+          "links": ["ch_calme"]
+        },
+        {
+          "id": "ch_empenne",
+          "name": "Empennage",
+          "icon": "bolt",
+          "x": 2,
+          "y": 5,
+          "max": 2,
+          "branch": 0,
+          "effects": [
+            ["stat", "atk_speed", 4]
+          ],
+          "links": ["ch_perf", "ch_p_givre"]
+        },
+        {
+          "id": "ch_oeil",
+          "name": "Œil d'aigle",
+          "icon": "eye",
+          "x": 0,
+          "y": 6,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["stat", "crit", 2]
+          ],
+          "links": ["ch_proie"]
+        },
+        {
+          "id": "ch_legende",
+          "name": "Flèche légendaire",
+          "icon": "sword",
+          "x": 2,
+          "y": 6,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["stat", "basic_pct", 5]
+          ],
+          "links": ["ch_empenne"]
+        },
+        {
+          "id": "ch_elite",
+          "name": "Tireur d'élite",
+          "icon": "star",
+          "x": 1,
+          "y": 7,
+          "max": 1,
+          "branch": 0,
+          "effects": [
+            ["flag", "first_strike", 50]
+          ],
+          "links": ["ch_oeil", "ch_legende"]
+        },
+        {
+          "id": "ch_pas",
+          "name": "Pas léger",
+          "icon": "boot",
+          "x": 4,
+          "y": 1,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "move_speed", 3]
+          ],
+          "links": ["ch_eveil"]
+        },
+        {
+          "id": "ch_cuir",
+          "name": "Cuir tanné",
+          "icon": "shield",
+          "x": 6,
+          "y": 1,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "armor_pct", 8]
+          ],
+          "links": ["ch_eveil"]
+        },
+        {
+          "id": "ch_acro",
+          "name": "Acrobate",
+          "icon": "bolt",
+          "x": 4,
+          "y": 2,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "roll_cd", 8]
+          ],
+          "links": ["ch_pas"]
+        },
+        {
+          "id": "ch_herbes",
+          "name": "Herboriste",
+          "icon": "heart",
+          "x": 6,
+          "y": 2,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "hp_regen", 0.1]
+          ],
+          "links": ["ch_cuir"]
+        },
+        {
+          "id": "ch_peau",
+          "name": "Seconde peau",
+          "icon": "heart",
+          "x": 4,
+          "y": 3,
+          "max": 2,
+          "branch": 1,
+          "effects": [
+            ["stat", "max_hp_pct", 5]
+          ],
+          "links": ["ch_acro", "ch_p_pistage"]
+        },
+        {
+          "id": "ch_instinct_s",
+          "name": "Instinct du traqueur",
+          "icon": "spell:instinct",
+          "x": 5,
+          "y": 3,
+          "max": 1,
+          "branch": 1,
+          "effects": [
+            ["spell", "instinct", 1]
+          ],
+          "links": ["ch_acro", "ch_herbes"]
+        },
+        {
+          "id": "ch_esquive",
+          "name": "Réflexes",
+          "icon": "shield",
+          "x": 6,
+          "y": 3,
+          "max": 2,
+          "branch": 1,
+          "effects": [
+            ["stat", "dr", 3]
+          ],
+          "links": ["ch_herbes", "ch_p_bivouac"]
+        },
+        {
+          "id": "ch_vent",
+          "name": "Vent arrière",
+          "icon": "boot",
+          "x": 4,
+          "y": 4,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "move_speed", 4]
+          ],
+          "links": ["ch_peau"]
+        },
+        {
+          "id": "ch_traque",
+          "name": "Prédateur",
+          "icon": "spell:instinct",
+          "x": 5,
+          "y": 4,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["sc", "instinct", 10]
+          ],
+          "links": ["ch_instinct_s"],
+          "req": "ch_instinct_s"
+        },
+        {
+          "id": "ch_viande",
+          "name": "Chasse fructueuse",
+          "icon": "drop",
+          "x": 6,
+          "y": 4,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["flag", "kill_heal", 1]
+          ],
+          "links": ["ch_esquive"]
+        },
+        {
+          "id": "ch_affut",
+          "name": "À l'affût",
+          "icon": "eye",
+          "x": 4,
+          "y": 5,
+          "max": 2,
+          "branch": 1,
+          "effects": [
+            ["stat", "crit", 3]
+          ],
+          "links": ["ch_vent", "ch_p_givre"]
+        },
+        {
+          "id": "ch_sang",
+          "name": "Sang de loup",
+          "icon": "drop",
+          "x": 6,
+          "y": 5,
+          "max": 2,
+          "branch": 1,
+          "effects": [
+            ["stat", "lifesteal", 1]
+          ],
+          "links": ["ch_viande", "ch_p_faucon"]
+        },
+        {
+          "id": "ch_meute",
+          "name": "Instinct de meute",
+          "icon": "boot",
+          "x": 4,
+          "y": 6,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "move_speed", 3]
+          ],
+          "links": ["ch_affut"]
+        },
+        {
+          "id": "ch_endurance",
+          "name": "Endurance",
+          "icon": "heart",
+          "x": 6,
+          "y": 6,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "hp_regen", 0.1]
+          ],
+          "links": ["ch_sang"]
+        },
+        {
+          "id": "ch_instinct",
+          "name": "Instinct de survie",
+          "icon": "star",
+          "x": 5,
+          "y": 7,
+          "max": 1,
+          "branch": 1,
+          "effects": [
+            ["flag", "low_hp_dr", 25]
+          ],
+          "links": ["ch_meute", "ch_endurance"]
+        },
+        {
+          "id": "ch_salve",
+          "name": "Salves",
+          "icon": "sword",
+          "x": 8,
+          "y": 1,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "spell_pct", 3]
+          ],
+          "links": ["ch_eveil"]
+        },
+        {
+          "id": "ch_poudre2",
+          "name": "Poudre fine",
+          "icon": "flame",
+          "x": 10,
+          "y": 1,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "dot_pct", 15]
+          ],
+          "links": ["ch_eveil"]
+        },
+        {
+          "id": "ch_poudre",
+          "name": "Poudre noire",
+          "icon": "spell:piege",
+          "x": 8,
+          "y": 2,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["sd", "piege", 15]
+          ],
+          "links": ["ch_salve"]
+        },
+        {
+          "id": "ch_meca",
+          "name": "Mécanismes",
+          "icon": "clock",
+          "x": 10,
+          "y": 2,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "cdr", 3]
+          ],
+          "links": ["ch_poudre2"]
+        },
+        {
+          "id": "ch_deluge",
+          "name": "Déluge",
+          "icon": "spell:pluie_fleches",
+          "x": 8,
+          "y": 3,
+          "max": 2,
+          "branch": 2,
+          "effects": [
+            ["sd", "pluie_fleches", 12]
+          ],
+          "links": ["ch_poudre", "ch_p_bivouac"]
+        },
+        {
+          "id": "ch_bombe_s",
+          "name": "Bombe incendiaire",
+          "icon": "spell:bombe",
+          "x": 9,
+          "y": 3,
+          "max": 1,
+          "branch": 2,
+          "effects": [
+            ["spell", "bombe", 1]
+          ],
+          "links": ["ch_poudre", "ch_meca"]
+        },
+        {
+          "id": "ch_ressort",
+          "name": "Ressorts",
+          "icon": "spell:piege",
+          "x": 10,
+          "y": 3,
+          "max": 2,
+          "branch": 2,
+          "effects": [
+            ["sc", "piege", 10]
+          ],
+          "links": ["ch_meca"]
+        },
+        {
+          "id": "ch_carquois",
+          "name": "Grand carquois",
+          "icon": "orb",
+          "x": 8,
+          "y": 4,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "mana_pct", 8]
+          ],
+          "links": ["ch_deluge"]
+        },
+        {
+          "id": "ch_bombe",
+          "name": "Napalm",
+          "icon": "spell:bombe",
+          "x": 9,
+          "y": 4,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["sd", "bombe", 15],
+            ["sc", "bombe", 6]
+          ],
+          "links": ["ch_bombe_s"],
+          "req": "ch_bombe_s"
+        },
+        {
+          "id": "ch_orage",
+          "name": "Orage de flèches",
+          "icon": "spell:pluie_fleches",
+          "x": 10,
+          "y": 4,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["sc", "pluie_fleches", 8]
+          ],
+          "links": ["ch_ressort"]
+        },
+        {
+          "id": "ch_arti",
+          "name": "Artificier",
+          "icon": "sword",
+          "x": 8,
+          "y": 5,
+          "max": 2,
+          "branch": 2,
+          "effects": [
+            ["stat", "spell_pct", 4]
+          ],
+          "links": ["ch_carquois", "ch_p_faucon"]
+        },
+        {
+          "id": "ch_ravit",
+          "name": "Ravitaillement",
+          "icon": "drop",
+          "x": 10,
+          "y": 5,
+          "max": 2,
+          "branch": 2,
+          "effects": [
+            ["flag", "mana_on_kill", 3]
+          ],
+          "links": ["ch_orage"]
+        },
+        {
+          "id": "ch_explo",
+          "name": "Explosifs instables",
+          "icon": "flame",
+          "x": 8,
+          "y": 6,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "spell_pct", 3]
+          ],
+          "links": ["ch_arti"]
+        },
+        {
+          "id": "ch_fumee",
+          "name": "Poudre fumigène",
+          "icon": "clock",
+          "x": 10,
+          "y": 6,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "cdr", 2]
+          ],
+          "links": ["ch_ravit"]
+        },
+        {
+          "id": "ch_prime",
+          "name": "Chasseur de primes",
+          "icon": "star",
+          "x": 9,
+          "y": 7,
+          "max": 1,
+          "branch": 2,
+          "effects": [
+            ["flag", "mana_on_kill", 6],
+            ["stat", "gold_find", 25]
+          ],
+          "links": ["ch_explo", "ch_fumee"]
+        },
+        {
+          "id": "ch_p_pistage",
+          "name": "Pistage",
+          "icon": "boot",
+          "x": 3,
+          "y": 2,
+          "max": 3,
+          "branch": -1,
+          "effects": [
+            ["stat", "move_speed", 2],
+            ["stat", "crit", 1]
+          ],
+          "links": ["ch_corde", "ch_pas"]
+        },
+        {
+          "id": "ch_p_bivouac",
+          "name": "Bivouac",
+          "icon": "heart",
+          "x": 7,
+          "y": 2,
+          "max": 3,
+          "branch": -1,
+          "effects": [
+            ["stat", "hp_regen", 0.05],
+            ["stat", "spell_pct", 1]
+          ],
+          "links": ["ch_cuir", "ch_salve"]
+        },
+        {
+          "id": "ch_p_givre",
+          "name": "Flèche givrante",
+          "icon": "spell:fleche_givrante",
+          "x": 3,
+          "y": 4,
+          "max": 1,
+          "branch": -1,
+          "effects": [
+            ["spell", "fleche_givrante", 1]
+          ],
+          "links": ["ch_volee", "ch_peau", "ch_p_pistage"]
+        },
+        {
+          "id": "ch_p_faucon",
+          "name": "Faucon de chasse",
+          "icon": "spell:faucon",
+          "x": 7,
+          "y": 4,
+          "max": 1,
+          "branch": -1,
+          "effects": [
+            ["spell", "faucon", 1]
+          ],
+          "links": ["ch_esquive", "ch_deluge", "ch_p_bivouac"]
+        },
+        {
+          "id": "ch_p_carquois",
+          "name": "Carquois sans fond",
+          "icon": "bolt",
+          "x": 3,
+          "y": 6,
+          "max": 3,
+          "branch": -1,
+          "effects": [
+            ["stat", "atk_speed", 3]
+          ],
+          "links": ["ch_empenne", "ch_affut", "ch_p_givre"]
+        },
+        {
+          "id": "ch_p_leurre",
+          "name": "Leurres",
+          "icon": "shield",
+          "x": 7,
+          "y": 6,
+          "max": 3,
+          "branch": -1,
+          "effects": [
+            ["stat", "dr", 2]
+          ],
+          "links": ["ch_sang", "ch_arti", "ch_p_faucon"]
+        }
+      ]
+    },
+    "paladin": {
+      "branches": [
+        {
+          "name": "Justice",
+          "color": [255, 214, 110],
+          "icon": "sword"
+        },
+        {
+          "name": "Protection",
+          "color": [180, 190, 210],
+          "icon": "shield"
+        },
+        {
+          "name": "Sainteté",
+          "color": [255, 244, 200],
+          "icon": "heart"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "pa_eveil",
+          "name": "Serment du paladin",
+          "icon": "shield",
+          "x": 5,
+          "y": 0,
+          "max": 1,
+          "branch": -1,
+          "effects": [
+            ["stat", "armor_pct", 3],
+            ["stat", "dmg_pct", 1]
+          ],
+          "links": []
+        },
+        {
+          "id": "pa_juste",
+          "name": "Juste cause",
+          "icon": "sword",
+          "x": 0,
+          "y": 1,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["stat", "dmg_pct", 3]
+          ],
+          "links": ["pa_eveil"]
+        },
+        {
+          "id": "pa_ferveur",
+          "name": "Ferveur",
+          "icon": "bolt",
+          "x": 2,
+          "y": 1,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["stat", "atk_speed", 3]
+          ],
+          "links": ["pa_eveil"]
+        },
+        {
+          "id": "pa_jugement",
+          "name": "Verdict",
+          "icon": "spell:jugement",
+          "x": 0,
+          "y": 2,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["sd", "jugement", 15]
+          ],
+          "links": ["pa_juste"]
+        },
+        {
+          "id": "pa_marque",
+          "name": "Marque sacrée",
+          "icon": "sword",
+          "x": 2,
+          "y": 2,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["stat", "basic_pct", 5]
+          ],
+          "links": ["pa_ferveur"]
+        },
+        {
+          "id": "pa_zele",
+          "name": "Zèle",
+          "icon": "eye",
+          "x": 0,
+          "y": 3,
+          "max": 2,
+          "branch": 0,
+          "effects": [
+            ["stat", "crit", 3]
+          ],
+          "links": ["pa_jugement"]
+        },
+        {
+          "id": "pa_marteau_s",
+          "name": "Marteau du juste",
+          "icon": "spell:marteau",
+          "x": 1,
+          "y": 3,
+          "max": 1,
+          "branch": 0,
+          "effects": [
+            ["spell", "marteau", 1]
+          ],
+          "links": ["pa_jugement", "pa_marque"]
+        },
+        {
+          "id": "pa_sentence",
+          "name": "Sentence",
+          "icon": "skull",
+          "x": 2,
+          "y": 3,
+          "max": 2,
+          "branch": 0,
+          "effects": [
+            ["stat", "crit_dmg", 15]
+          ],
+          "links": ["pa_marque", "pa_p_ordre"]
+        },
+        {
+          "id": "pa_croisade",
+          "name": "Croisade",
+          "icon": "sword",
+          "x": 0,
+          "y": 4,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["stat", "dmg_pct", 3]
+          ],
+          "links": ["pa_zele"]
+        },
+        {
+          "id": "pa_marteau",
+          "name": "Poids de la loi",
+          "icon": "spell:marteau",
+          "x": 1,
+          "y": 4,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["sd", "marteau", 15],
+            ["sc", "marteau", 8]
+          ],
+          "links": ["pa_marteau_s"],
+          "req": "pa_marteau_s"
+        },
+        {
+          "id": "pa_verdict2",
+          "name": "Tribunal céleste",
+          "icon": "spell:jugement",
+          "x": 2,
+          "y": 4,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["sc", "jugement", 10]
+          ],
+          "links": ["pa_sentence"]
+        },
+        {
+          "id": "pa_chatiment",
+          "name": "Châtiment",
+          "icon": "skull",
+          "x": 0,
+          "y": 5,
+          "max": 2,
+          "branch": 0,
+          "effects": [
+            ["flag", "first_strike", 20]
+          ],
+          "links": ["pa_croisade"]
+        },
+        {
+          "id": "pa_vengeance",
+          "name": "Vengeance",
+          "icon": "drop",
+          "x": 2,
+          "y": 5,
+          "max": 2,
+          "branch": 0,
+          "effects": [
+            ["stat", "lifesteal", 1]
+          ],
+          "links": ["pa_verdict2", "pa_p_lumiere"]
+        },
+        {
+          "id": "pa_glaive",
+          "name": "Glaive de lumière",
+          "icon": "sword",
+          "x": 0,
+          "y": 6,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["stat", "dmg_pct", 3]
+          ],
+          "links": ["pa_chatiment"]
+        },
+        {
+          "id": "pa_inquisition",
+          "name": "Inquisition",
+          "icon": "eye",
+          "x": 2,
+          "y": 6,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["stat", "crit_dmg", 10]
+          ],
+          "links": ["pa_vengeance"]
+        },
+        {
+          "id": "pa_colere",
+          "name": "Colère divine",
+          "icon": "star",
+          "x": 1,
+          "y": 7,
+          "max": 1,
+          "branch": 0,
+          "effects": [
+            ["flag", "execute", 30]
+          ],
+          "links": ["pa_glaive", "pa_inquisition"]
+        },
+        {
+          "id": "pa_plates",
+          "name": "Plates bénies",
+          "icon": "shield",
+          "x": 4,
+          "y": 1,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "armor_pct", 8]
+          ],
+          "links": ["pa_eveil"]
+        },
+        {
+          "id": "pa_rempart",
+          "name": "Rempart",
+          "icon": "heart",
+          "x": 6,
+          "y": 1,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "max_hp_pct", 4]
+          ],
+          "links": ["pa_eveil"]
+        },
+        {
+          "id": "pa_charge",
+          "name": "Bouclier sacré",
+          "icon": "spell:charge_bouclier",
+          "x": 4,
+          "y": 2,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["sd", "charge_bouclier", 15]
+          ],
+          "links": ["pa_plates"]
+        },
+        {
+          "id": "pa_garde",
+          "name": "Garde vigilante",
+          "icon": "shield",
+          "x": 6,
+          "y": 2,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "dr", 2]
+          ],
+          "links": ["pa_rempart"]
+        },
+        {
+          "id": "pa_epines",
+          "name": "Représailles",
+          "icon": "shield",
+          "x": 4,
+          "y": 3,
+          "max": 2,
+          "branch": 1,
+          "effects": [
+            ["flag", "thorns", 20]
+          ],
+          "links": ["pa_charge", "pa_p_ordre"]
+        },
+        {
+          "id": "pa_foi_s",
+          "name": "Rempart de foi",
+          "icon": "spell:rempart_foi",
+          "x": 5,
+          "y": 3,
+          "max": 1,
+          "branch": 1,
+          "effects": [
+            ["spell", "rempart_foi", 1]
+          ],
+          "links": ["pa_charge", "pa_garde"]
+        },
+        {
+          "id": "pa_constance",
+          "name": "Constance",
+          "icon": "heart",
+          "x": 6,
+          "y": 3,
+          "max": 2,
+          "branch": 1,
+          "effects": [
+            ["stat", "hp_regen", 0.1]
+          ],
+          "links": ["pa_garde", "pa_p_vigile"]
+        },
+        {
+          "id": "pa_bastion",
+          "name": "Bastion",
+          "icon": "shield",
+          "x": 4,
+          "y": 4,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "armor_pct", 10]
+          ],
+          "links": ["pa_epines"]
+        },
+        {
+          "id": "pa_foi_r",
+          "name": "Mur de la foi",
+          "icon": "spell:rempart_foi",
+          "x": 5,
+          "y": 4,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["sc", "rempart_foi", 10]
+          ],
+          "links": ["pa_foi_s"],
+          "req": "pa_foi_s"
+        },
+        {
+          "id": "pa_charge2",
+          "name": "Élan béni",
+          "icon": "spell:charge_bouclier",
+          "x": 6,
+          "y": 4,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["sc", "charge_bouclier", 10]
+          ],
+          "links": ["pa_constance"]
+        },
+        {
+          "id": "pa_resolu",
+          "name": "Résolution",
+          "icon": "shield",
+          "x": 4,
+          "y": 5,
+          "max": 2,
+          "branch": 1,
+          "effects": [
+            ["flag", "low_hp_dr", 12]
+          ],
+          "links": ["pa_bastion", "pa_p_lumiere"]
+        },
+        {
+          "id": "pa_titan",
+          "name": "Carrure",
+          "icon": "heart",
+          "x": 6,
+          "y": 5,
+          "max": 2,
+          "branch": 1,
+          "effects": [
+            ["stat", "max_hp_pct", 5]
+          ],
+          "links": ["pa_charge2", "pa_p_benir"]
+        },
+        {
+          "id": "pa_rempart2",
+          "name": "Rempart vivant",
+          "icon": "shield",
+          "x": 4,
+          "y": 6,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "armor_pct", 8]
+          ],
+          "links": ["pa_resolu"]
+        },
+        {
+          "id": "pa_serment",
+          "name": "Serment",
+          "icon": "heart",
+          "x": 6,
+          "y": 6,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "max_hp_pct", 4]
+          ],
+          "links": ["pa_titan"]
+        },
+        {
+          "id": "pa_martyr",
+          "name": "Martyr",
+          "icon": "star",
+          "x": 5,
+          "y": 7,
+          "max": 1,
+          "branch": 1,
+          "effects": [
+            ["flag", "last_stand", 1]
+          ],
+          "links": ["pa_rempart2", "pa_serment"]
+        },
+        {
+          "id": "pa_foi",
+          "name": "Foi inébranlable",
+          "icon": "heart",
+          "x": 8,
+          "y": 1,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "max_hp_pct", 4]
+          ],
+          "links": ["pa_eveil"]
+        },
+        {
+          "id": "pa_priere",
+          "name": "Prière",
+          "icon": "orb",
+          "x": 10,
+          "y": 1,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "mana_regen_pct", 12]
+          ],
+          "links": ["pa_eveil"]
+        },
+        {
+          "id": "pa_terre",
+          "name": "Terre consacrée",
+          "icon": "spell:consecration",
+          "x": 8,
+          "y": 2,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["sd", "consecration", 15]
+          ],
+          "links": ["pa_foi"]
+        },
+        {
+          "id": "pa_devot",
+          "name": "Dévotion",
+          "icon": "orb",
+          "x": 10,
+          "y": 2,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "mana_pct", 8]
+          ],
+          "links": ["pa_priere"]
+        },
+        {
+          "id": "pa_lumiere",
+          "name": "Lumière guérisseuse",
+          "icon": "drop",
+          "x": 8,
+          "y": 3,
+          "max": 2,
+          "branch": 2,
+          "effects": [
+            ["flag", "heal_on_spell", 1.5]
+          ],
+          "links": ["pa_terre", "pa_p_vigile"]
+        },
+        {
+          "id": "pa_sacre_s",
+          "name": "Lumière sacrée",
+          "icon": "spell:lumiere",
+          "x": 9,
+          "y": 3,
+          "max": 1,
+          "branch": 2,
+          "effects": [
+            ["spell", "lumiere", 1]
+          ],
+          "links": ["pa_terre", "pa_devot"]
+        },
+        {
+          "id": "pa_grace",
+          "name": "Grâce",
+          "icon": "clock",
+          "x": 10,
+          "y": 3,
+          "max": 2,
+          "branch": 2,
+          "effects": [
+            ["stat", "cdr", 3]
+          ],
+          "links": ["pa_devot"]
+        },
+        {
+          "id": "pa_aura",
+          "name": "Aura sainte",
+          "icon": "spell:consecration",
+          "x": 8,
+          "y": 4,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["sc", "consecration", 10]
+          ],
+          "links": ["pa_lumiere"]
+        },
+        {
+          "id": "pa_sacre",
+          "name": "Bénédiction",
+          "icon": "spell:lumiere",
+          "x": 9,
+          "y": 4,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["sc", "lumiere", 10]
+          ],
+          "links": ["pa_sacre_s"],
+          "req": "pa_sacre_s"
+        },
+        {
+          "id": "pa_saint",
+          "name": "Sang saint",
+          "icon": "drop",
+          "x": 10,
+          "y": 4,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["flag", "crit_heal", 1]
+          ],
+          "links": ["pa_grace"]
+        },
+        {
+          "id": "pa_eclat",
+          "name": "Éclat divin",
+          "icon": "sword",
+          "x": 8,
+          "y": 5,
+          "max": 2,
+          "branch": 2,
+          "effects": [
+            ["stat", "spell_pct", 5]
+          ],
+          "links": ["pa_aura", "pa_p_benir"]
+        },
+        {
+          "id": "pa_miracle",
+          "name": "Miracle",
+          "icon": "heart",
+          "x": 10,
+          "y": 5,
+          "max": 2,
+          "branch": 2,
+          "effects": [
+            ["stat", "hp_regen", 0.15]
+          ],
+          "links": ["pa_saint"]
+        },
+        {
+          "id": "pa_saint2",
+          "name": "Sanctification",
+          "icon": "drop",
+          "x": 8,
+          "y": 6,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["flag", "heal_on_spell", 0.5]
+          ],
+          "links": ["pa_eclat"]
+        },
+        {
+          "id": "pa_benediction",
+          "name": "Grâce infinie",
+          "icon": "orb",
+          "x": 10,
+          "y": 6,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "mana_regen_pct", 10]
+          ],
+          "links": ["pa_miracle"]
+        },
+        {
+          "id": "pa_egide",
+          "name": "Égide éternelle",
+          "icon": "spell:egide",
+          "x": 9,
+          "y": 7,
+          "max": 1,
+          "branch": 2,
+          "effects": [
+            ["sc", "egide", 30]
+          ],
+          "links": ["pa_saint2", "pa_benediction"]
+        },
+        {
+          "id": "pa_p_ordre",
+          "name": "Ordre sacré",
+          "icon": "sword",
+          "x": 3,
+          "y": 2,
+          "max": 3,
+          "branch": -1,
+          "effects": [
+            ["stat", "dmg_pct", 1],
+            ["stat", "armor_pct", 3]
+          ],
+          "links": ["pa_ferveur", "pa_plates"]
+        },
+        {
+          "id": "pa_p_vigile",
+          "name": "Vigile",
+          "icon": "heart",
+          "x": 7,
+          "y": 2,
+          "max": 3,
+          "branch": -1,
+          "effects": [
+            ["stat", "max_hp_pct", 2],
+            ["stat", "mana_regen_pct", 4]
+          ],
+          "links": ["pa_rempart", "pa_foi"]
+        },
+        {
+          "id": "pa_p_lumiere",
+          "name": "Lumière vengeresse",
+          "icon": "spell:lumiere_vengeresse",
+          "x": 3,
+          "y": 4,
+          "max": 1,
+          "branch": -1,
+          "effects": [
+            ["spell", "lumiere_vengeresse", 1]
+          ],
+          "links": ["pa_sentence", "pa_epines", "pa_p_ordre"]
+        },
+        {
+          "id": "pa_p_benir",
+          "name": "Bénédiction",
+          "icon": "spell:benediction",
+          "x": 7,
+          "y": 4,
+          "max": 1,
+          "branch": -1,
+          "effects": [
+            ["spell", "benediction", 1]
+          ],
+          "links": ["pa_constance", "pa_lumiere", "pa_p_vigile"]
+        },
+        {
+          "id": "pa_p_croise",
+          "name": "Croisé",
+          "icon": "sword",
+          "x": 3,
+          "y": 6,
+          "max": 3,
+          "branch": -1,
+          "effects": [
+            ["stat", "crit_dmg", 8]
+          ],
+          "links": ["pa_vengeance", "pa_resolu", "pa_p_lumiere"]
+        },
+        {
+          "id": "pa_p_aura",
+          "name": "Aura de paix",
+          "icon": "drop",
+          "x": 7,
+          "y": 6,
+          "max": 3,
+          "branch": -1,
+          "effects": [
+            ["stat", "hp_regen", 0.08]
+          ],
+          "links": ["pa_titan", "pa_eclat", "pa_p_benir"]
+        }
+      ]
+    },
+    "necromancien": {
+      "branches": [
+        {
+          "name": "Os",
+          "color": [230, 226, 200],
+          "icon": "skull"
+        },
+        {
+          "name": "Invocation",
+          "color": [130, 255, 170],
+          "icon": "summon"
+        },
+        {
+          "name": "Fléau",
+          "color": [170, 90, 230],
+          "icon": "drop"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "ne_eveil",
+          "name": "Pacte des tombes",
+          "icon": "skull",
+          "x": 5,
+          "y": 0,
+          "max": 1,
+          "branch": -1,
+          "effects": [
+            ["stat", "spell_pct", 2],
+            ["stat", "summon_pct", 4]
+          ],
+          "links": []
+        },
+        {
+          "id": "ne_moelle",
+          "name": "Moelle noire",
+          "icon": "skull",
+          "x": 0,
+          "y": 1,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["stat", "spell_pct", 3]
+          ],
+          "links": ["ne_eveil"]
+        },
+        {
+          "id": "ne_crane",
+          "name": "Crâne fêlé",
+          "icon": "eye",
+          "x": 2,
+          "y": 1,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["stat", "crit", 2]
+          ],
+          "links": ["ne_eveil"]
+        },
+        {
+          "id": "ne_lance",
+          "name": "Lance barbelée",
+          "icon": "spell:lance_os",
+          "x": 0,
+          "y": 2,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["sd", "lance_os", 15]
+          ],
+          "links": ["ne_moelle"]
+        },
+        {
+          "id": "ne_marrow",
+          "name": "Moelle vive",
+          "icon": "orb",
+          "x": 2,
+          "y": 2,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["stat", "mana_regen_pct", 12]
+          ],
+          "links": ["ne_crane"]
+        },
+        {
+          "id": "ne_eclats",
+          "name": "Éclats d'os",
+          "icon": "eye",
+          "x": 0,
+          "y": 3,
+          "max": 2,
+          "branch": 0,
+          "effects": [
+            ["stat", "crit_dmg", 15]
+          ],
+          "links": ["ne_lance"]
+        },
+        {
+          "id": "ne_nova_s",
+          "name": "Nova d'os",
+          "icon": "spell:nova_os",
+          "x": 1,
+          "y": 3,
+          "max": 1,
+          "branch": 0,
+          "effects": [
+            ["spell", "nova_os", 1]
+          ],
+          "links": ["ne_lance", "ne_marrow"]
+        },
+        {
+          "id": "ne_armure",
+          "name": "Armure d'os",
+          "icon": "shield",
+          "x": 2,
+          "y": 3,
+          "max": 2,
+          "branch": 0,
+          "effects": [
+            ["stat", "armor_pct", 10]
+          ],
+          "links": ["ne_marrow", "ne_p_ossuaire"]
+        },
+        {
+          "id": "ne_ossuaire",
+          "name": "Ossuaire",
+          "icon": "skull",
+          "x": 0,
+          "y": 4,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["stat", "spell_pct", 3]
+          ],
+          "links": ["ne_eclats"]
+        },
+        {
+          "id": "ne_nova",
+          "name": "Tempête d'os",
+          "icon": "spell:nova_os",
+          "x": 1,
+          "y": 4,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["sd", "nova_os", 15],
+            ["sc", "nova_os", 6]
+          ],
+          "links": ["ne_nova_s"],
+          "req": "ne_nova_s"
+        },
+        {
+          "id": "ne_lance2",
+          "name": "Lance acérée",
+          "icon": "spell:lance_os",
+          "x": 2,
+          "y": 4,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["sc", "lance_os", 10]
+          ],
+          "links": ["ne_armure"]
+        },
+        {
+          "id": "ne_fracas",
+          "name": "Fracas",
+          "icon": "skull",
+          "x": 0,
+          "y": 5,
+          "max": 2,
+          "branch": 0,
+          "effects": [
+            ["flag", "execute", 12]
+          ],
+          "links": ["ne_ossuaire"]
+        },
+        {
+          "id": "ne_squelette",
+          "name": "Squelette dur",
+          "icon": "shield",
+          "x": 2,
+          "y": 5,
+          "max": 2,
+          "branch": 0,
+          "effects": [
+            ["stat", "dr", 3]
+          ],
+          "links": ["ne_lance2", "ne_p_cadavre"]
+        },
+        {
+          "id": "ne_catacombe",
+          "name": "Catacombes",
+          "icon": "skull",
+          "x": 0,
+          "y": 6,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["stat", "spell_pct", 3]
+          ],
+          "links": ["ne_fracas"]
+        },
+        {
+          "id": "ne_moelle2",
+          "name": "Moelle d'acier",
+          "icon": "eye",
+          "x": 2,
+          "y": 6,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["stat", "crit", 2]
+          ],
+          "links": ["ne_squelette"]
+        },
+        {
+          "id": "ne_ossature",
+          "name": "Ossature",
+          "icon": "star",
+          "x": 1,
+          "y": 7,
+          "max": 1,
+          "branch": 0,
+          "effects": [
+            ["flag", "kill_cdr", 0.4]
+          ],
+          "links": ["ne_catacombe", "ne_moelle2"]
+        },
+        {
+          "id": "ne_liens",
+          "name": "Liens d'outre-tombe",
+          "icon": "summon",
+          "x": 4,
+          "y": 1,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "summon_pct", 8]
+          ],
+          "links": ["ne_eveil"]
+        },
+        {
+          "id": "ne_pacte",
+          "name": "Pacte obscur",
+          "icon": "heart",
+          "x": 6,
+          "y": 1,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "max_hp_pct", 4]
+          ],
+          "links": ["ne_eveil"]
+        },
+        {
+          "id": "ne_appel",
+          "name": "Appel pressant",
+          "icon": "spell:squelettes",
+          "x": 4,
+          "y": 2,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["sc", "squelettes", 8]
+          ],
+          "links": ["ne_liens"]
+        },
+        {
+          "id": "ne_legion",
+          "name": "Légion",
+          "icon": "summon",
+          "x": 6,
+          "y": 2,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "summon_pct", 8]
+          ],
+          "links": ["ne_pacte"]
+        },
+        {
+          "id": "ne_fureur",
+          "name": "Fureur des morts",
+          "icon": "summon",
+          "x": 4,
+          "y": 3,
+          "max": 2,
+          "branch": 1,
+          "effects": [
+            ["stat", "summon_pct", 12]
+          ],
+          "links": ["ne_appel", "ne_p_ossuaire"]
+        },
+        {
+          "id": "ne_follet_s",
+          "name": "Feux follets",
+          "icon": "spell:feux_follets",
+          "x": 5,
+          "y": 3,
+          "max": 1,
+          "branch": 1,
+          "effects": [
+            ["spell", "feux_follets", 1]
+          ],
+          "links": ["ne_appel", "ne_legion"]
+        },
+        {
+          "id": "ne_maitre",
+          "name": "Maître des morts",
+          "icon": "orb",
+          "x": 6,
+          "y": 3,
+          "max": 2,
+          "branch": 1,
+          "effects": [
+            ["stat", "mana_pct", 8]
+          ],
+          "links": ["ne_legion", "ne_p_miasme"]
+        },
+        {
+          "id": "ne_armee",
+          "name": "Armée sans fin",
+          "icon": "spell:squelettes",
+          "x": 4,
+          "y": 4,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["sd", "squelettes", 12]
+          ],
+          "links": ["ne_fureur"]
+        },
+        {
+          "id": "ne_follet",
+          "name": "Âmes errantes",
+          "icon": "spell:feux_follets",
+          "x": 5,
+          "y": 4,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["sd", "feux_follets", 15],
+            ["sc", "feux_follets", 8]
+          ],
+          "links": ["ne_follet_s"],
+          "req": "ne_follet_s"
+        },
+        {
+          "id": "ne_lien",
+          "name": "Lien vital",
+          "icon": "drop",
+          "x": 6,
+          "y": 4,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["flag", "kill_heal", 1]
+          ],
+          "links": ["ne_maitre"]
+        },
+        {
+          "id": "ne_horde",
+          "name": "Horde",
+          "icon": "summon",
+          "x": 4,
+          "y": 5,
+          "max": 2,
+          "branch": 1,
+          "effects": [
+            ["stat", "summon_pct", 10]
+          ],
+          "links": ["ne_armee", "ne_p_cadavre"]
+        },
+        {
+          "id": "ne_tombe",
+          "name": "Gardien des tombes",
+          "icon": "shield",
+          "x": 6,
+          "y": 5,
+          "max": 2,
+          "branch": 1,
+          "effects": [
+            ["stat", "dr", 3]
+          ],
+          "links": ["ne_lien", "ne_p_mains"]
+        },
+        {
+          "id": "ne_nuee",
+          "name": "Nuée spectrale",
+          "icon": "summon",
+          "x": 4,
+          "y": 6,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "summon_pct", 10]
+          ],
+          "links": ["ne_horde"]
+        },
+        {
+          "id": "ne_phylactere",
+          "name": "Phylactère",
+          "icon": "heart",
+          "x": 6,
+          "y": 6,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "max_hp_pct", 4]
+          ],
+          "links": ["ne_tombe"]
+        },
+        {
+          "id": "ne_seigneur",
+          "name": "Seigneur des morts",
+          "icon": "star",
+          "x": 5,
+          "y": 7,
+          "max": 1,
+          "branch": 1,
+          "effects": [
+            ["flag", "extra_summon", 2]
+          ],
+          "links": ["ne_nuee", "ne_phylactere"]
+        },
+        {
+          "id": "ne_sang",
+          "name": "Sang corrompu",
+          "icon": "drop",
+          "x": 8,
+          "y": 1,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "lifesteal", 1]
+          ],
+          "links": ["ne_eveil"]
+        },
+        {
+          "id": "ne_peste",
+          "name": "Peste",
+          "icon": "flame",
+          "x": 10,
+          "y": 1,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "dot_pct", 15]
+          ],
+          "links": ["ne_eveil"]
+        },
+        {
+          "id": "ne_mal",
+          "name": "Malédiction profonde",
+          "icon": "spell:malediction",
+          "x": 8,
+          "y": 2,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "curse_amp", 8]
+          ],
+          "links": ["ne_sang"]
+        },
+        {
+          "id": "ne_affliction",
+          "name": "Affliction",
+          "icon": "spell:malediction",
+          "x": 10,
+          "y": 2,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["sc", "malediction", 10]
+          ],
+          "links": ["ne_peste"]
+        },
+        {
+          "id": "ne_moisson",
+          "name": "Grande moisson",
+          "icon": "spell:moisson",
+          "x": 8,
+          "y": 3,
+          "max": 2,
+          "branch": 2,
+          "effects": [
+            ["sd", "moisson", 15]
+          ],
+          "links": ["ne_mal", "ne_p_miasme"]
+        },
+        {
+          "id": "ne_siphon_s",
+          "name": "Siphon de vie",
+          "icon": "spell:siphon",
+          "x": 9,
+          "y": 3,
+          "max": 1,
+          "branch": 2,
+          "effects": [
+            ["spell", "siphon", 1]
+          ],
+          "links": ["ne_mal", "ne_affliction"]
+        },
+        {
+          "id": "ne_decrepit",
+          "name": "Décrépitude",
+          "icon": "skull",
+          "x": 10,
+          "y": 3,
+          "max": 2,
+          "branch": 2,
+          "effects": [
+            ["flag", "first_strike", 20]
+          ],
+          "links": ["ne_affliction"]
+        },
+        {
+          "id": "ne_charogne",
+          "name": "Charogne",
+          "icon": "drop",
+          "x": 8,
+          "y": 4,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["flag", "kill_heal", 1]
+          ],
+          "links": ["ne_moisson"]
+        },
+        {
+          "id": "ne_siphon",
+          "name": "Soif des âmes",
+          "icon": "spell:siphon",
+          "x": 9,
+          "y": 4,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["sd", "siphon", 15],
+            ["sc", "siphon", 8]
+          ],
+          "links": ["ne_siphon_s"],
+          "req": "ne_siphon_s"
+        },
+        {
+          "id": "ne_fleau",
+          "name": "Fléau noir",
+          "icon": "skull",
+          "x": 10,
+          "y": 4,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "curse_amp", 8]
+          ],
+          "links": ["ne_decrepit"]
+        },
+        {
+          "id": "ne_moisson2",
+          "name": "Faux affûtée",
+          "icon": "spell:moisson",
+          "x": 8,
+          "y": 5,
+          "max": 2,
+          "branch": 2,
+          "effects": [
+            ["sc", "moisson", 10]
+          ],
+          "links": ["ne_charogne", "ne_p_mains"]
+        },
+        {
+          "id": "ne_contagion",
+          "name": "Contagion",
+          "icon": "flame",
+          "x": 10,
+          "y": 5,
+          "max": 2,
+          "branch": 2,
+          "effects": [
+            ["stat", "dot_pct", 20]
+          ],
+          "links": ["ne_fleau"]
+        },
+        {
+          "id": "ne_putrefaction",
+          "name": "Putréfaction",
+          "icon": "flame",
+          "x": 8,
+          "y": 6,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "dot_pct", 12]
+          ],
+          "links": ["ne_moisson2"]
+        },
+        {
+          "id": "ne_malefice",
+          "name": "Maléfice",
+          "icon": "skull",
+          "x": 10,
+          "y": 6,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "curse_amp", 6]
+          ],
+          "links": ["ne_contagion"]
+        },
+        {
+          "id": "ne_devoreur",
+          "name": "Dévoreur d'âmes",
+          "icon": "star",
+          "x": 9,
+          "y": 7,
+          "max": 1,
+          "branch": 2,
+          "effects": [
+            ["flag", "kill_heal", 2],
+            ["flag", "mana_on_kill", 5]
+          ],
+          "links": ["ne_putrefaction", "ne_malefice"]
+        },
+        {
+          "id": "ne_p_ossuaire",
+          "name": "Charnier",
+          "icon": "skull",
+          "x": 3,
+          "y": 2,
+          "max": 3,
+          "branch": -1,
+          "effects": [
+            ["stat", "summon_pct", 4],
+            ["stat", "spell_pct", 1]
+          ],
+          "links": ["ne_crane", "ne_liens"]
+        },
+        {
+          "id": "ne_p_miasme",
+          "name": "Miasmes",
+          "icon": "flame",
+          "x": 7,
+          "y": 2,
+          "max": 3,
+          "branch": -1,
+          "effects": [
+            ["stat", "dot_pct", 6],
+            ["stat", "summon_pct", 3]
+          ],
+          "links": ["ne_pacte", "ne_sang"]
+        },
+        {
+          "id": "ne_p_cadavre",
+          "name": "Explosion de cadavre",
+          "icon": "spell:explosion_cadavre",
+          "x": 3,
+          "y": 4,
+          "max": 1,
+          "branch": -1,
+          "effects": [
+            ["spell", "explosion_cadavre", 1]
+          ],
+          "links": ["ne_armure", "ne_fureur", "ne_p_ossuaire"]
+        },
+        {
+          "id": "ne_p_mains",
+          "name": "Mains des morts",
+          "icon": "spell:mains_des_morts",
+          "x": 7,
+          "y": 4,
+          "max": 1,
+          "branch": -1,
+          "effects": [
+            ["spell", "mains_des_morts", 1]
+          ],
+          "links": ["ne_maitre", "ne_moisson", "ne_p_miasme"]
+        },
+        {
+          "id": "ne_p_linceul",
+          "name": "Linceul",
+          "icon": "shield",
+          "x": 3,
+          "y": 6,
+          "max": 3,
+          "branch": -1,
+          "effects": [
+            ["stat", "dr", 2]
+          ],
+          "links": ["ne_squelette", "ne_horde", "ne_p_cadavre"]
+        },
+        {
+          "id": "ne_p_goule",
+          "name": "Faim de goule",
+          "icon": "drop",
+          "x": 7,
+          "y": 6,
+          "max": 3,
+          "branch": -1,
+          "effects": [
+            ["stat", "lifesteal", 1]
+          ],
+          "links": ["ne_tombe", "ne_moisson2", "ne_p_mains"]
+        }
+      ]
+    },
+    "assassin": {
+      "branches": [
+        {
+          "name": "Assassinat",
+          "color": [200, 80, 90],
+          "icon": "dagger"
+        },
+        {
+          "name": "Poisons",
+          "color": [120, 230, 90],
+          "icon": "drop"
+        },
+        {
+          "name": "Ombres",
+          "color": [150, 130, 230],
+          "icon": "boot"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "as_eveil",
+          "name": "Pas feutrés",
+          "icon": "dagger",
+          "x": 5,
+          "y": 0,
+          "max": 1,
+          "branch": -1,
+          "effects": [
+            ["stat", "crit", 1],
+            ["stat", "atk_speed", 2]
+          ],
+          "links": []
+        },
+        {
+          "id": "as_lame",
+          "name": "Lame affûtée",
+          "icon": "eye",
+          "x": 0,
+          "y": 1,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["stat", "crit", 2]
+          ],
+          "links": ["as_eveil"]
+        },
+        {
+          "id": "as_dos",
+          "name": "Dans le dos",
+          "icon": "dagger",
+          "x": 2,
+          "y": 1,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["stat", "basic_pct", 5]
+          ],
+          "links": ["as_eveil"]
+        },
+        {
+          "id": "as_ombre",
+          "name": "Frappe de l'ombre",
+          "icon": "spell:pas_ombre",
+          "x": 0,
+          "y": 2,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["sd", "pas_ombre", 15]
+          ],
+          "links": ["as_lame"]
+        },
+        {
+          "id": "as_saigne",
+          "name": "Saignée",
+          "icon": "drop",
+          "x": 2,
+          "y": 2,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["stat", "lifesteal", 1]
+          ],
+          "links": ["as_dos"]
+        },
+        {
+          "id": "as_jugul",
+          "name": "Jugulaire",
+          "icon": "skull",
+          "x": 0,
+          "y": 3,
+          "max": 2,
+          "branch": 0,
+          "effects": [
+            ["stat", "crit_dmg", 20]
+          ],
+          "links": ["as_ombre"]
+        },
+        {
+          "id": "as_marque_s",
+          "name": "Marque de mort",
+          "icon": "spell:marque_mort",
+          "x": 1,
+          "y": 3,
+          "max": 1,
+          "branch": 0,
+          "effects": [
+            ["spell", "marque_mort", 1]
+          ],
+          "links": ["as_ombre", "as_saigne"]
+        },
+        {
+          "id": "as_ombre2",
+          "name": "Traque silencieuse",
+          "icon": "spell:pas_ombre",
+          "x": 2,
+          "y": 3,
+          "max": 2,
+          "branch": 0,
+          "effects": [
+            ["sc", "pas_ombre", 10]
+          ],
+          "links": ["as_saigne", "as_p_enduit"]
+        },
+        {
+          "id": "as_precis",
+          "name": "Précision létale",
+          "icon": "eye",
+          "x": 0,
+          "y": 4,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["stat", "crit", 2]
+          ],
+          "links": ["as_jugul"]
+        },
+        {
+          "id": "as_marque",
+          "name": "Sentence de mort",
+          "icon": "spell:marque_mort",
+          "x": 1,
+          "y": 4,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["sd", "marque_mort", 15],
+            ["sc", "marque_mort", 8]
+          ],
+          "links": ["as_marque_s"],
+          "req": "as_marque_s"
+        },
+        {
+          "id": "as_bourreau",
+          "name": "Bourreau",
+          "icon": "skull",
+          "x": 2,
+          "y": 4,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["flag", "execute", 12]
+          ],
+          "links": ["as_ombre2"]
+        },
+        {
+          "id": "as_cruaute",
+          "name": "Cruauté",
+          "icon": "dagger",
+          "x": 0,
+          "y": 5,
+          "max": 2,
+          "branch": 0,
+          "effects": [
+            ["stat", "dmg_pct", 4]
+          ],
+          "links": ["as_precis"]
+        },
+        {
+          "id": "as_sang",
+          "name": "Soif du sang",
+          "icon": "drop",
+          "x": 2,
+          "y": 5,
+          "max": 2,
+          "branch": 0,
+          "effects": [
+            ["flag", "crit_heal", 1]
+          ],
+          "links": ["as_bourreau", "as_p_spectre"]
+        },
+        {
+          "id": "as_coup_grace",
+          "name": "Coup de grâce",
+          "icon": "skull",
+          "x": 0,
+          "y": 6,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["flag", "execute", 6]
+          ],
+          "links": ["as_cruaute"]
+        },
+        {
+          "id": "as_lame2",
+          "name": "Lame fantôme",
+          "icon": "eye",
+          "x": 2,
+          "y": 6,
+          "max": 3,
+          "branch": 0,
+          "effects": [
+            ["stat", "crit", 2]
+          ],
+          "links": ["as_sang"]
+        },
+        {
+          "id": "as_premier",
+          "name": "Premier sang",
+          "icon": "star",
+          "x": 1,
+          "y": 7,
+          "max": 1,
+          "branch": 0,
+          "effects": [
+            ["flag", "first_strike", 60]
+          ],
+          "links": ["as_coup_grace", "as_lame2"]
+        },
+        {
+          "id": "as_toxine",
+          "name": "Toxines",
+          "icon": "drop",
+          "x": 4,
+          "y": 1,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "dot_pct", 12]
+          ],
+          "links": ["as_eveil"]
+        },
+        {
+          "id": "as_alchimie",
+          "name": "Alchimie",
+          "icon": "orb",
+          "x": 6,
+          "y": 1,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "mana_regen_pct", 12]
+          ],
+          "links": ["as_eveil"]
+        },
+        {
+          "id": "as_venin",
+          "name": "Réserve de venin",
+          "icon": "spell:venin",
+          "x": 4,
+          "y": 2,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["sc", "venin", 8]
+          ],
+          "links": ["as_toxine"]
+        },
+        {
+          "id": "as_antidote",
+          "name": "Antidote",
+          "icon": "heart",
+          "x": 6,
+          "y": 2,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "max_hp_pct", 4]
+          ],
+          "links": ["as_alchimie"]
+        },
+        {
+          "id": "as_eventail",
+          "name": "Pluie d'acier",
+          "icon": "spell:eventail",
+          "x": 4,
+          "y": 3,
+          "max": 2,
+          "branch": 1,
+          "effects": [
+            ["sd", "eventail", 15]
+          ],
+          "links": ["as_venin", "as_p_enduit"]
+        },
+        {
+          "id": "as_nuage_s",
+          "name": "Nuage toxique",
+          "icon": "spell:nuage_toxique",
+          "x": 5,
+          "y": 3,
+          "max": 1,
+          "branch": 1,
+          "effects": [
+            ["spell", "nuage_toxique", 1]
+          ],
+          "links": ["as_venin", "as_antidote"]
+        },
+        {
+          "id": "as_virulence",
+          "name": "Virulence",
+          "icon": "drop",
+          "x": 6,
+          "y": 3,
+          "max": 2,
+          "branch": 1,
+          "effects": [
+            ["stat", "dot_pct", 15]
+          ],
+          "links": ["as_antidote", "as_p_brume"]
+        },
+        {
+          "id": "as_eventail2",
+          "name": "Lames tournoyantes",
+          "icon": "spell:eventail",
+          "x": 4,
+          "y": 4,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["sc", "eventail", 10]
+          ],
+          "links": ["as_eventail"]
+        },
+        {
+          "id": "as_nuage",
+          "name": "Miasme",
+          "icon": "spell:nuage_toxique",
+          "x": 5,
+          "y": 4,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["sd", "nuage_toxique", 15],
+            ["sc", "nuage_toxique", 8]
+          ],
+          "links": ["as_nuage_s"],
+          "req": "as_nuage_s"
+        },
+        {
+          "id": "as_fiole",
+          "name": "Fiole de secours",
+          "icon": "drop",
+          "x": 6,
+          "y": 4,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["flag", "kill_heal", 1]
+          ],
+          "links": ["as_virulence"]
+        },
+        {
+          "id": "as_neuro",
+          "name": "Neurotoxine",
+          "icon": "skull",
+          "x": 4,
+          "y": 5,
+          "max": 2,
+          "branch": 1,
+          "effects": [
+            ["flag", "first_strike", 20]
+          ],
+          "links": ["as_eventail2", "as_p_spectre"]
+        },
+        {
+          "id": "as_distill",
+          "name": "Distillation",
+          "icon": "orb",
+          "x": 6,
+          "y": 5,
+          "max": 2,
+          "branch": 1,
+          "effects": [
+            ["flag", "mana_on_kill", 3]
+          ],
+          "links": ["as_fiole", "as_p_frenesie"]
+        },
+        {
+          "id": "as_venin2",
+          "name": "Venin concentré",
+          "icon": "drop",
+          "x": 4,
+          "y": 6,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "dot_pct", 12]
+          ],
+          "links": ["as_neuro"]
+        },
+        {
+          "id": "as_elixir",
+          "name": "Élixir",
+          "icon": "orb",
+          "x": 6,
+          "y": 6,
+          "max": 3,
+          "branch": 1,
+          "effects": [
+            ["stat", "mana_pct", 8]
+          ],
+          "links": ["as_distill"]
+        },
+        {
+          "id": "as_mortel",
+          "name": "Venin mortel",
+          "icon": "star",
+          "x": 5,
+          "y": 7,
+          "max": 1,
+          "branch": 1,
+          "effects": [
+            ["flag", "execute", 25]
+          ],
+          "links": ["as_venin2", "as_elixir"]
+        },
+        {
+          "id": "as_furtif",
+          "name": "Furtivité",
+          "icon": "boot",
+          "x": 8,
+          "y": 1,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "move_speed", 3]
+          ],
+          "links": ["as_eveil"]
+        },
+        {
+          "id": "as_vif",
+          "name": "Mains vives",
+          "icon": "bolt",
+          "x": 10,
+          "y": 1,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "atk_speed", 3]
+          ],
+          "links": ["as_eveil"]
+        },
+        {
+          "id": "as_voile",
+          "name": "Voile d'ombre",
+          "icon": "bolt",
+          "x": 8,
+          "y": 2,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "roll_cd", 10]
+          ],
+          "links": ["as_furtif"]
+        },
+        {
+          "id": "as_insaisi",
+          "name": "Insaisissable",
+          "icon": "shield",
+          "x": 10,
+          "y": 2,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "dr", 2]
+          ],
+          "links": ["as_vif"]
+        },
+        {
+          "id": "as_danse2",
+          "name": "Ballet mortel",
+          "icon": "spell:danse_lames",
+          "x": 8,
+          "y": 3,
+          "max": 2,
+          "branch": 2,
+          "effects": [
+            ["sd", "danse_lames", 15]
+          ],
+          "links": ["as_voile", "as_p_brume"]
+        },
+        {
+          "id": "as_fumee_s",
+          "name": "Voile de fumée",
+          "icon": "spell:voile_fumee",
+          "x": 9,
+          "y": 3,
+          "max": 1,
+          "branch": 2,
+          "effects": [
+            ["spell", "voile_fumee", 1]
+          ],
+          "links": ["as_voile", "as_insaisi"]
+        },
+        {
+          "id": "as_vitesse",
+          "name": "Vivacité",
+          "icon": "bolt",
+          "x": 10,
+          "y": 3,
+          "max": 2,
+          "branch": 2,
+          "effects": [
+            ["stat", "atk_speed", 4]
+          ],
+          "links": ["as_insaisi"]
+        },
+        {
+          "id": "as_nuit",
+          "name": "Enfant de la nuit",
+          "icon": "clock",
+          "x": 8,
+          "y": 4,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "cdr", 3]
+          ],
+          "links": ["as_danse2"]
+        },
+        {
+          "id": "as_fumee",
+          "name": "Écran opaque",
+          "icon": "spell:voile_fumee",
+          "x": 9,
+          "y": 4,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["sc", "voile_fumee", 10]
+          ],
+          "links": ["as_fumee_s"],
+          "req": "as_fumee_s"
+        },
+        {
+          "id": "as_fantome",
+          "name": "Fantôme",
+          "icon": "boot",
+          "x": 10,
+          "y": 4,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "move_speed", 4]
+          ],
+          "links": ["as_vitesse"]
+        },
+        {
+          "id": "as_reflexe",
+          "name": "Réflexes félins",
+          "icon": "shield",
+          "x": 8,
+          "y": 5,
+          "max": 2,
+          "branch": 2,
+          "effects": [
+            ["flag", "low_hp_dr", 12]
+          ],
+          "links": ["as_nuit", "as_p_frenesie"]
+        },
+        {
+          "id": "as_evasion",
+          "name": "Évasion",
+          "icon": "eye",
+          "x": 10,
+          "y": 5,
+          "max": 2,
+          "branch": 2,
+          "effects": [
+            ["stat", "crit", 3]
+          ],
+          "links": ["as_fantome"]
+        },
+        {
+          "id": "as_ombre_vive",
+          "name": "Ombre vivante",
+          "icon": "boot",
+          "x": 8,
+          "y": 6,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "move_speed", 3]
+          ],
+          "links": ["as_reflexe"]
+        },
+        {
+          "id": "as_brume",
+          "name": "Brume",
+          "icon": "shield",
+          "x": 10,
+          "y": 6,
+          "max": 3,
+          "branch": 2,
+          "effects": [
+            ["stat", "dr", 2]
+          ],
+          "links": ["as_evasion"]
+        },
+        {
+          "id": "as_danse",
+          "name": "Danse macabre",
+          "icon": "spell:danse_lames",
+          "x": 9,
+          "y": 7,
+          "max": 1,
+          "branch": 2,
+          "effects": [
+            ["sd", "danse_lames", 40],
+            ["flag", "kill_cdr", 0.3]
+          ],
+          "links": ["as_ombre_vive", "as_brume"]
+        },
+        {
+          "id": "as_p_enduit",
+          "name": "Lames enduites",
+          "icon": "drop",
+          "x": 3,
+          "y": 2,
+          "max": 3,
+          "branch": -1,
+          "effects": [
+            ["stat", "dot_pct", 6],
+            ["stat", "crit", 1]
+          ],
+          "links": ["as_dos", "as_toxine"]
+        },
+        {
+          "id": "as_p_brume",
+          "name": "Silhouette",
+          "icon": "boot",
+          "x": 7,
+          "y": 2,
+          "max": 3,
+          "branch": -1,
+          "effects": [
+            ["stat", "move_speed", 2],
+            ["stat", "dot_pct", 5]
+          ],
+          "links": ["as_alchimie", "as_furtif"]
+        },
+        {
+          "id": "as_p_spectre",
+          "name": "Lame spectrale",
+          "icon": "spell:lame_spectrale",
+          "x": 3,
+          "y": 4,
+          "max": 1,
+          "branch": -1,
+          "effects": [
+            ["spell", "lame_spectrale", 1]
+          ],
+          "links": ["as_ombre2", "as_eventail", "as_p_enduit"]
+        },
+        {
+          "id": "as_p_frenesie",
+          "name": "Frénésie",
+          "icon": "spell:frenesie",
+          "x": 7,
+          "y": 4,
+          "max": 1,
+          "branch": -1,
+          "effects": [
+            ["spell", "frenesie", 1]
+          ],
+          "links": ["as_virulence", "as_danse2", "as_p_brume"]
+        },
+        {
+          "id": "as_p_tueur",
+          "name": "Tueur à gages",
+          "icon": "skull",
+          "x": 3,
+          "y": 6,
+          "max": 3,
+          "branch": -1,
+          "effects": [
+            ["stat", "crit_dmg", 8]
+          ],
+          "links": ["as_sang", "as_neuro", "as_p_spectre"]
+        },
+        {
+          "id": "as_p_ombre",
+          "name": "Ombre fuyante",
+          "icon": "shield",
+          "x": 7,
+          "y": 6,
+          "max": 3,
+          "branch": -1,
+          "effects": [
+            ["stat", "dr", 2]
+          ],
+          "links": ["as_distill", "as_reflexe", "as_p_frenesie"]
+        }
+      ]
+    }
   }
 }

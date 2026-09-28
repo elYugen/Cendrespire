@@ -211,7 +211,7 @@ def talent_icon(surf, t, c, r, color, state):
     """state : 'max', 'some', 'open' (apprenable) ou 'locked'."""
     icon = t["icon"]
     kind = SPELL_GLYPH.get(icon[6:], "star") if icon.startswith("spell:") else icon
-    capstone = t["tier"] == 3
+    capstone = t.get("capstone")
     if state == "locked":
         bg, ring, fg = (22, 24, 26), (80, 82, 82), (90, 92, 92)
     elif state == "open":

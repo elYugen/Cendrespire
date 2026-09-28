@@ -44,6 +44,7 @@ class Pad:
         self.active = False         # dernière entrée venue de la manette (et non du clavier / de la souris)
         self.cursor = None          # curseur virtuel (coordonnées de conception) dans les menus
         self.trig = {"lt": False, "rt": False}
+        self.capture = None         # fonction qui reçoit le prochain bouton appuyé (réglage des commandes)
 
     # ------------------------------------------------------------------ branchement
     def init(self):
@@ -124,6 +125,10 @@ class Pad:
 
     def press(self, name, game):
         self.held.add(name)
+        if self.capture:                    # réglages : le prochain bouton appuyé est lié à une action
+            fn, self.capture = self.capture, None
+            fn(name)
+            return []
         scene = game.scene
         if in_menu(game):
             if name in ("a", "x"):
@@ -192,31 +197,32 @@ def set_mouse(game, x, y):
 
 # =========================================================================== en jeu
 def world_press(world, name):
-    from . import artifacts, spells
+    """Bouton appuyé en jeu : action choisie dans les réglages (controls.pad). Select ouvre toujours la carte."""
+    from . import artifacts, controls, spells
     from .items import ART_SLOTS
     p = world.player
     if p.dead:
         return
-    if name == "a":
+    act = controls.pad_action(name) or ("map" if name == "back" else None)
+    if act == "interact":
         obj = world.nearest_interactable()
-        PAD.a_attacks = obj is None          # A maintenu attaque seulement s'il n'a pas servi à interagir
+        PAD.a_attacks = obj is None          # maintenu, il attaque seulement s'il n'a pas servi à interagir
         if obj:
             obj.interact(world)
-        return
-    if name == "lb":
+    elif act == "roll":
         dx, dy = move_dir(world) or (math.cos(p.facing), math.sin(p.facing))
         p.start_roll(world, dx, dy)
-    elif name in ("x", "y", "b", "rb"):
-        i = ("x", "y", "b", "rb").index(name)
+    elif act in ("spell1", "spell2", "spell3", "spell4"):
+        i = int(act[-1]) - 1
         if i < len(p.spells):
             spells.cast(world, p.spells[i])
-    elif name == "lt":
+    elif act == "potion":
         p.drink_potion(world)
-    elif name in ("left", "up", "right"):
-        artifacts.use(world, ART_SLOTS[("left", "up", "right").index(name)])
-    elif name in ("down", "back"):
+    elif act in ("art1", "art2", "art3"):
+        artifacts.use(world, ART_SLOTS[int(act[-1]) - 1])
+    elif act == "map":
         world.big_map = not world.big_map
-    elif name == "start":
+    elif act == "pause":
         world.open_pause()
 
 
@@ -257,7 +263,8 @@ def aim_point(world):
 
 
 def attack_held():
-    return "rt" in PAD.held or ("a" in PAD.held and PAD.a_attacks)
+    from . import controls
+    return controls.pad["attack"] in PAD.held or (controls.pad["interact"] in PAD.held and PAD.a_attacks)
 
 
 PAD = Pad()

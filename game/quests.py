@@ -5,7 +5,7 @@
 Les objectifs « clear » et « floor » se lisent sur la progression du héros (étages vaincus, étage atteint) ;
 les autres comptent les événements survenus après l'acceptation (monstres tués, gardiens, discussions).
 """
-from . import sfx
+from . import coins, sfx
 from .data import CONTENT, MONSTERS
 from .settings import GOLD_BRIGHT, RARITY_NAMES
 from . import town
@@ -73,8 +73,10 @@ def complete(p, qid):
 def reward_text(qid):
     r = QUESTS[qid].get("reward", {})
     parts = []
-    if r.get("gold"):
-        parts.append(f"{r['gold']} or")
+    if r.get("money"):
+        parts.append(coins.text(r["money"]))
+    if r.get("tears"):
+        parts.append(f"{r['tears']} Larme(s) d'oubli")
     if r.get("xp"):
         parts.append(f"{r['xp']} XP")
     if r.get("item"):
@@ -137,9 +139,11 @@ def turn_in(world, qid):
     r = QUESTS[qid].get("reward", {})
     world.show_banner("Quête accomplie", QUESTS[qid]["name"], GOLD_BRIGHT, 4)
     sfx.play("levelup")
-    if r.get("gold"):
-        p.gold += r["gold"]
-        world.on_gold(r["gold"])
+    if r.get("money"):
+        p.money += r["money"]
+        world.on_gold(r["money"])
+    if r.get("tears"):
+        p.tears += r["tears"]
     if r.get("item"):
         it = generate_item(max(1, p.max_floor), rarity=r["item"], cls_id=p.cls_id)
         if not world.pickup_item(it):

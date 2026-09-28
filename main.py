@@ -123,7 +123,10 @@ class Game:
             # pixels par point (2 sur écran Retina) : mesuré avant tout agrandissement de la fenêtre, tant que
             # le framebuffer d'OpenGL et la fenêtre ont encore la même taille
             self.ratio = self.ctx.screen.size[0] / self.window.size[0]
-            if mode == "full":
+            from game import display
+            if display.prefs["fullscreen"] is not None:        # réglage choisi dans les options
+                display.apply(self, display.prefs["fullscreen"], display.prefs["size"])
+            elif mode == "full":
                 self.window.set_fullscreen(True)
             elif mode == "max":
                 self.window.maximize()
@@ -172,15 +175,8 @@ class Game:
     def toggle_fullscreen(self):
         if not self.window:
             return
-        if self.window.size != pygame.display.get_desktop_sizes()[0]:
-            self.window.set_fullscreen(True)
-        else:
-            self.window.set_windowed()
-            size, mode = window_size()
-            if mode:                       # écran trop petit pour une fenêtre 1080p : fenêtre agrandie
-                self.window.size = (size[0] * 3 // 4, size[1] * 3 // 4)
-                self.window.maximize()
-        self.refresh_view()
+        from game import display
+        display.toggle(self)
 
     def change_scene(self, scene):
         self.next_scene = scene

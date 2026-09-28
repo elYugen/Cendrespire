@@ -11,7 +11,7 @@ import math
 import pygame
 
 from . import icons, ui
-from .data import POTION_HEAL, SPELLS, BUFFS, ANIMA_POWERS, ARTIFACTS, ARTIFACT_KEYS, anima_desc, xp_needed
+from .data import POTION_HEAL, SPELLS, BUFFS, ANIMA_POWERS, ARTIFACTS, anima_desc, xp_needed
 from .items import ART_SLOTS
 from .settings import SCREEN_W, SCREEN_H, VIEW, TEXT, TEXT_DIM, GOLD_BRIGHT, WHITE, SHEIKAH, UI_LINE, RARITY_COLORS
 
@@ -47,8 +47,8 @@ def heart_surfs(size_px):
         _heart_shape(full, big, (232, 44, 60))
         empty = pygame.Surface((big, big), pygame.SRCALPHA)
         _heart_shape(empty, big, (24, 26, 30, 150))
-        _heart_cache[key] = (pygame.transform.smoothscale(full, (size_px, size_px)),
-                             pygame.transform.smoothscale(empty, (size_px, size_px)))
+        _heart_cache[key] = (pygame.transform.smoothscale(full, (size_px, size_px)).premul_alpha(),
+                             pygame.transform.smoothscale(empty, (size_px, size_px)).premul_alpha())
     return _heart_cache[key]
 
 
@@ -56,11 +56,11 @@ def draw_heart(surf, x, y, frac, size=HEART):
     px = max(4, int(size * VIEW.s))
     full, empty = heart_surfs(px)
     X, Y = round(x * VIEW.s), round(y * VIEW.s)
-    surf.blit(empty, (X, Y))
+    ui.premul_blit(surf, empty, (X, Y))
     if frac <= 0:
         return
     if frac >= 1:
-        surf.blit(full, (X, Y))
+        ui.premul_blit(surf, full, (X, Y))
         return
     part = full.copy()
     c = px / 2
@@ -68,7 +68,7 @@ def draw_heart(surf, x, y, frac, size=HEART):
     pts = [(c, c)] + [(c + math.cos(a0 + math.tau * (1 - frac) * i / 20) * px,
                        c + math.sin(a0 + math.tau * (1 - frac) * i / 20) * px) for i in range(21)]
     pygame.draw.polygon(part, (0, 0, 0, 0), pts)
-    surf.blit(part, (X, Y))
+    ui.premul_blit(surf, part, (X, Y))
 
 
 def draw_hearts(surf, world, x, y):
@@ -123,8 +123,7 @@ def draw_mana_wheel(surf, world, x, y):
     empty = frac < 0.15 and int(world.time * 6) % 2
     _ring(t, c, c, ro, ri, frac, (235, 90, 70, 255) if empty else (*SHEIKAH, 255))
     pygame.draw.circle(t, (240, 240, 235, 200), (c, c), ro + 1, max(1, int(s)))
-    t.set_alpha(int(a))
-    surf.blit(t, (x * s - c, y * s - c))
+    ui.blit_straight(surf, t, (x * s - c, y * s - c), a)
 
 
 # --------------------------------------------------------------------------- emplacements
@@ -140,7 +139,7 @@ def _cooldown(surf, rect, frac, radius=10):
     mask = pygame.Surface(pr.size, pygame.SRCALPHA)
     pygame.draw.rect(mask, (255, 255, 255, 255), mask.get_rect(), border_radius=int(radius * VIEW.s))
     t.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
-    surf.blit(t, pr)
+    ui.blit_straight(surf, t, pr)
 
 
 def spell_label(name):
@@ -204,6 +203,13 @@ def _flat_slot(surf, world, rect, key, label, accent, icon, cd_frac=0.0, cd_left
                      (255, 120, 110) if lacking else (150, 190, 255), "bold", anchor="bottomright")
 
 
+def _slot_pad(surf, rc, action):
+    """À la manette : le pictogramme du bouton dans le coin haut gauche de la case."""
+    btn = pad_btn(action)
+    if btn:
+        ui.pad_button(surf, btn, (rc.x + 8, rc.y + 8), 7)
+
+
 def draw_slots(surf, world):
     """Barre des compétences, en bas au centre : attaque, 4 sorts, roulade (le mana reste affiché près du héros)."""
     p = world.player
@@ -215,9 +221,10 @@ def draw_slots(surf, world):
     x = x0
     rc = pygame.Rect(x, y0, SLOT, SLOT)
     acol = atk.get("color", p.cls["color"])
-    _flat_slot(surf, world, rc, "attack", "Clic", acol,
+    _flat_slot(surf, world, rc, "attack", "" if pad_btn("attack") else "Clic", acol,
                lambda s, c, lk: icons.spell_icon(s, None, c, SLOT * 0.5, acol, attack_cls=p.cls_id, flat=True),
                p.atk_cd / max(0.01, p.atk_total))
+    _slot_pad(surf, rc, "attack")
     world.skill_rects.append((rc, ("attack", None)))
     for i, sid in enumerate(p.spells):
         x += SLOT + GAP
@@ -225,10 +232,11 @@ def draw_slots(surf, world):
         rc = pygame.Rect(x, y0, SLOT, SLOT)
         tot = p.cd_total.get(sid, 1) or 1
         cd = p.cds.get(sid, 0)
-        _flat_slot(surf, world, rc, sid, str(i + 1), sp["color"],
+        _flat_slot(surf, world, rc, sid, "" if pad_btn(f"spell{i + 1}") else key_hint(f"spell{i + 1}"), sp["color"],
                    lambda s, c, lk, sid=sid, col=sp["color"]: icons.spell_icon(s, sid, c, SLOT * 0.5, col, locked=lk,
                                                                                 flat=True),
-                   cd / tot, cd, not p.spell_unlocked(sid), p.mana < sp["mana"], sp["mana"], sp["level"])
+                   cd / tot, cd, not p.spell_unlocked(sid), p.mana < p.mana_cost(sid), p.mana_cost(sid), sp["level"])
+        _slot_pad(surf, rc, f"spell{i + 1}")
         world.skill_rects.append((rc, ("spell", sid)))
     x += SLOT + GAP + 10
     rc = pygame.Rect(x, y0, SLOT, SLOT)
@@ -237,17 +245,16 @@ def draw_slots(surf, world):
     def roll_icon(s, c, lk):
         ui.arc(s, col, pygame.Rect(c[0] - 9, c[1] - 9, 18, 18), 0.6, 5.4, 2)
         ui.polygon(s, col, [(c[0] + 9, c[1] - 1), (c[0] + 4, c[1] - 9), (c[0] + 12, c[1] - 7)])
-    _flat_slot(surf, world, rc, "roll", "Espace", col, roll_icon, p.roll_cd / max(0.01, p.roll_total))
+    _flat_slot(surf, world, rc, "roll", "" if pad_btn("roll") else key_hint("roll"), col, roll_icon,
+               p.roll_cd / max(0.01, p.roll_total))
+    _slot_pad(surf, rc, "roll")
     world.skill_rects.append((rc, ("roll", None)))
     # or : apparaît brièvement quand il change, en haut à droite
     if world.gold_shown > 0 or world.show_inv:
         a = min(1.0, world.gold_shown / 0.5) if not world.show_inv else 1.0
-        r = pygame.Rect(SCREEN_W - 22 - 130, 20, 130, 28)
+        r = pygame.Rect(SCREEN_W - 22 - 190, 20, 190, 28)
         ui.rect(surf, (*FLAT_BG, int(210 * a)), r, 0, 6)
-        ui.circle(surf, (240, 196, 70), (r.x + 16, r.centery), 8)
-        ui.circle(surf, (255, 230, 140), (r.x + 14, r.centery - 2), 3)
-        ui.draw_text(surf, f"{world.player.gold}", (r.right - 12, r.centery), 16, WHITE, "bold",
-                     anchor="midright", alpha=int(255 * a))
+        ui.draw_money(surf, world.player.money, (r.right - 12, r.centery), 15, "midright", alpha=int(255 * a))
 
 
 # --------------------------------------------------------------------------- effets actifs (sous les cœurs)
@@ -280,26 +287,70 @@ def _potion_glyph(surf, c, k=1.0):
     ui.circle(surf, (255, 170, 170), (fx - 4 * k, fy), 3 * k)
 
 
+def key_hint(action):
+    """Touche de l'action : bouton de la manette si elle est utilisée, sinon touche du clavier."""
+    from . import controls, gamepad
+    if gamepad.PAD.active and action in controls.pad:
+        return controls.pad_label(action)
+    return controls.label(action)
+
+
+def pad_btn(action):
+    """Bouton de manette de l'action quand on joue à la manette (pour dessiner son pictogramme), sinon None."""
+    from . import controls, gamepad
+    if gamepad.PAD.active and action in controls.pad:
+        return controls.pad[action]
+    return None
+
+
+def key_icon(surf, action, center, size=10):
+    """Touche de l'action : pictogramme de manette, ou pastille avec la touche du clavier."""
+    btn = pad_btn(action)
+    if btn:
+        return ui.pad_button(surf, btn, center, size)
+    return ui.key_badge(surf, key_hint(action), center, size)
+
+
+def _cross_layout():
+    """Position des artefacts et de la potion dans la croix : [(emplacement, action, (dx, dy), badge ?)].
+    À la manette, chaque artefact se place du côté de sa flèche de la croix directionnelle."""
+    slots = [(ART_SLOTS[0], "art1"), (ART_SLOTS[1], "art2"), (ART_SLOTS[2], "art3"), ("potion", "potion")]
+    default = [(0, -1), (-1, 0), (1, 0), (0, 1)]
+    if not pad_btn("art1"):
+        return [(s, a, d, True) for (s, a), d in zip(slots, default)]
+    out, used = {}, set()
+    for s, a in slots:
+        d = ui.DPAD_DIRS.get(pad_btn(a))
+        if d and d not in used:
+            out[s] = (s, a, d, False)
+            used.add(d)
+    free = [d for d in ((0, 1), (0, -1), (-1, 0), (1, 0)) if d not in used]
+    for s, a in slots:
+        if s not in out:
+            out[s] = (s, a, free.pop(0), True)
+    return [out[s] for s, _a in slots]
+
+
 def draw_artifacts(surf, world, x, y):
     """Façon Breath of the Wild : les 3 artefacts et la potion en croix sous les cœurs, la touche à côté."""
     p = world.player
     R, gap = 19, 44
     cx, cy = x + gap + R, y + gap + R - 4
     # (emplacement, décalage dans la croix, côté de la touche)
-    layout = [(ART_SLOTS[0], (0, -1), "right"), (ART_SLOTS[1], (-1, 0), "below"), (ART_SLOTS[2], (1, 0), "below"),
-              ("potion", (0, 1), "right")]
-    ui.circle(surf, (0, 0, 0, 60), (cx, cy), 9)
-    for i, (slot, (ox, oy), side) in enumerate(layout):
+    pad = bool(pad_btn("art1"))
+    ui.circle(surf, (0, 0, 0, 60), (cx, cy), 12 if pad else 9)
+    if pad:                                   # manette : une croix directionnelle au centre, sans lettres
+        ui.dpad(surf, (cx, cy), 10)
+    for slot, action, (ox, oy), badge in _cross_layout():
+        side = "right" if ox == 0 else "below"
         c = (cx + ox * gap, cy + oy * gap)
         box = pygame.Rect(c[0] - R, c[1] - R, 2 * R, 2 * R)
         if slot == "potion":
-            key = "F"
             ui.circle(surf, (0, 0, 0, 150), c, R)
             _potion_glyph(surf, c, 0.8)
             cd, tot = p.potion_cd, max(0.01, p.potion_total)
             ring = (210, 34, 46)
         else:
-            key = ARTIFACT_KEYS[ART_SLOTS.index(slot)]
             it = p.equipment.get(slot)
             if it:
                 ui.circle(surf, (0, 0, 0, 150), c, R)
@@ -317,8 +368,9 @@ def draw_artifacts(surf, world, x, y):
             ui.draw_text(surf, f"{cd:.0f}", c, 13, WHITE, "bold", anchor="center")
         elif ring:
             ui.circle(surf, ring, c, R, 2)
-        kp = (c[0] + R + 10, c[1]) if side == "right" else (c[0], c[1] + R + 7)
-        ui.key_badge(surf, key, kp, 10)
+        if badge:
+            kp = (c[0] + R + 12, c[1]) if side == "right" else (c[0], c[1] + R + 9)
+            key_icon(surf, action, kp, 10 if not pad else 8)
         world.skill_rects.append((box, ("art", slot) if slot != "potion" else ("potion", None)))
     return cy + gap + R + 12
 
@@ -350,7 +402,7 @@ def draw_hud_tooltips(surf, world):
                 lines.append((f"Chaque ennemi touché rend {a['mana_gain']} mana", (120, 160, 255), 14))
         elif kind == "spell":
             sp = SPELLS[sid]
-            lines = [(sp["name"], GOLD_BRIGHT, 17), (f"Mana {sp['mana']}  ·  Recharge {sp['cd']} s", (120, 170, 255), 14)]
+            lines = [(sp["name"], GOLD_BRIGHT, 17), (f"Mana {p.mana_cost(sid)}  ·  Recharge {sp['cd']} s", (120, 170, 255), 14)]
             lines += [(l, TEXT, 15) for l in ui.wrap(sp["desc"], 15, 300)]
             if not p.spell_unlocked(sid):
                 lines.append((f"Débloqué au niveau {sp['level']}", (240, 100, 80), 14))
@@ -486,7 +538,7 @@ def draw_minimap(surf, world):
     disc.fill((10, 20, 26, 190))
     disc.blit(rot, (pb.w / 2 - rot.get_width() / 2, pb.h / 2 - rot.get_height() / 2))
     disc.blit(_round_mask(pb.w, pb.h, pb.w // 2), (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
-    surf.blit(disc, pb)
+    ui.blit_straight(surf, disc, pb)
     old = surf.get_clip()
     surf.set_clip(pb)
     _markers(surf, world, box.centerx, box.centery, zoom * mm.S / 40, box)
@@ -548,7 +600,7 @@ def draw_big_map(surf, world):
     k = min(avail_w / rot.get_width(), avail_h / rot.get_height())
     rot = pygame.transform.smoothscale(rot, (int(rot.get_width() * k), int(rot.get_height() * k)))
     r = rot.get_rect(center=(SCREEN_W / 2 * VIEW.s, (SCREEN_H / 2 + 12) * VIEW.s))
-    surf.blit(rot, r)
+    ui.blit_straight(surf, rot, r)
     # centre de la carte (monde) -> position du joueur à l'écran
     scale = k / VIEW.s * mm.S / 40
     cx0 = mm.surf.get_width() / 2 / mm.S * 40
@@ -584,8 +636,13 @@ def draw_prompt(surf, text, pt):
     r.midleft = (pt[0] + 26, pt[1])
     ui.botw_box(surf, r, 175, UI_LINE, radius=15)
     b = (r.x + 16, r.centery)
-    ui.circle(surf, (245, 243, 235), b, 11)
-    ui.draw_text(surf, "E", b, 13, (20, 20, 20), "bold", anchor="center", shadow=False)
+    btn = pad_btn("interact")
+    if btn:
+        ui.pad_button(surf, btn, b, 11)
+    else:
+        from . import controls
+        ui.circle(surf, (245, 243, 235), b, 11)
+        ui.draw_text(surf, controls.label("interact"), b, 13, (20, 20, 20), "bold", anchor="center", shadow=False)
     ui.draw_text(surf, text, (r.x + 34, r.centery), 15, WHITE, "text", anchor="midleft")
 
 
@@ -605,9 +662,7 @@ def low_hp_veil(surf, alpha):
             pygame.draw.ellipse(v, (150, 0, 0, a), (cx - sx, cy - sy, sx * 2, sy * 2))
         v = pygame.transform.smoothscale(v, (w, h))
         _mask_cache[key] = v
-    t = v.copy()
-    t.set_alpha(int(alpha))
-    surf.blit(t, (0, 0))
+    ui.blit_straight(surf, v, (0, 0), alpha)
 
 
 def draw_top(surf, world):

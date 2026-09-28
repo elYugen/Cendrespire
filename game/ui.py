@@ -9,7 +9,7 @@ import math
 import pygame
 import pygame.freetype as ft
 
-from . import gfx, sfx
+from . import coins, gfx, sfx
 from .gfx import darker, lighter
 from .items import item_lines
 from .settings import (VIEW, SCREEN_W, SCREEN_H, TEXT, TEXT_DIM, WHITE, SHEIKAH, UI_LINE, RARITY_COLORS, FONT_FILES)
@@ -70,7 +70,9 @@ _text_cache = {}
 
 
 def text_surf(text, size, color, kind="text"):
-    """Surface du texte en pixels (hauteur de ligne constante pour aligner les lignes)."""
+    """Surface du texte en pixels (hauteur de ligne constante pour aligner les lignes), en alpha prémultiplié
+    comme tout le calque d'interface : à coller avec premul_blit, sinon les bords lissés deviennent blancs
+    (texte gras et crénelé) là où l'interface est transparente."""
     key = (text, size, color, kind, VIEW.version)
     s = _text_cache.get(key)
     if s is None:
@@ -85,6 +87,7 @@ def text_surf(text, size, color, kind="text"):
             ox = max(0, -r.x)
             s = pygame.Surface((max(1, r.x + r.width + ox + 2), h), pygame.SRCALPHA)
             f.render_to(s, (ox, asc + 1), text, color)
+            s = s.premul_alpha()
         else:
             s = pygame.Surface((1, h), pygame.SRCALPHA)
         _text_cache[key] = s
@@ -94,14 +97,35 @@ def text_surf(text, size, color, kind="text"):
 _shadow_cache = {}
 
 
+def premul_blit(surf, src, pos):
+    """Colle une surface en alpha prémultiplié (couleur déjà multipliée par l'alpha)."""
+    surf.blit(src, pos, special_flags=pygame.BLEND_PREMULTIPLIED)
+
+
+def blit_straight(surf, src, pos, alpha=255):
+    """Colle une surface à alpha « classique » (couleur non multipliée) sur le calque prémultiplié."""
+    p = src.premul_alpha()
+    if alpha < 255:
+        a = max(0, min(255, int(alpha)))
+        p.fill((a, a, a, a), special_flags=pygame.BLEND_RGBA_MULT)
+    premul_blit(surf, p, pos)
+
+
+def faded(src, alpha):
+    """Copie d'une surface prémultipliée, rendue plus transparente (alpha de 0 à 255)."""
+    s = src.copy()
+    a = max(0, min(255, int(alpha)))
+    s.fill((a, a, a, a), special_flags=pygame.BLEND_RGBA_MULT)
+    return s
+
+
 def _shadow_surf(text, size, kind):
     key = (text, size, kind, VIEW.version)
     s = _shadow_cache.get(key)
     if s is None:
         if len(_shadow_cache) > 5000:
             _shadow_cache.clear()
-        s = text_surf(text, size, (0, 0, 0), kind).copy()
-        s.set_alpha(150)
+        s = faded(text_surf(text, size, (0, 0, 0), kind), 150)
         _shadow_cache[key] = s
     return s
 
@@ -109,6 +133,19 @@ def _shadow_surf(text, size, kind):
 def text_size(text, size, kind="text"):
     s = text_surf(text, size, (255, 255, 255), kind)
     return s.get_width() / VIEW.s, s.get_height() / VIEW.s
+
+
+_caps = {}
+
+
+def cap_box(size, kind="text"):
+    """(haut, bas) des majuscules dans la surface d'un texte, en coordonnées de conception : sert à centrer
+    un texte sur la hauteur réelle de ses lettres plutôt que sur celle de la ligne."""
+    key = (int(round(size * VIEW.s)), kind)
+    if key not in _caps:
+        r = text_surf("H", size, (255, 255, 255), kind).get_bounding_rect(min_alpha=40)
+        _caps[key] = (r.top / VIEW.s, r.bottom / VIEW.s)
+    return _caps[key]
 
 
 def draw_text(surf, text, pos, size=18, color=TEXT, kind="text", anchor="topleft", shadow=False, alpha=255):
@@ -119,16 +156,67 @@ def draw_text(surf, text, pos, size=18, color=TEXT, kind="text", anchor="topleft
     if shadow:
         sh = _shadow_surf(text, size, kind)
         if alpha < 255:
-            sh = sh.copy()
-            sh.set_alpha(int(150 * alpha / 255))
+            sh = faded(sh, alpha)
         off = max(1, round(1.5 * VIEW.s))
-        surf.blit(sh, r.move(off, off))
+        premul_blit(surf, sh, r.move(off, off))
     if alpha < 255:
-        s = s.copy()
-        s.set_alpha(int(alpha))
-    surf.blit(s, r)
+        s = faded(s, alpha)
+    premul_blit(surf, s, r)
     k = VIEW.s
     return pygame.Rect(round(r.x / k), round(r.y / k), round(r.w / k), round(r.h / k))
+
+
+def _money_layout(amount, size):
+    parts = coins.split(amount)
+    r, gap = size * 0.36, size * 0.3
+    widths = [text_size(str(n), size, "bold")[0] + gap * 0.6 + r * 2 for _name, n, _c in parts]
+    return parts, r, gap, widths, sum(widths) + gap * (len(parts) - 1)
+
+
+def money_width(amount, size=16):
+    return _money_layout(amount, size)[4]
+
+
+def draw_money(surf, amount, pos, size=16, anchor="midleft", color=WHITE, alpha=255):
+    """Somme en pièces : « 2 (or) 15 (argent) 40 (cuivre) », chaque nombre suivi de sa pièce. Renvoie la largeur."""
+    parts, r, gap, widths, total = _money_layout(amount, size)
+    x, y = pos
+    if anchor.endswith("right") or anchor == "topright":
+        x -= total
+    elif anchor in ("center", "midtop", "midbottom"):
+        x -= total / 2
+    if anchor.startswith("top") or anchor == "midtop":
+        y += size * 0.6
+    elif anchor.startswith("bottom") or anchor == "midbottom":
+        y -= size * 0.6
+    for (_name, n, col), w in zip(parts, widths):
+        tr = draw_text(surf, str(n), (x, y), size, color, "bold", anchor="midleft", alpha=alpha)
+        c = (tr.right + gap * 0.6 + r, y)
+        a = int(alpha)
+        circle(surf, (*darker(col, 0.6), a), c, r)
+        circle(surf, (*col, a), c, r * 0.78)
+        circle(surf, (*lighter(col, 1.25), a), (c[0] - r * 0.25, c[1] - r * 0.25), r * 0.28)
+        x += w + gap
+    return total
+
+
+def speech_bubble(surf, text, bottom, size=14, max_w=280, alpha=255):
+    """Bulle de dialogue (parchemin clair, pointe vers le bas) dont la pointe touche bottom. Renvoie son rectangle."""
+    lines = wrap(text, size, max_w)
+    lh = size * 1.35
+    w = max(text_size(line, size)[0] for line in lines) + 26
+    h = len(lines) * lh + 16
+    r = pygame.Rect(0, 0, w, h)
+    r.midbottom = (bottom[0], bottom[1] - 9)
+    a = int(alpha)
+    rect(surf, (0, 0, 0, int(a * 0.35)), r.move(2, 3), 0, 10)                  # ombre
+    rect(surf, (246, 240, 226, int(a * 0.96)), r, 0, 10)
+    polygon(surf, (246, 240, 226, int(a * 0.96)), [(bottom[0] - 8, r.bottom - 1), (bottom[0] + 8, r.bottom - 1),
+                                                  (bottom[0], bottom[1])])
+    rect(surf, (120, 100, 70, a), r, 1, 10)
+    for i, line in enumerate(lines):
+        draw_text(surf, line, (r.centerx, r.y + 8 + i * lh), size, (48, 38, 28), anchor="midtop", alpha=a)
+    return r
 
 
 def wrap(text, size, width, kind="text"):
@@ -161,8 +249,9 @@ def _alpha_target(surf, color, bbox, fn):
         return
     bx, by, bw, bh = bbox
     t = pygame.Surface((max(1, int(bw) + 4), max(1, int(bh) + 4)), pygame.SRCALPHA)
+    t.fill((*color[:3], 0))         # bords lissés : on fond vers la même teinte transparente, pas vers le noir
     fn(t, (-bx + 2, -by + 2), color)
-    surf.blit(t, (bx - 2, by - 2))
+    premul_blit(surf, t.premul_alpha(), (bx - 2, by - 2))
 
 
 def rect(surf, color, r, width=0, radius=0):
@@ -170,7 +259,14 @@ def rect(surf, color, r, width=0, radius=0):
     rad = W(radius) if radius else 0
 
     def fn(t, o, c):
-        pygame.draw.rect(t, c, pr.move(o), W(width), border_radius=rad)
+        r = pr.move(o)
+        w = W(width)
+        pygame.draw.rect(t, c, r, w, border_radius=rad)
+        k = min(rad, r.w // 2, r.h // 2)
+        if k >= 2:                       # coins arrondis lissés
+            x0, y0, x1, y1 = r.x + k, r.y + k, r.right - k - 1, r.bottom - k - 1
+            for cx, cy, q in ((x1, y0, 0), (x0, y0, 1), (x0, y1, 2), (x1, y1, 3)):
+                pygame.draw.aacircle(t, c, (cx, cy), k, w, *[i == q for i in range(4)])
     _alpha_target(surf, color, (pr.x, pr.y, pr.w, pr.h), fn)
 
 
@@ -179,12 +275,12 @@ def circle(surf, color, c, r, width=0):
     rr = max(1, r * VIEW.s)
 
     def fn(t, o, col):
-        pygame.draw.circle(t, col, (cx + o[0], cy + o[1]), rr, W(width))
+        pygame.draw.aacircle(t, col, (cx + o[0], cy + o[1]), rr, W(width))     # bords lissés (icônes nettes)
     _alpha_target(surf, color, (cx - rr, cy - rr, rr * 2, rr * 2), fn)
 
 
 def line(surf, color, a, b, width=1):
-    pygame.draw.line(surf, color[:3], P(*a), P(*b), W(width))
+    pygame.draw.aaline(surf, color[:3], P(*a), P(*b), W(width))
 
 
 def aaline(surf, color, a, b):
@@ -192,7 +288,11 @@ def aaline(surf, color, a, b):
 
 
 def lines(surf, color, closed, pts, width=1):
-    pygame.draw.lines(surf, color[:3], closed, [P(*p) for p in pts], W(width))
+    pp = [P(*p) for p in pts]
+    if W(width) <= 1:
+        pygame.draw.aalines(surf, color[:3], closed, pp)
+    else:
+        pygame.draw.lines(surf, color[:3], closed, pp, width=W(width))
 
 
 def polygon(surf, color, pts, width=0):
@@ -201,7 +301,10 @@ def polygon(surf, color, pts, width=0):
     ys = [p[1] for p in pp]
 
     def fn(t, o, c):
-        pygame.draw.polygon(t, c, [(p[0] + o[0], p[1] + o[1]) for p in pp], W(width))
+        q = [(p[0] + o[0], p[1] + o[1]) for p in pp]
+        pygame.draw.polygon(t, c, q, W(width))
+        if W(width) <= 1:
+            pygame.draw.aalines(t, c, True, q)       # contour lissé
     _alpha_target(surf, color, (min(xs), min(ys), max(xs) - min(xs), max(ys) - min(ys)), fn)
 
 
@@ -223,13 +326,13 @@ def glow(surf, x, y, r, color):
 
 def blit(surf, src, pos, anchor="topleft"):
     r = src.get_rect(**{anchor: (round(pos[0] * VIEW.s), round(pos[1] * VIEW.s))})
-    surf.blit(src, r)
+    blit_straight(surf, src, r)
 
 
 def veil(surf, color=(6, 12, 16), alpha=200):
     v = pygame.Surface(surf.get_size(), pygame.SRCALPHA)
-    v.fill((*color, alpha))
-    surf.blit(v, (0, 0))
+    v.fill((*(int(c * alpha / 255) for c in color[:3]), alpha))      # couleur prémultipliée
+    premul_blit(surf, v, (0, 0))
 
 
 # --------------------------------------------------------------------------- éléments BotW
@@ -275,6 +378,61 @@ def key_badge(surf, key, center, size=13, color=WHITE):
     rect(surf, (12, 14, 16), r, 0, r.h // 2)
     rect(surf, color, r, 1, r.h // 2)
     draw_text(surf, key, r.center, size, color, "bold", anchor="center", shadow=False)
+    return r
+
+
+PAD_FACE = {"a": (84, 186, 92), "b": (222, 78, 68), "x": (72, 134, 232), "y": (234, 192, 60)}
+DPAD_DIRS = {"up": (0, -1), "down": (0, 1), "left": (-1, 0), "right": (1, 0)}
+
+
+def dpad(surf, center, size=10, lit=None, color=(210, 212, 208)):
+    """Croix directionnelle ; la branche « lit » (up, down, left, right) est éclairée."""
+    x, y = center
+    a = size * 0.36                          # demi-largeur d'une branche
+    rect(surf, (18, 20, 22), (x - size - 1, y - a - 1, 2 * size + 2, 2 * a + 2), 0, 3)
+    rect(surf, (18, 20, 22), (x - a - 1, y - size - 1, 2 * a + 2, 2 * size + 2), 0, 3)
+    rect(surf, (*darker(color, 0.55), 255), (x - size, y - a, 2 * size, 2 * a), 0, 2)
+    rect(surf, (*darker(color, 0.55), 255), (x - a, y - size, 2 * a, 2 * size), 0, 2)
+    if lit in DPAD_DIRS:
+        dx, dy = DPAD_DIRS[lit]
+        if dx:
+            x0 = x if dx > 0 else x - size
+            rect(surf, color, (x0, y - a, size, 2 * a), 0, 2)
+        else:
+            y0 = y if dy > 0 else y - size
+            rect(surf, color, (x - a, y0, 2 * a, size), 0, 2)
+    circle(surf, (18, 20, 22), center, a * 0.55)
+
+
+def pad_button(surf, btn, center, size=10):
+    """Pictogramme d'un bouton de manette : A B X Y en pastilles colorées, gâchettes, croix, Start."""
+    x, y = center
+    if btn in PAD_FACE:
+        col = PAD_FACE[btn]
+        circle(surf, (14, 16, 18), center, size + 1)
+        circle(surf, darker(col, 0.8), center, size)
+        circle(surf, col, center, size, 1)
+        draw_text(surf, btn.upper(), (x, y + 0.5), int(size * 1.15), WHITE, "bold", anchor="center", shadow=False)
+        return pygame.Rect(x - size, y - size, 2 * size, 2 * size)
+    if btn in DPAD_DIRS:
+        dpad(surf, center, size, btn)
+        return pygame.Rect(x - size, y - size, 2 * size, 2 * size)
+    if btn in ("lb", "rb", "lt", "rt"):
+        w, h = size * 2.7, size * 1.7
+        r = pygame.Rect(0, 0, w, h)
+        r.center = center
+        trig = btn[1] == "t"
+        rect(surf, (14, 16, 18), r.inflate(2, 2), 0, int(h * (0.5 if trig else 0.3)))
+        rect(surf, (58, 62, 66), r, 0, int(h * (0.5 if trig else 0.3)))
+        rect(surf, (200, 204, 204), r, 1, int(h * (0.5 if trig else 0.3)))
+        draw_text(surf, btn.upper(), r.center, int(size * 0.95), WHITE, "bold", anchor="center", shadow=False)
+        return r
+    r = pygame.Rect(0, 0, size * 2.4, size * 1.4)          # start / back
+    r.center = center
+    rect(surf, (40, 44, 48), r, 0, r.h // 2)
+    rect(surf, (200, 204, 204), r, 1, r.h // 2)
+    for k in (-1, 0, 1):
+        line(surf, WHITE, (x - size * 0.45, y + k * size * 0.3), (x + size * 0.45, y + k * size * 0.3), 1)
     return r
 
 
@@ -442,9 +600,19 @@ def draw_item_icon(surf, item, r, bg=True):
 
 
 # --------------------------------------------------------------------------- infobulles
+TIP_W = 330          # largeur maximale du texte d'une infobulle : au-delà, retour à la ligne
+
+
 def draw_tooltip_lines(surf, lines_, pos, border=UI_LINE, side="right"):
     pad = 10
-    sizes = [text_size(t, sz, "bold" if i == 0 else "text") for i, (t, c, sz) in enumerate(lines_)]
+    # retour à la ligne des lignes trop longues (le titre reste en gras, suivi d'un filet)
+    rows = []
+    for i, (t, c, sz) in enumerate(lines_):
+        kind = "bold" if i == 0 else "text"
+        parts = wrap(t, sz, TIP_W, kind) if text_size(t, sz, kind)[0] > TIP_W else [t]
+        for j, part in enumerate(parts or [""]):
+            rows.append((part, c, sz, kind, i == 0 and j == len(parts) - 1 and len(lines_) > 1))
+    sizes = [text_size(t, sz, kind) for t, c, sz, kind, _ in rows]
     w = max(s[0] for s in sizes) + pad * 2
     h = sum(s[1] + 1 for s in sizes) + pad * 2 + 6
     x, y = pos
@@ -463,10 +631,10 @@ def draw_tooltip_lines(surf, lines_, pos, border=UI_LINE, side="right"):
     r = pygame.Rect(x, y, w, h)
     botw_box(surf, r, 232, border, radius=8, fill=(6, 9, 12))
     cy = y + pad
-    for i, ((t, c, sz), (tw, th)) in enumerate(zip(lines_, sizes)):
-        draw_text(surf, t, (x + pad, cy), sz, c, "bold" if i == 0 else "text", shadow=False)
+    for (t, c, sz, kind, rule), (tw, th) in zip(rows, sizes):
+        draw_text(surf, t, (x + pad, cy), sz, c, kind, shadow=False)
         cy += th + 1
-        if i == 0 and len(lines_) > 1:
+        if rule:
             line(surf, darker(border, 0.6), (x + 6, cy + 2), (x + w - 6, cy + 2))
             cy += 6
     return r

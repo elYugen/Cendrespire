@@ -30,15 +30,22 @@ def load_options():
         for k in volumes:
             if isinstance(data.get(k), (int, float)):
                 volumes[k] = max(0.0, min(1.0, float(data[k])))
+        from . import display
+        display.load(data)
     except (OSError, ValueError):
         pass
+    from . import controls
+    controls.load()
 
 
 def save_options():
+    """Volumes, commandes (controls.py) et affichage (display.py) dans options.json."""
+    from . import controls, display
     try:
         os.makedirs(os.path.dirname(OPTIONS_PATH), exist_ok=True)
         with open(OPTIONS_PATH, "w", encoding="utf-8") as f:
-            json.dump(volumes, f, indent=2)
+            json.dump(dict(volumes, keys=dict(controls.keys), pad=dict(controls.pad), display=dict(display.prefs)), f,
+                      indent=2)
     except OSError:
         pass
 

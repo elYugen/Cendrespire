@@ -100,7 +100,7 @@ def ramparts(mb, rng):
         for a, b in _runs({c for c in cells if T.WALL_Y0 < c[1] < T.WALL_Y1}, "x", fixed):
             _wall_segment(mb, fixed, a, fixed, b, rng)
     for x, z in ((T.WALL_X0, T.WALL_Y0), (T.WALL_X1, T.WALL_Y0), (T.WALL_X0, T.WALL_Y1), (T.WALL_X1, T.WALL_Y1),
-                 (T.WALL_X0, 26)):
+                 (T.WALL_X0, 26), (T.WALL_X0, 43), (T.WALL_X1, 43)):
         _tower(mb, x + 0.5, z + 0.5)
     _gate(mb, T.WALL_Y0)
     _gate(mb, T.WALL_Y1)
@@ -232,6 +232,44 @@ def streets(mb, geo, tile, rng):
         put(mb, "camp", x, 0.0, z, rng.random() * 6.28, 2.4, 0.0, "barrel")
 
 
+def temple_quarter(mb, geo, rng, tile):
+    """Quartier du Temple : statue de la place des Oracles, sanctuaire de l'Oubli, bibliothèque."""
+    put = objmodels.put
+    ox, oz = T.ORACLES
+    # socle à degrés et statue (obélisque ou colonne procédurale)
+    for i, (r, h) in enumerate(((1.25, 0.18), (0.95, 0.36), (0.6, 0.55))):
+        mb.add("cylinder", (ox, h / 2, oz), (r, 0, 0), (0, h / 2, 0), (0, 0, r), shade(STONE, 1.0 - i * 0.07), 1.0)
+    mb.mat = mb.STONE
+    mb.box(ox - 0.32, 0.55, oz - 0.32, ox + 0.32, 0.75, oz + 0.32, shade(STONE, 0.9), 1.0)
+    mb.box(ox - 0.24, 0.75, oz - 0.24, ox + 0.24, 2.55, oz + 0.24, shade(STONE, 1.08), 1.0)
+    mb.box(ox - 0.34, 2.55, oz - 0.34, ox + 0.34, 2.72, oz + 0.34, shade(STONE, 0.9), 1.0)
+    mb.mat = 0
+    for a in (0.0, math.pi / 2, math.pi, 1.5 * math.pi):      # griffes qui tiennent l'orbe
+        c, s = math.cos(a), math.sin(a)
+        mb.add("cone", (ox + c * 0.2, 2.9, oz + s * 0.2), (0.05, 0, 0), (0, 0.2, 0), (0, 0, 0.05), (0.7, 0.6, 0.4), 1.0)
+    mb.add("sphere", (ox, 3.1, oz), (0.22, 0, 0), (0, 0.22, 0), (0, 0, 0.22), (0.62, 0.52, 0.95), 1.0)
+    geo.torches.append((ox * tile, oz * tile, 3.1 * tile))
+    for a in (0.8, 2.35, 3.9, 5.45):             # urnes autour du socle
+        put(mb, "grave", ox + math.cos(a) * 1.7, 0.0, oz + math.sin(a) * 1.7, a, 1.6, 0.0, "urn-round")
+    # sanctuaire de l'Oubli : chandeliers devant la porte, lueur violette
+    for x, z in T.CANDLES:
+        if not put(mb, "grave", x, 0.0, z, 0.0, 1.8, 0.0, "candle-multiple"):
+            camp.post(mb, x, z, 0.9, 0.04, DARK_WOOD, flag=1.0)
+        geo.torches.append((x * tile, z * tile, 0.8 * tile))
+    sx, sz = T.SANCTUARY
+    mb.add("sphere", (sx + 1.25, 2.3, sz), (0.16, 0, 0), (0, 0.16, 0), (0, 0, 0.16), (0.7, 0.5, 1.0), 1.0)
+    # bibliothèque : pupitres, caisses de livres
+    for x, z in T.LECTERNS:
+        camp.post(mb, x, z, 0.75, 0.05, DARK_WOOD)
+        mb.box(x - 0.28, 0.72, z - 0.2, x + 0.28, 0.8, z + 0.2, (0.42, 0.28, 0.16), 1.0)
+        mb.box(x - 0.2, 0.8, z - 0.14, x + 0.2, 0.86, z + 0.14, (0.86, 0.82, 0.7), 1.0)
+    lx, lz = T.LIBRARY
+    for dz in (-2.6, 2.6):
+        put(mb, "camp", lx - 2.2, 0.0, lz + dz, rng.random() * 6.28, 2.3, 0.0, rng.choice(["box", "box-large"]))
+    for x, z in ((4.6, 44.9), (41.6, 54.8), (16.4, 54.9)):
+        put(mb, "camp", x, 0.0, z, rng.random() * 6.28, 2.4, 0.0, "barrel")
+
+
 def esplanade(mb, geo, tile):
     """Esplanade de la tour : grand portail, obélisques, braseros."""
     x, z = T.PORTAL
@@ -306,5 +344,6 @@ def build(mb, geo, d, rng, tile):
     tavern(mb, rng)
     streets(mb, geo, tile, rng)
     esplanade(mb, geo, tile)
+    temple_quarter(mb, geo, rng, tile)
     training(mb, rng)
     arena(mb, geo, rng, tile)

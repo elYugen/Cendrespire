@@ -14,7 +14,7 @@ Pas besoin de toucher au dossier d'installation. Il suffit de copier un fichier 
 |---|---|
 | `classes.json` | Classes : caractéristiques, attaque de base, 4 sorts, armes, noms légendaires, apparence du modèle 3D |
 | `spells.json` | Sorts : coût, recharge, niveau requis, puissance, liste d'effets |
-| `talents.json` | Arbres de talents : 3 branches par classe, 4 paliers |
+| `talents.json` | Un grand arbre de talents par classe (racine, domaines, ponts), sorts à débloquer |
 | `buffs.json` | Effets temporaires (Cri de guerre, Égide, Célérité…) |
 | `artifacts.json` | Artefacts : recharge, puissance selon la rareté, liste d'effets |
 | `monsters.json` | Monstres, affixes d'élite, progression par étage |
@@ -91,10 +91,11 @@ Une statistique égale à `"v"` prend la valeur transmise par l'effet `buff` (ut
 
 ## Talents (`talents.json`)
 
-Chaque classe a 3 branches de 4 talents. Le talent du palier *n* demande `tier_cost × n` points déjà investis dans sa branche. `ranks` fixe le nombre de rangs de chaque palier. Chaque effet s'écrit `[type, clé, valeur par rang]` :
+Chaque classe a un seul grand arbre (`trees.<classe>.nodes`) : une racine, trois domaines décrits par `branches` (nom, couleur, icône) et des talents « ponts » qui les relient. Chaque talent a une place sur la grille (`x`, `y`), un nombre de rangs `max`, un domaine `branch` (-1 pour la racine et les ponts) et des voisins `links`. La racine s'apprend seule ; tout autre talent doit toucher (dans un sens ou dans l'autre) un talent déjà appris. La ligne `y` demande `row_cost × (y - 1)` points déjà dépensés dans l'arbre. `req` (facultatif) désigne un talent à maîtriser d'abord. La dernière ligne est celle des talents ultimes. Le joueur gagne 1 point de talent par niveau à partir du niveau 10 (91 points au niveau 100) et les réinitialise en ville, contre des pièces. Chaque effet s'écrit `[type, clé, valeur par rang]` :
 
-- `["stat", clé, v]`, avec comme clé : `dmg_pct`, `spell_pct`, `basic_pct`, `crit`, `crit_dmg`, `atk_speed`, `move_speed`, `cdr`, `max_hp_pct`, `mana_pct`, `mana_regen_pct`, `armor_pct`, `dr`, `lifesteal`, `roll_cd`, `summon_pct`, `curse_amp`, `dot_pct`, `gold_find`
+- `["stat", clé, v]`, avec comme clé : `dmg_pct`, `spell_pct`, `basic_pct`, `crit`, `crit_dmg`, `atk_speed`, `move_speed`, `cdr`, `max_hp_pct`, `mana_pct`, `mana_regen_pct`, `armor_pct`, `dr`, `lifesteal`, `roll_cd`, `summon_pct`, `curse_amp`, `dot_pct`, `gold_find`, `hp_regen` (% de la vie maximum régénérée par seconde)
 - `["sd", sort, v]` : % de dégâts en plus pour ce sort. `["sc", sort, v]` : % de recharge en moins pour ce sort.
+- `["spell", sort, 1]` : débloque un nouveau sort. Le joueur l'équipe dans l'un de ses 4 emplacements depuis la page Personnage (clic sur un sort).
 - `["flag", clé, v]`, avec comme clé : `kill_cdr`, `free_cast`, `execute`, `first_strike`, `berserk`, `low_hp_dr`, `last_stand`, `mana_on_kill`, `kill_heal`, `heal_on_spell`, `crit_heal`, `thorns`, `extra_summon`
 
 `icon` accepte un pictogramme ou `spell:<id du sort>`.
@@ -174,11 +175,11 @@ Chaque quête est donnée par un habitant de Cendreval (`giver`). Un « ! » dor
   "done": "Ce qu'il dit quand on la lui rend.",
   "requires": ["le_seuil"], "min_level": 1,
   "objectives": [{"type": "kill", "monster": "squelette", "count": 15}],
-  "reward": {"gold": 80, "xp": 180, "item": "magique"}
+  "reward": {"money": 800, "xp": 180, "item": "magique"}
 }
 ```
 
-Habitants : `gorvan`, `hilda`, `ysolde`, `elise`, `anselme`, `mira`, `aldebert`, `garde_nord`, `garde_sud`, `garde_ronde` (liste dans `game/town.py`). `turn_in` désigne un autre habitant à qui rendre la quête. `requires` : quêtes à avoir rendues avant.
+Habitants : `gorvan`, `hilda`, `ysolde`, `oriane`, `theodric`, `elise`, `anselme`, `mira`, `aldebert`, `garde_nord`, `garde_sud`, `garde_ronde`, `maelle`, `roderic`, `pip` (liste dans `game/town.py`). Récompenses : `money` en pièces de cuivre (100 cuivre = 1 argent, 100 argent = 1 or), `xp`, `item` (rareté de l'objet), `tears` (Larmes d'oubli, échangées auprès d'Oriane contre les points d'attribut). `turn_in` désigne un autre habitant à qui rendre la quête. `requires` : quêtes à avoir rendues avant.
 
 | Objectif | Paramètres |
 |---|---|

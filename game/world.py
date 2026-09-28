@@ -5,22 +5,19 @@ from collections import deque
 
 import pygame
 
-from . import artifacts, gamepad, hud, nav, quests, save, sfx, spells, ui
-from .data import ANIMA_POWERS, ANIMA_TIERS, BAG_SIZE, POINTS_PER_LEVEL, SPELLS
+from . import artifacts, coins, controls, gamepad, hud, nav, quests, save, sfx, spells, ui
+from .data import ANIMA_POWERS, ANIMA_TIERS, BAG_SIZE, POINTS_PER_LEVEL, SPELLS, TEAR_DROP
 from .dungeon import WALL, BARRIER, Minimap
 from .entities import Loot
 from .fx import Particles, RingFX, Blast, Lightning
 from .items import generate_item, item_value, buy_price, ench_spent, ART_SLOTS
-from .panels import (InventoryPanel, MenuScreen, MerchantPanel, ForgePanel, AnimaPanel, DeathPanel, PAGE_CHAR,
-                     PAGE_INV, PAGE_QUEST, PAGE_SYS, PAGE_TAL)
+from .panels import (InventoryPanel, MenuScreen, ForgePanel, AnimaPanel, DeathPanel, MENU_KEYS,
+                     PAGE_SYS)
 from .r3d import level, models
 from .r3d.camera import Camera3D
 from .r3d.renderer import Env
-from .settings import (SCREEN_W, SCREEN_H, TILE, VIEW, SC_UP, SC_DOWN, SC_LEFT, SC_RIGHT, SC_SPELLS, SC_POTION,
-                       SC_INTERACT, GOLD, GOLD_BRIGHT, TEXT, RED, WHITE, RARITY_COLORS)
+from .settings import SCREEN_W, SCREEN_H, TILE, VIEW, GOLD, GOLD_BRIGHT, TEXT, RED, WHITE, RARITY_COLORS
 
-SC_ROLL = 44                  # Espace
-SC_ARTIFACTS = (21, 23, 10)   # R, T, G
 
 
 class Scene:
@@ -176,7 +173,7 @@ class World(Scene):
         return self.cam.ray_ground(*self.mouse_px(), height=0)
 
     def is_moving(self):
-        return (any(s in self.keys for s in SC_UP + SC_DOWN + SC_LEFT + SC_RIGHT) or bool(self.nav and self.path)
+        return (any(self.held(a) for a in ("up", "down", "left", "right")) or bool(self.nav and self.path)
                 or gamepad.move_dir(self) is not None)
 
     def schedule(self, delay, fn):
@@ -411,20 +408,23 @@ class World(Scene):
         return max(1, self.player.max_floor)
 
     def gold_amount(self, base):
-        return max(1, int(base * (1 + 0.5 * (self.floor_level() - 1)) * (1 + self.player.stats["gold_find"] / 100)))
+        """Pièces de cuivre (base : ancienne valeur en or, x10)."""
+        return max(1, int(base * 10 * (1 + 0.5 * (self.floor_level() - 1)) * (1 + self.player.stats["gold_find"] / 100)))
 
     def drop_monster_loot(self, m):
         f = self.floor_level()
         p = self.player
         if random.random() < (1.0 if m.elite else 0.55):
             self.loot.append(Loot(m.x, m.y, "gold", amount=self.gold_amount(random.randint(2, 6) * (4 if m.elite else 1))))
-        n_items = 2 if m.elite else (1 if random.random() < 0.1 else 0)
+        n_items = 2 if m.elite else (1 if random.random() < 0.1 * (1 + p.stats["loot_pct"] / 100) else 0)
         for _ in range(n_items):
             self.loot.append(Loot(m.x, m.y, "item", generate_item(f, cls_id=p.cls_id, tier=1 if m.elite else 0)))
         if random.random() < (0.35 if m.elite else 0.05):
             self.loot.append(Loot(m.x, m.y, "orb"))
         if m.elite and random.random() < 0.35:
             self.loot.append(Loot(m.x, m.y, "anima"))
+        if random.random() < TEAR_DROP.get("elite" if m.elite else m.mid, 0.0):
+            self.loot.append(Loot(m.x, m.y, "tear"))
 
     def on_monster_killed(self, m):
         pass
@@ -434,19 +434,24 @@ class World(Scene):
 
     def on_level_up(self):
         p = self.player
-        self.show_banner(f"Niveau {p.level}", f"+{POINTS_PER_LEVEL} point de caractéristique · +1 point d'enchantement", GOLD_BRIGHT)
+        from . import talents
+        new_talent = talents.points_total(p.level) > talents.points_total(p.level - 1)
+        gains = [f"+{POINTS_PER_LEVEL} point de caractéristique"] + (["+1 point de talent"] if new_talent else []) \
+            + ["+1 point d'enchantement"]
+        self.show_banner(f"Niveau {p.level}", " · ".join(gains), GOLD_BRIGHT)
         self.effects.append(RingFX(p.x, p.y, 10, 160, 0.6, (255, 210, 100), 6))
         self.particles.emit(p.x, p.y, (255, 210, 100), n=50, speed=200, life=0.9, size=4, up=200, z=10)
         for sid in p.spells:
             if SPELLS[sid]["level"] == p.level:
                 self.message(f"Nouveau sort débloqué : {SPELLS[sid]['name']} !", GOLD_BRIGHT, 8)
         sfx.play("levelup")
-        from . import talents
-        if talents.points_total(p.level) > talents.points_total(p.level - 1):
-            self.message(f"Nouveau point de talent ! (touche N)", (255, 214, 110), 8)
+        if p.level == talents.FIRST_LEVEL:
+            self.message("Premier point de talent ! Ouvrez l'arbre avec la touche N.", (255, 214, 110), 10)
+        elif new_talent:
+            self.message("Nouveau point de talent ! (touche N)", (255, 214, 110), 8)
 
     def reset_talents(self):
-        """Oubli des talents : uniquement au campement, contre de l'or."""
+        """Oubli des talents : auprès de l'érudit de la bibliothèque, en ville, contre de l'or."""
         from . import talents
         p = self.player
         if self.is_tower:
@@ -455,14 +460,33 @@ class World(Scene):
         cost = talents.reset_cost(p.level)
         if not p.talents:
             return False
-        if p.gold < cost:
-            self.message(f"Il faut {cost} or pour réinitialiser les talents.", RED)
+        if p.money < cost:
+            self.message(f"Il faut {coins.text(cost)} pour réinitialiser les talents.", RED)
             return False
-        p.gold -= cost
+        p.money -= cost
         p.talents.clear()
         p.recompute()
         self.message("Talents réinitialisés.", GOLD_BRIGHT)
         sfx.play("seal", 0.6)
+        return True
+
+    def reset_attributes(self):
+        """Oubli des attributs : auprès de la gardienne du sanctuaire, contre une Larme d'oubli."""
+        p = self.player
+        spent = sum(p.alloc.values())
+        if not spent:
+            self.message("Aucun point d'attribut à rendre.", RED)
+            return False
+        if p.tears < 1:
+            self.message("Il faut une Larme d'oubli (sur les champions et les gardiens de la tour).", RED)
+            return False
+        p.tears -= 1
+        p.points += spent
+        p.alloc = {a: 0 for a in p.alloc}
+        p.recompute()
+        self.message(f"Attributs réinitialisés : {spent} point(s) à répartir (touche C).", GOLD_BRIGHT, 6)
+        sfx.play("seal", 0.6)
+        self.save()
         return True
 
     def on_player_death(self):
@@ -514,17 +538,19 @@ class World(Scene):
         sfx.play("pickup")
 
     def bag_right_click(self, idx):
+        self.equip(self.player.inventory[idx], idx)
+
+    def sell_item(self, idx):
+        """Vend un objet du sac au marchand (rachetable tant qu'on reste en ville)."""
         p = self.player
-        it = p.inventory[idx]
-        if isinstance(self.left_panel, MerchantPanel):
-            p.inventory.pop(idx)
-            v = item_value(it)
-            p.gold += v
-            self.message(f"Vendu : {it['name']} (+{v} or)" + (" · points d'enchantement rendus" if ench_spent(it) else ""),
-                         GOLD)
-            sfx.play("gold")
-            return
-        self.equip(it, idx)
+        it = p.inventory.pop(idx)
+        v = item_value(it)
+        p.money += v
+        self.__dict__.setdefault("buyback", []).insert(0, it)
+        del self.buyback[8:]
+        self.message(f"Vendu : {it['name']} (+{coins.text(v)})" + (" · points d'enchantement rendus" if ench_spent(it) else ""),
+                     GOLD)
+        sfx.play("gold")
 
     def assign_artifact(self, item, slot):
         """Place un artefact (du sac ou d'une autre touche) sur la touche voulue ; échange si elle est occupée."""
@@ -568,14 +594,29 @@ class World(Scene):
         p = self.player
         it = self.shop_stock[i]
         price = buy_price(it)
-        if p.gold < price:
-            self.message("Pas assez d'or.", RED)
+        if p.money < price:
+            self.message("Pas assez d'argent.", RED)
         elif len(p.inventory) >= BAG_SIZE:
             self.message("Votre sac est plein.", RED)
         else:
-            p.gold -= price
+            p.money -= price
             p.inventory.append(self.shop_stock.pop(i))
             self.message(f"Acheté : {it['name']}", RARITY_COLORS[it["rarity"]])
+            sfx.play("gold")
+
+    def buy_back(self, i):
+        """Rachète au prix de vente un objet vendu pendant cette visite."""
+        p = self.player
+        it = self.buyback[i]
+        price = item_value(it)
+        if p.money < price:
+            self.message("Pas assez d'argent.", RED)
+        elif len(p.inventory) >= BAG_SIZE:
+            self.message("Votre sac est plein.", RED)
+        else:
+            p.money -= price
+            p.inventory.append(self.buyback.pop(i))
+            self.message(f"Racheté : {it['name']}", RARITY_COLORS[it["rarity"]])
             sfx.play("gold")
 
     def enchant(self, item, slot_i, eid):
@@ -683,38 +724,38 @@ class World(Scene):
                 else:
                     self.open_pause()
                 return
-            if e.key in (pygame.K_i, pygame.K_c, pygame.K_n, pygame.K_j):
+            act = controls.key_action(e.scancode)
+            if act in MENU_KEYS:
                 self.close_panels()
-                page = {pygame.K_i: PAGE_INV, pygame.K_c: PAGE_CHAR, pygame.K_n: PAGE_TAL, pygame.K_j: PAGE_QUEST}[e.key]
-                self.modal = MenuScreen(self, page)
+                self.modal = MenuScreen(self, MENU_KEYS[act])
                 sfx.play("click")
                 return
-            if e.key == pygame.K_TAB:
+            if act == "map":
                 self.big_map = not self.big_map
                 return
-            if e.scancode == SC_POTION:
+            if act == "potion":
                 p.drink_potion(self)
                 return
-            if e.scancode == SC_ROLL:
+            if act == "roll":
                 if self.is_moving():
                     dx, dy = p.move_dir
                 else:
                     dx, dy = math.cos(p.facing), math.sin(p.facing)
                 p.start_roll(self, dx, dy)
                 return
-            if e.scancode == SC_INTERACT:
+            if act == "interact":
                 obj = self.nearest_interactable()
                 if obj:
                     obj.interact(self)
                 return
-            for i, sc in enumerate(SC_ARTIFACTS):
-                if e.scancode == sc:
-                    artifacts.use(self, ART_SLOTS[i])
-                    return
-            for i, codes in enumerate(SC_SPELLS):
-                if e.scancode in codes and i < len(p.spells):
+            if act in ("art1", "art2", "art3"):
+                artifacts.use(self, ART_SLOTS[int(act[-1]) - 1])
+                return
+            if act in ("spell1", "spell2", "spell3", "spell4"):
+                i = int(act[-1]) - 1
+                if i < len(p.spells):
                     spells.cast(self, p.spells[i])
-                    return
+                return
         for panel in (self.inv_panel if self.show_inv else None, self.left_panel):
             if panel and panel.handle_event(e):
                 if e.type == pygame.MOUSEBUTTONDOWN:
@@ -728,6 +769,10 @@ class World(Scene):
                 self.click_target()
             if e.button == 3:
                 spells.cast(self, p.spells[0])
+
+    def held(self, action):
+        """Touche (clavier) de l'action enfoncée."""
+        return any(s in self.keys for s in controls.codes(action))
 
     def nearest_interactable(self):
         p = self.player
@@ -808,6 +853,20 @@ class World(Scene):
         """Signe au-dessus d'un personnage (quêtes) : (texte, couleur) ou None."""
         return None
 
+    def greet_line(self, npc):
+        return getattr(npc, "greeting", None)
+
+    def greet(self, npc):
+        """Un personnage salue le héros qui s'approche (pas plus d'une fois toutes les 45 s)."""
+        p = self.player
+        line = self.greet_line(npc)
+        if not line or self.time < npc.greet_at or (npc.bubble and self.time < npc.bubble[1]):
+            return
+        if math.hypot(npc.x - p.x, npc.y - p.y) < 170:
+            first = line.split(". ")[0]                  # la première phrase suffit pour saluer
+            npc.say(self, first if first.endswith(("!", "?", ".")) else first + ".")
+            npc.greet_at = self.time + 45
+
     def update_ambient(self, dt):
         p = self.player
         for x, y, z in self.geo.torches:
@@ -856,9 +915,8 @@ class World(Scene):
                 if D.get("on_end"):
                     D["on_end"](self)
             return
-        k = self.keys
-        mx = (1 if any(s in k for s in SC_RIGHT) else 0) - (1 if any(s in k for s in SC_LEFT) else 0)
-        my = (1 if any(s in k for s in SC_DOWN) else 0) - (1 if any(s in k for s in SC_UP) else 0)
+        mx = (1 if self.held("right") else 0) - (1 if self.held("left") else 0)
+        my = (1 if self.held("down") else 0) - (1 if self.held("up") else 0)
         held = pygame.mouse.get_pressed()[0] and not self.click_block and not self.ui_contains(ui.mouse_pos())
         shift = pygame.key.get_mods() & pygame.KMOD_SHIFT
         self.update_hover()
@@ -924,7 +982,11 @@ class World(Scene):
                 continue
             rad = (m.r + 14) * self.cam.pixel_scale(m.x, m.y, 20)
             d = math.hypot(sp[0] - mx, sp[1] - my)
-            if d < rad and (bd is None or d < bd):
+            if d >= rad:
+                continue
+            if not self.los(self.player.x, self.player.y, m.x, m.y):
+                d += 10000              # monstre derrière un mur : seulement s'il n'y a rien d'autre sous le curseur
+            if bd is None or d < bd:
                 best, bd = m, d
         return best
 
@@ -953,7 +1015,7 @@ class World(Scene):
         """Clic gauche : attaquer le monstre survolé, parler au PNJ survolé, sinon marcher jusqu'au point cliqué."""
         self.update_hover()
         self.path, self.repath_t, self.stuck_t = [], 0.0, 0.0
-        if self.hover:
+        if self.hover and self.detour_ok(self.hover.x, self.hover.y):
             self.nav = {"kind": "attack", "obj": self.hover, "once": True}
         elif self.hover_obj:
             self.nav = {"kind": "interact", "obj": self.hover_obj, "x": self.hover_obj.x, "y": self.hover_obj.y}
@@ -970,7 +1032,7 @@ class World(Scene):
             return
         if n and n["kind"] == "interact":
             return
-        if self.hover and (not n or n["kind"] == "move"):
+        if self.hover and (not n or n["kind"] == "move") and self.detour_ok(self.hover.x, self.hover.y):
             self.nav = {"kind": "attack", "obj": self.hover, "once": False}
             self.path = []
             return
@@ -979,6 +1041,28 @@ class World(Scene):
             self.nav = {"kind": "move", "x": gx, "y": gy}
             if self.repath_t <= 0:
                 self.path = []
+
+    def detour_ok(self, x, y):
+        """Faux si atteindre ce point oblige à un long détour (monstre vu à travers un mur, à l'autre bout de la carte)."""
+        p = self.player
+        if self.los(p.x, p.y, x, y):
+            return True
+        key = (int(x // 20), int(y // 20), int(p.x // 20), int(p.y // 20))
+        c = getattr(self, "_detour", None)
+        if c and c[0] == key and self.time - c[2] < 0.3:
+            return c[1]
+        path = nav.find_path(self, p.x, p.y, x, y, p.r)
+        ok = bool(path) and self.path_ok(p.x, p.y, x, y, path)
+        self._detour = (key, ok, self.time)
+        return ok
+
+    @staticmethod
+    def path_ok(x0, y0, x1, y1, path):
+        length, px, py = 0.0, x0, y0
+        for wx, wy in path:
+            length += math.hypot(wx - px, wy - py)
+            px, py = wx, wy
+        return length <= math.hypot(x1 - x0, y1 - y0) * 1.8 + 160
 
     def attack_reach(self, m):
         a = self.player.cls["attack"]
@@ -1023,8 +1107,8 @@ class World(Scene):
         if not self.path or self.repath_t <= 0:
             self.path = nav.find_path(self, p.x, p.y, dest[0], dest[1], p.r)
             self.repath_t = 0.25 if n["kind"] == "attack" else 0.6
-            if not self.path:
-                self.nav = None
+            if not self.path or (n["kind"] == "attack" and not self.path_ok(p.x, p.y, dest[0], dest[1], self.path)):
+                self.nav, self.path = None, []      # cible hors d'atteinte ou partie trop loin : on ne la poursuit pas
                 return
         wx, wy = self.path[0]
         dx, dy = wx - p.x, wy - p.y
@@ -1085,10 +1169,10 @@ class World(Scene):
                     l.y += (p.y - l.y) * min(1, dt * 8)
                 if d < 26:
                     if l.kind == "gold":
-                        p.gold += l.amount
+                        p.money += l.amount
                         self.on_gold(l.amount)
                         self.gold_shown = 3.0
-                        self.add_text(p.x, p.y, 60, f"+{l.amount} or", GOLD, 15)
+                        self.add_text(p.x, p.y, 60, f"+{coins.text(l.amount)}", GOLD, 15)
                         sfx.play("gold", 0.5)
                     else:
                         amt = p.stats["max_hp"] * 0.15
@@ -1098,6 +1182,13 @@ class World(Scene):
                     continue
             elif l.kind == "anima" and d < 36:
                 self.pending_anima += 1
+                sfx.play("magic")
+                continue
+            elif l.kind == "tear" and d < 36:
+                p.tears += 1
+                self.add_text(p.x, p.y, 64, "+1 Larme d'oubli", (190, 150, 255), 16)
+                self.message(f"Larme d'oubli ramassée ({p.tears}) : la gardienne du sanctuaire, en ville, "
+                             "l'échange contre vos points d'attribut.", (190, 150, 255), 6)
                 sfx.play("magic")
                 continue
             elif l.kind == "item" and d < 30:
@@ -1247,11 +1338,16 @@ class World(Scene):
             if o.label:
                 pt = self.project(o.x, o.y, 78)
                 if pt:
-                    r = ui.draw_text(surf, o.label, pt, 14, WHITE, "text", anchor="midbottom")
+                    r = ui.draw_text(surf, o.label, pt, 14, WHITE, "text", anchor="midbottom", shadow=True)
                     mark = self.npc_marker(o)
                     if mark:
                         bob = 3 * math.sin(self.time * 3 + o.x)
-                        ui.draw_text(surf, mark[0], (pt[0], r.y - 2 + bob), 40, mark[1], "title", anchor="midbottom")
+                        r = ui.draw_text(surf, mark[0], (pt[0], r.y - 2 + bob), 40, mark[1], "title",
+                                         anchor="midbottom")
+                    bubble = getattr(o, "bubble", None)
+                    if bubble and self.time < bubble[1] and not self.modal:
+                        fade = min(1.0, (bubble[1] - self.time) / 0.4)
+                        ui.speech_bubble(surf, bubble[0], (pt[0], r.y - 2), alpha=255 * fade)
         for l in self.loot:
             if l.kind == "item" and (l.item["rarity"] != "commun" or math.hypot(l.x - p.x, l.y - p.y) < 160):
                 pt = self.project(l.x, l.y, 30)
@@ -1283,7 +1379,7 @@ class World(Scene):
             hud.low_hp_veil(surf, 40 + 40 * k)
         if self.big_map:
             hud.draw_big_map(surf, self)
-        elif not isinstance(self.modal, MenuScreen):
+        elif not getattr(self.modal, "hide_hud", False):
             hud.draw_hud(surf, self)
         if self.left_panel:
             self.left_panel.draw(surf)

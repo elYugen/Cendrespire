@@ -1,5 +1,5 @@
 {
-  "_info": "Quêtes de Cendreval. giver : habitant qui donne la quête (et la reprend, sauf « turn_in »). Objectifs : kill (monster, elite, min_floor), boss (floor), clear (floor), floor (atteindre l'étage), talk (npc). Voir LISEZMOI.md.",
+  "_info": "Quêtes de Cendreval. giver : habitant qui donne la quête (et la reprend, sauf « turn_in »). Objectifs : kill (monster, elite, min_floor), boss (floor), clear (floor), floor (atteindre l'étage), talk (npc). Récompenses : money (pièces de cuivre), xp, item (rareté), tears (Larmes d'oubli). Voir LISEZMOI.md.",
   "quests": {
     "le_seuil": {
       "name": "Le seuil de la tour",
@@ -11,7 +11,7 @@
       "objectives": [
         {"type": "clear", "floor": 1}
       ],
-      "reward": {"gold": 60, "xp": 120}
+      "reward": {"money": 600, "xp": 120}
     },
     "saluer_gorvan": {
       "name": "Un mot pour Gorvan",
@@ -23,7 +23,7 @@
       "objectives": [
         {"type": "talk", "npc": "gorvan", "text": "Parler à Gorvan le Marchand"}
       ],
-      "reward": {"gold": 25, "xp": 40}
+      "reward": {"money": 250, "xp": 40}
     },
     "os_sans_repos": {
       "name": "Des os sans repos",
@@ -35,7 +35,7 @@
       "objectives": [
         {"type": "kill", "monster": "squelette", "count": 15}
       ],
-      "reward": {"gold": 80, "xp": 180, "item": "magique"}
+      "reward": {"money": 800, "xp": 180, "item": "magique"}
     },
     "goules": {
       "name": "L'odeur des goules",
@@ -48,7 +48,7 @@
       "objectives": [
         {"type": "kill", "monster": "zombie", "count": 12}
       ],
-      "reward": {"gold": 90, "xp": 220, "item": "magique"}
+      "reward": {"money": 900, "xp": 220, "item": "magique"}
     },
     "chasse_aux_elites": {
       "name": "Chasse aux champions",
@@ -61,7 +61,7 @@
       "objectives": [
         {"type": "kill", "elite": true, "count": 3, "text": "Abattre des champions (monstres d'élite)"}
       ],
-      "reward": {"gold": 150, "xp": 300, "item": "rare"}
+      "reward": {"money": 1500, "xp": 300, "item": "rare"}
     },
     "acier_des_forges": {
       "name": "L'acier des Forges Hurlantes",
@@ -74,7 +74,7 @@
       "objectives": [
         {"type": "floor", "floor": 3}
       ],
-      "reward": {"gold": 200, "xp": 350}
+      "reward": {"money": 2000, "xp": 350}
     },
     "flamme_eternelle": {
       "name": "La flamme éternelle",
@@ -87,7 +87,111 @@
       "objectives": [
         {"type": "boss", "count": 5, "text": "Vaincre des gardiens d'étage"}
       ],
-      "reward": {"gold": 400, "xp": 700, "item": "legendaire"}
+      "reward": {"money": 4000, "xp": 700, "item": "legendaire"}
+    },
+    "visite_bibliotheque": {
+      "name": "Les livres qui parlent",
+      "giver": "pip",
+      "desc": "Pip jure que les livres de la bibliothèque murmurent la nuit. Il veut que vous alliez vérifier.",
+      "intro": "Moi, j'ose pas entrer. Mais vous, vous êtes un héros ! Allez voir Théodric à la bibliothèque, et demandez-lui si c'est vrai pour les livres qui parlent !",
+      "progress": "La bibliothèque, c'est le grand bâtiment à l'est de la place des Oracles !",
+      "done": "Il a dit quoi ? Que c'est le vent dans les pages ? Pfff. Tenez, c'est tout ce que j'ai.",
+      "objectives": [
+        {"type": "talk", "npc": "theodric", "text": "Parler à Théodric l'Érudit"}
+      ],
+      "reward": {"money": 150, "xp": 40}
+    },
+    "diablotins": {
+      "name": "Chasse aux diablotins",
+      "giver": "pip",
+      "requires": ["visite_bibliotheque"],
+      "min_level": 4,
+      "desc": "Pip collectionne les cornes de diablotin. Il lui en manque une vingtaine.",
+      "intro": "Les grands disent que les diablotins de la tour ont des cornes qui brillent. J'en veux vingt ! Pour ma collection. S'il vous plaît ?",
+      "progress": "Encore des diablotins ! Ils sont petits mais ils piquent.",
+      "done": "Vingt cornes ! C'est la plus belle collection de Cendreval ! Prenez mes économies, vous les méritez.",
+      "objectives": [
+        {"type": "kill", "monster": "diablotin", "count": 20}
+      ],
+      "reward": {"money": 1200, "xp": 260}
+    },
+    "cendres_du_culte": {
+      "name": "Les cendres du culte",
+      "giver": "maelle",
+      "min_level": 5,
+      "desc": "Sœur Maëlle a vu des cultistes prier la flamme de la tour. Elle veut que leur culte s'éteigne.",
+      "intro": "Des hommes en robe rouge murmurent le nom de la Flamme dans les étages. Ils nourrissent ce qui brûle là-haut. Faites taire dix d'entre eux, je vous en prie.",
+      "progress": "Les cultistes se cachent plus haut dans la tour. Soyez prudent.",
+      "done": "Je sens la tour un peu moins lourde ce soir. Que les Oracles vous bénissent.",
+      "objectives": [
+        {"type": "kill", "monster": "cultiste", "count": 10}
+      ],
+      "reward": {"money": 1800, "xp": 380, "item": "magique"}
+    },
+    "veillee_des_ames": {
+      "name": "La veillée des âmes",
+      "giver": "maelle",
+      "requires": ["cendres_du_culte"],
+      "desc": "Les morts de la tour se relèvent toujours. Sœur Maëlle veut qu'ils trouvent enfin le repos.",
+      "intro": "Chaque goule de la tour est une âme qui ne dort pas. Libérez-en vingt-cinq, et je vous confierai une larme de la statue. Elle aide à oublier ce qui pèse.",
+      "progress": "Vingt-cinq âmes... Je prie pour chacune d'elles.",
+      "done": "Voici une Larme d'oubli. Oriane, au sanctuaire, saura quoi en faire.",
+      "objectives": [
+        {"type": "kill", "monster": "zombie", "count": 25}
+      ],
+      "reward": {"money": 1500, "xp": 450, "tears": 1}
+    },
+    "brutes": {
+      "name": "Brutes à abattre",
+      "giver": "roderic",
+      "min_level": 8,
+      "desc": "Le capitaine Roderic veut qu'on ralentisse les brutes qui descendent vers la ville.",
+      "intro": "Mes gardes ne font pas le poids contre les brutes de la tour. Abattez-en huit, et la solde de la garde est à vous.",
+      "progress": "Les brutes rôdent dans les étages supérieurs. Visez les genoux.",
+      "done": "Huit brutes ! Mes hommes boiront à votre santé ce soir. Voici votre solde.",
+      "objectives": [
+        {"type": "kill", "monster": "brute", "count": 8}
+      ],
+      "reward": {"money": 2500, "xp": 520, "item": "rare"}
+    },
+    "coeur_de_la_tour": {
+      "name": "Au cœur de la tour",
+      "giver": "roderic",
+      "requires": ["brutes"],
+      "desc": "Roderic veut savoir ce qui se cache au huitième étage.",
+      "intro": "Aucun de mes éclaireurs n'a dépassé le septième étage. Montez jusqu'au huitième et revenez me dire ce que vous y avez vu.",
+      "progress": "Le huitième étage. Personne n'en est revenu... pour l'instant.",
+      "done": "Vous êtes monté si haut ? La garde de Cendreval vous doit une fière chandelle.",
+      "objectives": [
+        {"type": "floor", "floor": 8}
+      ],
+      "reward": {"money": 6000, "xp": 1200, "item": "rare"}
+    },
+    "larmes_du_passe": {
+      "name": "Les larmes du passé",
+      "giver": "oriane",
+      "min_level": 6,
+      "desc": "Oriane veut éprouver votre valeur avant de vous confier les secrets de l'oubli.",
+      "intro": "Les champions de la tour portent parfois des Larmes d'oubli. Abattez-en cinq, et je vous offrirai la mienne.",
+      "progress": "Les champions brillent d'une aura colorée. Vous ne pouvez pas les manquer.",
+      "done": "Vous avez la force d'oublier et de recommencer. Prenez cette Larme ; venez me voir quand vous voudrez redistribuer vos forces.",
+      "objectives": [
+        {"type": "kill", "elite": true, "count": 5, "text": "Abattre des champions (monstres d'élite)"}
+      ],
+      "reward": {"money": 2000, "xp": 500, "tears": 1}
+    },
+    "savoir_interdit": {
+      "name": "Le savoir interdit",
+      "giver": "theodric",
+      "min_level": 10,
+      "desc": "Théodric cherche un grimoire perdu, gardé par le gardien du cinquième étage.",
+      "intro": "Un grimoire des anciens bâtisseurs repose au cinquième étage, sous la garde d'un monstre. Vainquez-le et je vous enseignerai l'art d'oublier vos talents.",
+      "progress": "Le gardien du cinquième étage. Mes livres disent qu'il ne dort jamais.",
+      "done": "Le grimoire est intact ! Revenez quand vous voudrez oublier vos talents : je le ferai à moitié prix... enfin, presque.",
+      "objectives": [
+        {"type": "clear", "floor": 5}
+      ],
+      "reward": {"money": 3500, "xp": 800, "item": "rare"}
     }
   }
 }

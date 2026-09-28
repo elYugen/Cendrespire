@@ -37,7 +37,7 @@ def basic_attack(world, target=None):
     ax, ay = target if target else world.aim_point()
     ang = math.atan2(ay - p.y, ax - p.x)
     p.facing = ang
-    mult = a["mult"] * (1 + p.t("basic_pct") / 100)
+    mult = a["mult"] * (1 + p.stats["basic_pct"] / 100)
     if a["kind"] == "melee":
         p.swing = -1.4
         world.effects.append(SwingFX(p, ang, math.radians(a["arc"]), a["range"] + 18, a.get("color", p.cls["color"])))
@@ -85,7 +85,7 @@ def cast(world, sid):
         return
     if p.cds.get(sid, 0) > 0:
         return
-    if p.mana < sp["mana"]:
+    if p.mana < p.mana_cost(sid):
         world.add_text(p.x, p.y, 64, "Pas assez de mana", (110, 150, 255), 16)
         return
     tx, ty = world.ground_point() if sp.get("target") == "ground" else world.aim_point()
@@ -94,7 +94,7 @@ def cast(world, sid):
     facing = p.facing
     p.facing = math.atan2(ty - p.y, tx - p.x)
     # talents : +% dégâts du sort (et de tous les sorts), -% recharge du sort
-    mult = sp["mult"] * (1 + (p.t("spell_pct") + p.t("sd:" + sid)) / 100)
+    mult = sp["mult"] * (1 + (p.stats["spell_pct"] + p.t("sd:" + sid)) / 100)
     ctx = Ctx(world, tx, ty, mult, sp["color"], spell=sid)
     if run(sp["effects"], ctx) is False:
         p.facing = facing
@@ -104,7 +104,7 @@ def cast(world, sid):
     if random.random() * 100 < p.t("free_cast"):
         world.add_text(p.x, p.y, 70, "Surcharge !", (190, 150, 255), 15)
     else:
-        p.mana -= sp["mana"]
+        p.mana -= p.mana_cost(sid)
     if p.t("heal_on_spell"):
         p.heal(p.stats["max_hp"] * p.t("heal_on_spell") / 100)
     cd = sp["cd"] * (1 - p.stats["cdr"] / 100) * (1 - p.t("sc:" + sid) / 100)

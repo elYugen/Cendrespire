@@ -105,7 +105,7 @@ class Tutorial:
             return False
         if e.type == pygame.MOUSEBUTTONDOWN and e.button == 1 and self.rect.collidepoint(e.pos):
             if self.skip_rect.collidepoint(e.pos):
-                self.finish("Tutoriel passé", "Les commandes restent dans Système > Commandes")
+                self.finish("Tutoriel passé", "Les commandes se règlent dans Système > Options")
             return True
         return False
 

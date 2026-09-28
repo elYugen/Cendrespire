@@ -3,7 +3,7 @@
   "date": "2026-09-27",
   "title": "Héros animés, étages immenses et nouveaux gardiens",
   "sections": [
-    {"name": "Commandes façon Diablo", "notes": [
+    {"name": "Commandes à la souris", "notes": [
       "Clic gauche au sol pour se déplacer (maintenu : le héros suit le curseur), avec recherche de chemin autour des murs.",
       "Clic gauche sur un ennemi pour l'attaquer (le héros s'en approche), sur un PNJ ou un mur fissuré pour interagir.",
       "Maj + clic : attaquer sur place. Le clavier (ZQSD / WASD) reste disponible.",
@@ -27,7 +27,7 @@
       "Chaque étage (1 à 8) a désormais son propre gardien."
     ]},
     {"name": "Interface", "notes": [
-      "Artefacts (R, T, G) et potion (F) disposés en croix sous les cœurs, façon Breath of the Wild.",
+      "Artefacts (R, T, G) et potion (F) disposés en croix sous les cœurs.",
       "Un seul exemplaire de chaque artefact peut être équipé.",
       "Minicarte ronde ; la jauge du sceau et l'indicateur de bruit sont retirés."
     ]},

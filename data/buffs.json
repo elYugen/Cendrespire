@@ -50,6 +50,54 @@
       "dr": "v",
       "armor_pct": 30,
       "visual": "bubble"
+    },
+    "peau_fer": {
+      "name": "Peau de fer",
+      "color": [190, 196, 210],
+      "dr": 20,
+      "armor_pct": 40,
+      "visual": "bubble"
+    },
+    "chasse": {
+      "name": "Instinct du traqueur",
+      "color": [120, 220, 130],
+      "move_pct": 30,
+      "atk_speed": 25,
+      "visual": "glow"
+    },
+    "rempart_foi": {
+      "name": "Rempart de foi",
+      "color": [200, 210, 235],
+      "armor_pct": 60,
+      "dr": 15,
+      "visual": "bubble"
+    },
+    "fumee": {
+      "name": "Voile de fumée",
+      "color": [150, 130, 230],
+      "dr": 40,
+      "move_pct": 40,
+      "visual": "glow"
+    },
+    "bouclier_mana": {
+      "name": "Bouclier de mana",
+      "color": [140, 170, 255],
+      "dr": 30,
+      "visual": "bubble"
+    },
+    "benediction": {
+      "name": "Bénédiction",
+      "color": [255, 240, 190],
+      "dmg_pct": 20,
+      "atk_speed": 15,
+      "visual": "ring"
+    },
+    "frenesie": {
+      "name": "Frénésie",
+      "color": [230, 90, 110],
+      "atk_speed": 35,
+      "move_pct": 15,
+      "visual": "glow"
     }
   }
 }

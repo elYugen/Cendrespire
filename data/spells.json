@@ -563,6 +563,739 @@
           "invuln": 0.75
         }
       ]
+    },
+    "frappe_titan": {
+      "name": "Frappe titanesque",
+      "level": 1,
+      "mana": 22,
+      "cd": 5,
+      "mult": 2.8,
+      "color": [220, 90, 50],
+      "icon": "axe",
+      "target": "aim",
+      "desc": "Un coup colossal devant vous (280% en zone) qui étourdit et repousse.",
+      "effects": [
+        {
+          "type": "blast",
+          "at": "target",
+          "range": 110,
+          "radius": 80,
+          "stun": 0.8,
+          "knock": 90,
+          "blast_sound": "hit"
+        }
+      ]
+    },
+    "peau_fer": {
+      "name": "Peau de fer",
+      "level": 1,
+      "mana": 20,
+      "cd": 18,
+      "mult": 0,
+      "color": [190, 196, 210],
+      "icon": "shield",
+      "target": "aim",
+      "desc": "Rend 10% de votre vie ; -20% de dégâts subis et +40% d'armure pendant 6 s.",
+      "effects": [
+        {
+          "type": "buff",
+          "id": "peau_fer",
+          "duration": 6
+        },
+        {
+          "type": "heal",
+          "pct": 10
+        },
+        {
+          "type": "fx",
+          "ring": [60, 10, 0.4],
+          "particles": 24,
+          "sound": "seal"
+        }
+      ]
+    },
+    "ruee": {
+      "name": "Ruée sauvage",
+      "level": 1,
+      "mana": 18,
+      "cd": 5,
+      "mult": 1.6,
+      "color": [255, 150, 60],
+      "icon": "fist",
+      "target": "aim",
+      "desc": "Fonce vers le curseur puis libère une onde de choc (160%) qui repousse.",
+      "effects": [
+        {
+          "type": "dash",
+          "distance": 260,
+          "duration": 0.22,
+          "invuln": 0.25,
+          "then": [
+            {
+              "type": "nova",
+              "at": "self",
+              "radius": 95,
+              "knock": 80,
+              "sound": "hit"
+            }
+          ]
+        }
+      ]
+    },
+    "colonne_feu": {
+      "name": "Colonne de flammes",
+      "level": 1,
+      "mana": 26,
+      "cd": 5,
+      "mult": 1.1,
+      "color": [255, 110, 30],
+      "icon": "flame",
+      "target": "aim",
+      "desc": "Une traînée d'explosions de feu jaillit devant vous (110% par explosion).",
+      "effects": [
+        {
+          "type": "line",
+          "count": 7,
+          "start": 60,
+          "spacing": 55,
+          "radius": 55,
+          "delay": 0.05,
+          "delay_step": 0.07,
+          "knock": 20,
+          "sound": "fire"
+        }
+      ]
+    },
+    "lance_glace": {
+      "name": "Lance de glace",
+      "level": 1,
+      "mana": 18,
+      "cd": 2.5,
+      "mult": 1.7,
+      "color": [150, 220, 255],
+      "icon": "snow",
+      "target": "aim",
+      "desc": "Une lance gelée transperce tous les ennemis (170%) et les ralentit.",
+      "effects": [
+        {
+          "type": "projectile",
+          "speed": 820,
+          "radius": 9,
+          "life": 0.9,
+          "kind": "bolt",
+          "pierce": 99,
+          "slow": 2.5,
+          "sound": "ice"
+        }
+      ]
+    },
+    "orbe_arcane": {
+      "name": "Orbe arcanique",
+      "level": 1,
+      "mana": 30,
+      "cd": 6,
+      "mult": 1.8,
+      "color": [180, 130, 255],
+      "icon": "orb",
+      "target": "aim",
+      "desc": "Un orbe lent traverse la salle et frappe tout sur son passage (180%).",
+      "effects": [
+        {
+          "type": "projectile",
+          "speed": 240,
+          "radius": 16,
+          "life": 2.4,
+          "kind": "bolt",
+          "pierce": 99,
+          "knock": 10,
+          "sound": "magic"
+        }
+      ]
+    },
+    "tir_fatal": {
+      "name": "Tir fatal",
+      "level": 1,
+      "mana": 20,
+      "cd": 6,
+      "mult": 3.4,
+      "color": [255, 230, 120],
+      "icon": "eye",
+      "target": "aim",
+      "desc": "Une flèche d'une puissance terrible (340%) qui repousse sa cible.",
+      "effects": [
+        {
+          "type": "projectile",
+          "speed": 1150,
+          "radius": 7,
+          "life": 0.8,
+          "kind": "arrow",
+          "knock": 60,
+          "sound": "arrow"
+        }
+      ]
+    },
+    "instinct": {
+      "name": "Instinct du traqueur",
+      "level": 1,
+      "mana": 16,
+      "cd": 14,
+      "mult": 0,
+      "color": [120, 220, 130],
+      "icon": "boot",
+      "target": "aim",
+      "desc": "Bond d'esquive, puis +30% de vitesse et +25% de vitesse d'attaque pendant 6 s.",
+      "effects": [
+        {
+          "type": "dash",
+          "direction": "move",
+          "distance": 180,
+          "duration": 0.18,
+          "invuln": 0.2
+        },
+        {
+          "type": "buff",
+          "id": "chasse",
+          "duration": 6
+        },
+        {
+          "type": "fx",
+          "particles": 20,
+          "sound": "swing"
+        }
+      ]
+    },
+    "bombe": {
+      "name": "Bombe incendiaire",
+      "level": 1,
+      "mana": 24,
+      "cd": 7,
+      "mult": 1.8,
+      "color": [255, 140, 50],
+      "icon": "meteor",
+      "target": "ground",
+      "range": 420,
+      "desc": "Lance une bombe qui explose (180%) et laisse le sol en feu pendant 3 s.",
+      "effects": [
+        {
+          "type": "blast",
+          "at": "target",
+          "radius": 100,
+          "delay": 0.45,
+          "knock": 60,
+          "sound": "fire",
+          "then": [
+            {
+              "type": "zone",
+              "at": "target",
+              "kind": "fire",
+              "radius": 85,
+              "duration": 3.0,
+              "tick": 0.5,
+              "mult_abs": 0.3
+            }
+          ]
+        }
+      ]
+    },
+    "marteau": {
+      "name": "Marteau du juste",
+      "level": 1,
+      "mana": 20,
+      "cd": 3,
+      "mult": 2.0,
+      "color": [255, 220, 120],
+      "icon": "fist",
+      "target": "aim",
+      "desc": "Lance un marteau sacré qui explose à l'impact (200% en zone).",
+      "effects": [
+        {
+          "type": "projectile",
+          "speed": 620,
+          "radius": 11,
+          "life": 0.9,
+          "kind": "bolt",
+          "explode": 70,
+          "knock": 60,
+          "sound": "magic"
+        }
+      ]
+    },
+    "rempart_foi": {
+      "name": "Rempart de foi",
+      "level": 1,
+      "mana": 24,
+      "cd": 16,
+      "mult": 0,
+      "color": [200, 210, 235],
+      "icon": "aegis",
+      "target": "aim",
+      "desc": "Étourdit et repousse les ennemis proches ; +60% d'armure et -15% de dégâts subis pendant 8 s.",
+      "effects": [
+        {
+          "type": "buff",
+          "id": "rempart_foi",
+          "duration": 8
+        },
+        {
+          "type": "nova",
+          "radius": 150,
+          "damage": false,
+          "stun": 1.0,
+          "knock": 90,
+          "sound": "seal"
+        }
+      ]
+    },
+    "lumiere": {
+      "name": "Lumière sacrée",
+      "level": 1,
+      "mana": 28,
+      "cd": 15,
+      "mult": 0,
+      "color": [255, 240, 170],
+      "icon": "sun",
+      "target": "aim",
+      "desc": "Rend 20% de votre vie et bénit le sol : 3% de vie par seconde pendant 5 s.",
+      "effects": [
+        {
+          "type": "heal",
+          "pct": 20
+        },
+        {
+          "type": "zone",
+          "at": "self",
+          "kind": "heal",
+          "radius": 110,
+          "duration": 5.0,
+          "tick": 0.5,
+          "mult_abs": 3,
+          "sound": "levelup"
+        }
+      ]
+    },
+    "nova_os": {
+      "name": "Nova d'os",
+      "level": 1,
+      "mana": 24,
+      "cd": 4,
+      "mult": 0.75,
+      "color": [230, 226, 200],
+      "icon": "bone",
+      "target": "aim",
+      "desc": "Projette 16 éclats d'os tout autour de vous (75% chacun).",
+      "effects": [
+        {
+          "type": "projectile",
+          "radial": 16,
+          "speed": 620,
+          "radius": 6,
+          "life": 0.5,
+          "kind": "bolt",
+          "sound": "arrow"
+        }
+      ]
+    },
+    "feux_follets": {
+      "name": "Feux follets",
+      "level": 1,
+      "mana": 26,
+      "cd": 14,
+      "mult": 0.45,
+      "color": [140, 255, 210],
+      "icon": "summon",
+      "target": "aim",
+      "desc": "Invoque 2 feux follets pendant 12 s ; ils tirent sur les ennemis proches (45% par tir).",
+      "effects": [
+        {
+          "type": "summon",
+          "minion": "wisp",
+          "count": 2,
+          "duration": 12,
+          "sound": "magic"
+        }
+      ]
+    },
+    "siphon": {
+      "name": "Siphon de vie",
+      "level": 1,
+      "mana": 26,
+      "cd": 8,
+      "mult": 1.1,
+      "color": [150, 90, 220],
+      "icon": "harvest",
+      "target": "aim",
+      "desc": "Draine les ennemis proches (110%) et les ralentit ; chaque ennemi touché rend 2% de vie.",
+      "effects": [
+        {
+          "type": "nova",
+          "radius": 170,
+          "heal_per_hit": 2,
+          "slow": 1.5,
+          "style": "souls",
+          "sound": "magic"
+        }
+      ]
+    },
+    "marque_mort": {
+      "name": "Marque de mort",
+      "level": 1,
+      "mana": 22,
+      "cd": 9,
+      "mult": 3.0,
+      "color": [220, 70, 90],
+      "icon": "dagger",
+      "target": "aim",
+      "desc": "Surgit derrière l'ennemi visé, le frappe (300%, +30% crit) et maudit les ennemis autour (+25% de dégâts subis).",
+      "effects": [
+        {
+          "type": "shadowstep",
+          "range": 480,
+          "crit_bonus": 30,
+          "sound": "hit",
+          "fail_text": "Aucune cible"
+        },
+        {
+          "type": "curse",
+          "at": "self",
+          "radius": 90,
+          "duration": 6,
+          "amp": 25,
+          "slow": 1.0
+        }
+      ]
+    },
+    "nuage_toxique": {
+      "name": "Nuage toxique",
+      "level": 1,
+      "mana": 24,
+      "cd": 8,
+      "mult": 0.5,
+      "color": [120, 230, 90],
+      "icon": "drop",
+      "target": "ground",
+      "range": 420,
+      "desc": "Un nuage empoisonné stagne 5 s sur la zone (50% par impulsion).",
+      "effects": [
+        {
+          "type": "zone",
+          "at": "target",
+          "kind": "fire",
+          "radius": 115,
+          "duration": 5.0,
+          "tick": 0.5,
+          "sound": "potion"
+        }
+      ]
+    },
+    "voile_fumee": {
+      "name": "Voile de fumée",
+      "level": 1,
+      "mana": 18,
+      "cd": 15,
+      "mult": 0,
+      "color": [150, 130, 230],
+      "icon": "shadow",
+      "target": "aim",
+      "desc": "Ralentit fortement les ennemis proches ; -40% de dégâts subis et +40% de vitesse pendant 4 s.",
+      "effects": [
+        {
+          "type": "buff",
+          "id": "fumee",
+          "duration": 4
+        },
+        {
+          "type": "nova",
+          "radius": 130,
+          "damage": false,
+          "slow": 2.5,
+          "sound": "swing"
+        },
+        {
+          "type": "fx",
+          "particles": 40
+        }
+      ]
+    },
+    "hurlement": {
+      "name": "Hurlement terrifiant",
+      "level": 1,
+      "mana": 18,
+      "cd": 12,
+      "mult": 0,
+      "color": [240, 110, 70],
+      "icon": "shout",
+      "target": "aim",
+      "desc": "Un hurlement qui étourdit (1,4 s) et ralentit les ennemis proches.",
+      "effects": [
+        {
+          "type": "nova",
+          "radius": 180,
+          "damage": false,
+          "stun": 1.4,
+          "slow": 2.0,
+          "sound": "roar"
+        },
+        {
+          "type": "fx",
+          "shake": 6
+        }
+      ]
+    },
+    "hache_tournoyante": {
+      "name": "Hache tournoyante",
+      "level": 1,
+      "mana": 20,
+      "cd": 5,
+      "mult": 1.4,
+      "color": [220, 170, 110],
+      "icon": "axe",
+      "target": "aim",
+      "desc": "Lance une hache qui tournoie et traverse tout (140%).",
+      "effects": [
+        {
+          "type": "projectile",
+          "speed": 380,
+          "radius": 14,
+          "life": 1.4,
+          "kind": "bolt",
+          "pierce": 99,
+          "knock": 30,
+          "sound": "swing"
+        }
+      ]
+    },
+    "chaine_eclairs": {
+      "name": "Chaîne d'éclairs",
+      "level": 1,
+      "mana": 24,
+      "cd": 4,
+      "mult": 1.3,
+      "color": [150, 200, 255],
+      "icon": "bolt",
+      "target": "ground",
+      "desc": "La foudre frappe jusqu'à 5 ennemis près du curseur (130%).",
+      "effects": [
+        {
+          "type": "strikes",
+          "at": "target",
+          "range": 460,
+          "search": 240,
+          "count": 5,
+          "stun": 0.2,
+          "stagger": 0.06,
+          "sound": "magic",
+          "fail_text": "Aucune cible"
+        }
+      ]
+    },
+    "bouclier_mana": {
+      "name": "Bouclier de mana",
+      "level": 1,
+      "mana": 30,
+      "cd": 16,
+      "mult": 0,
+      "color": [140, 170, 255],
+      "icon": "orb",
+      "target": "aim",
+      "desc": "-30% de dégâts subis pendant 6 s.",
+      "effects": [
+        {
+          "type": "buff",
+          "id": "bouclier_mana",
+          "duration": 6
+        },
+        {
+          "type": "fx",
+          "ring": [60, 10, 0.4],
+          "particles": 24,
+          "sound": "magic"
+        }
+      ]
+    },
+    "fleche_givrante": {
+      "name": "Flèche givrante",
+      "level": 1,
+      "mana": 18,
+      "cd": 3,
+      "mult": 1.5,
+      "color": [170, 225, 255],
+      "icon": "snow",
+      "target": "aim",
+      "desc": "Une flèche qui explose en éclats de glace (150%) et ralentit.",
+      "effects": [
+        {
+          "type": "projectile",
+          "speed": 820,
+          "radius": 7,
+          "life": 0.8,
+          "kind": "arrow",
+          "explode": 55,
+          "slow": 2.5,
+          "sound": "ice"
+        }
+      ]
+    },
+    "faucon": {
+      "name": "Faucon de chasse",
+      "level": 1,
+      "mana": 20,
+      "cd": 16,
+      "mult": 0.6,
+      "color": [220, 190, 140],
+      "icon": "summon",
+      "target": "aim",
+      "desc": "Un faucon vous accompagne 15 s et plonge sur les ennemis proches (60% par attaque).",
+      "effects": [
+        {
+          "type": "summon",
+          "minion": "wisp",
+          "count": 1,
+          "duration": 15,
+          "sound": "magic"
+        }
+      ]
+    },
+    "lumiere_vengeresse": {
+      "name": "Lumière vengeresse",
+      "level": 1,
+      "mana": 26,
+      "cd": 7,
+      "mult": 1.6,
+      "color": [255, 230, 150],
+      "icon": "sun",
+      "target": "aim",
+      "desc": "Une onde sacrée (160%) ; chaque ennemi touché vous rend 1% de vie.",
+      "effects": [
+        {
+          "type": "nova",
+          "radius": 150,
+          "heal_per_hit": 1,
+          "knock": 50,
+          "sound": "seal"
+        }
+      ]
+    },
+    "benediction": {
+      "name": "Bénédiction",
+      "level": 1,
+      "mana": 22,
+      "cd": 18,
+      "mult": 0,
+      "color": [255, 240, 190],
+      "icon": "star",
+      "target": "aim",
+      "desc": "+20% de dégâts et +15% de vitesse d'attaque pendant 8 s.",
+      "effects": [
+        {
+          "type": "buff",
+          "id": "benediction",
+          "duration": 8
+        },
+        {
+          "type": "fx",
+          "ring": [20, 160, 0.5],
+          "particles": 30,
+          "sound": "levelup"
+        }
+      ]
+    },
+    "explosion_cadavre": {
+      "name": "Explosion de cadavre",
+      "level": 1,
+      "mana": 24,
+      "cd": 5,
+      "mult": 2.2,
+      "color": [200, 90, 110],
+      "icon": "skull",
+      "target": "ground",
+      "range": 440,
+      "desc": "Une détonation de chair et d'os au point visé (220%).",
+      "effects": [
+        {
+          "type": "blast",
+          "at": "target",
+          "radius": 110,
+          "delay": 0.2,
+          "knock": 80,
+          "sound": "explosion"
+        }
+      ]
+    },
+    "mains_des_morts": {
+      "name": "Mains des morts",
+      "level": 1,
+      "mana": 28,
+      "cd": 10,
+      "mult": 0.45,
+      "color": [150, 110, 200],
+      "icon": "curse",
+      "target": "ground",
+      "range": 440,
+      "desc": "Des mains jaillissent du sol 4 s (45% par impulsion) et maudissent les ennemis (+20% de dégâts subis).",
+      "effects": [
+        {
+          "type": "zone",
+          "at": "target",
+          "kind": "fire",
+          "radius": 120,
+          "duration": 4.0,
+          "tick": 0.5
+        },
+        {
+          "type": "curse",
+          "at": "target",
+          "radius": 120,
+          "duration": 5,
+          "amp": 20,
+          "slow": 1.5,
+          "sound": "ice"
+        }
+      ]
+    },
+    "lame_spectrale": {
+      "name": "Lame spectrale",
+      "level": 1,
+      "mana": 18,
+      "cd": 3,
+      "mult": 1.8,
+      "color": [190, 170, 255],
+      "icon": "dagger",
+      "target": "aim",
+      "desc": "Une lame fantôme file droit devant et transperce (180%).",
+      "effects": [
+        {
+          "type": "projectile",
+          "speed": 950,
+          "radius": 8,
+          "life": 0.7,
+          "kind": "bolt",
+          "pierce": 99,
+          "sound": "swing"
+        }
+      ]
+    },
+    "frenesie": {
+      "name": "Frénésie",
+      "level": 1,
+      "mana": 20,
+      "cd": 16,
+      "mult": 0,
+      "color": [230, 90, 110],
+      "icon": "bolt",
+      "target": "aim",
+      "desc": "+35% de vitesse d'attaque et +15% de vitesse pendant 6 s.",
+      "effects": [
+        {
+          "type": "buff",
+          "id": "frenesie",
+          "duration": 6
+        },
+        {
+          "type": "fx",
+          "particles": 26,
+          "sound": "roar"
+        }
+      ]
     }
   }
 }

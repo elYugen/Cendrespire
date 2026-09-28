@@ -102,6 +102,7 @@ RACK = (38.4, 22.8)
 WARDROBE = (7.7, 29.1)
 MIRROR = (9.5, 29.0)
 TAVERN_TABLES = [(12.2, 28.7), (15.4, 28.7)]
+STASH = (16.5, 28.8)                       # coffre de stockage, au bout de la terrasse de la taverne
 LAMPS = [(20.3, 11.5), (25.7, 11.5), (20.3, 19.5), (25.7, 19.5), (20.3, 33.5), (25.7, 33.5), (20.3, 40.0),
          (25.7, 40.0), (7.0, 24.4), (14.0, 24.4), (32.0, 24.4), (39.0, 24.4), (7.0, 34.4), (14.0, 34.4),
          (32.0, 34.4), (39.0, 34.4), (17.5, 5.0), (28.5, 5.0),
@@ -272,7 +273,7 @@ def obstacles():
            (*GRIND, 0.4), (*RACK, 0.4), (*WARDROBE, 0.45), (*MIRROR, 0.35),
            (PORTAL[0] - 1.45, PORTAL[1], 0.35), (PORTAL[0] + 1.45, PORTAL[1], 0.35)]
     obs += [(x, y, 0.65) for x, y, _ in MARKET_STALLS]
-    obs += [(x, y, 0.5) for x, y in TAVERN_TABLES]
+    obs += [(x, y, 0.5) for x, y in TAVERN_TABLES] + [(*STASH, 0.45)]
     obs += [(*ORACLES, 1.1)] + [(x, y, 0.35) for x, y in LECTERNS + CANDLES]
     obs += [(x, y, 0.3) for x, y in GARDEN_TREES]
     obs += [(x, y, 0.6) for x, y, _ in CARTS]

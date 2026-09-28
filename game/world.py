@@ -11,7 +11,7 @@ from .dungeon import WALL, BARRIER, Minimap
 from .entities import Loot
 from .fx import Particles, RingFX, Blast, Lightning
 from .items import generate_item, item_value, buy_price, ench_spent, ART_SLOTS
-from .panels import (InventoryPanel, MenuScreen, ForgePanel, AnimaPanel, DeathPanel, MENU_KEYS,
+from .panels import (InventoryPanel, MenuScreen, AnimaPanel, DeathPanel, MENU_KEYS,
                      PAGE_SYS)
 from .r3d import level, models
 from .r3d.camera import Camera3D

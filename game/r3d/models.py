@@ -665,6 +665,18 @@ def chest(fr, x, y, opened, t=0.0):
         fr.glow(x, y, 16, 26 + 3 * math.sin(t * 3), (255, 200, 90), 0.35)
 
 
+def stash_chest(fr, x, y, t=0.0):
+    """Grand coffre cerclé de fer (stockage de la ville)."""
+    wood, iron, gold = (112, 72, 40), (70, 74, 82), (230, 190, 90)
+    fr.box(x, y, 0, 17, 11, 9, wood)
+    for dx in (-16.4, -6, 6, 16.4):
+        fr.box(x + dx, y, 0, 1.1, 11.4, 9.3, iron)
+    fr.part("cylinder", (x, y, 18), (17, 0, 0), (0, 0, 3.2), (0, 11.2, 0), (128, 84, 46))
+    for dx in (-6, 6):
+        fr.part("cylinder", (x + dx, y, 18), (1.2, 0, 0), (0, 0, 3.5), (0, 11.5, 0), iron)
+    fr.box(x, y + 11.4, 10, 3.2, 1.0, 3.6, gold, 0.5)
+
+
 def portal(fr, x, y, color, t):
     stone, dark = (156, 152, 162), (112, 110, 120)
     f, s = frame_axes(math.pi / 4)

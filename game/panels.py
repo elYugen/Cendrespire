@@ -6,10 +6,10 @@ import math
 
 import pygame
 
-from . import coins, controls, updates, sfx, ui
+from . import controls, updates, sfx, ui
 from .data import (ATTR_K, ATTRS, ATTR_NAMES, ATTR_LINES, ATTR_LORE, ATTR_USERS, SPELLS, ANIMA_POWERS, ANIMA_TIERS, BAG_SIZE, ARTIFACTS, ENCHANTS,
                    CLASSES, xp_needed, floor_name, floor_boss, BOSSES, anima_desc, ench_value)
-from .items import (SLOT_NAMES, AFFIX_DEF, ART_SLOTS, upgrade_cost, MAX_UPGRADE, item_lines, item_stats,
+from .items import (SLOT_NAMES, AFFIX_DEF, ART_SLOTS, item_stats,
                     item_value, art_desc)
 from .settings import (SCREEN_W, SCREEN_H, TEXT, TEXT_DIM, GOLD, GOLD_BRIGHT, RED, RARITY_COLORS, RARITY_NAMES,
                        WHITE, SHEIKAH, UI_LINE)
@@ -223,8 +223,6 @@ class MenuScreen(Panel):
         """Position (conception) et zoom du héros en 3D selon la page ; None : le monde reste visible derrière."""
         if self.page == PAGE_INV:
             return 1010, 352, 1.3
-        if self.page == PAGE_CHAR:
-            return 230, 400, 1.05
         return None
 
     def goto(self, page):
@@ -551,8 +549,6 @@ class MenuScreen(Panel):
                     p.recompute()
                     sfx.play("click")
                     return
-        if e.button == 1 and pygame.Rect(40, 240, 380, 340).collidepoint(e.pos):
-            self.drag = e.pos[0]
 
     def sys_key(self, e):
         n = len(self.sys_entries)
@@ -622,7 +618,7 @@ class MenuScreen(Panel):
         if self.page == PAGE_INV:
             hints = [("Actions", "Clic"), ("Équiper", "Clic droit"), ("Pivoter", "Glisser"), ("Retour", "Échap")]
         elif self.page == PAGE_CHAR:
-            hints = [("Répartir", "Clic"), ("+5", "Maj + clic"), ("Pivoter", "Glisser"), ("Retour", "Échap")]
+            hints = [("Répartir", "Clic"), ("+5", "Maj + clic"), ("Retour", "Échap")]
         elif self.page == PAGE_TAL:
             hints = [("Apprendre", "Clic"), ("Faire défiler", "Molette"), ("Retour", "Échap")]
         elif self.page == PAGE_QUEST:
@@ -873,32 +869,53 @@ class MenuScreen(Panel):
         s = p.stats
         cc = p.cls["color"]
         self.hover_info = None
-        # ---- colonne héros
-        left = ui.botw_box(surf, (40, 122, 380, 518), 90, FRAME, radius=4)
-        ui.glow(surf, 230, 470, 150, ui.darker(cc, 0.28))
+        # ---- colonne héros : identité, expérience, grandes valeurs, anima, records
+        ui.botw_box(surf, (40, 122, 380, 518), 150, FRAME, radius=4)
+        ui.glow(surf, 92, 182, 90, ui.darker(cc, 0.3))
         med = (92, 182)
         need = xp_needed(p.level)
         frac = min(1.0, p.xp / need)
         ui.circle(surf, (8, 12, 14), med, 38)
-        ui.circle(surf, (60, 64, 64), med, 38, 5)
-        if frac > 0:
-            pts = [med] + [(med[0] + math.cos(-math.pi / 2 + math.tau * frac * i / 40) * 40,
-                            med[1] + math.sin(-math.pi / 2 + math.tau * frac * i / 40) * 40) for i in range(41)]
-            ui.polygon(surf, (236, 200, 90), pts)
-            ui.circle(surf, (8, 12, 14), med, 34)
-        ui.circle(surf, ui.lighter(cc, 1.1), med, 34, 1)
+        ui.circle(surf, ui.lighter(cc, 1.1), med, 38, 2)
         ui.draw_text(surf, "NIV.", (med[0], med[1] - 14), 10, SOFT, "bold", anchor="center", shadow=False)
         ui.draw_text(surf, str(p.level), (med[0], med[1] + 7), 28, WHITE, "title", anchor="center")
-        if pygame.Rect(med[0] - 40, med[1] - 40, 80, 80).collidepoint(mouse):
-            self.hover_info = [("Niveau " + str(p.level), BOTW_YELLOW, 17),
-                               (f"Expérience : {p.xp} / {need}", WHITE, 14),
-                               (f"{int(frac * 100)}% vers le niveau {p.level + 1}", SOFT, 13)]
         ui.draw_text(surf, p.name, (144, 150), 28, WHITE, "title")
         ui.draw_text(surf, p.cls["title"], (146, 186), 14, SOFT)
         chip_r = pygame.Rect(146, 208, ui.text_size(p.cls["name"], 13, "bold")[0] + 22, 22)
         ui.botw_box(surf, chip_r, 200, cc, radius=11, fill=ui.darker(cc, 0.25))
         ui.draw_text(surf, p.cls["name"], chip_r.center, 13, ui.lighter(cc, 1.3), "bold", anchor="center",
                      shadow=False)
+        # expérience
+        bar = pygame.Rect(62, 266, 336, 8)
+        ui.draw_text(surf, "Expérience", (bar.x, bar.y - 8), 13, SOFT, "bold", anchor="bottomleft", shadow=False)
+        ui.draw_text(surf, f"{p.xp} / {need}", (bar.right, bar.y - 8), 12, SOFT, anchor="bottomright", shadow=False)
+        ui.rect(surf, (0, 0, 0, 180), bar.inflate(2, 2), 0, 4)
+        if frac > 0:
+            ui.rect(surf, (236, 200, 90), (bar.x, bar.y, max(4, bar.w * frac), bar.h), 0, 4)
+        if bar.inflate(0, 24).collidepoint(mouse):
+            self.hover_info = [("Niveau " + str(p.level), BOTW_YELLOW, 16),
+                               (f"{int(frac * 100)}% vers le niveau {p.level + 1}", SOFT, 13)]
+        # grandes tuiles
+        dr = p.damage_reduction() * 100
+        tiles = [("sword", "Attaque", f"{int(p.dps_estimate())}", "dégâts / seconde", (236, 140, 90)),
+                 ("shield", "Défense", f"{int(s['armor'])}", f"-{dr:.0f}% de dégâts subis", (170, 180, 200)),
+                 ("heart", "Vie", f"{int(p.hp)}", f"sur {int(s['max_hp'])}", (236, 80, 100)),
+                 ("drop", "Mana", f"{int(p.mana)}", f"sur {int(s['max_mana'])}", (100, 150, 255))]
+        for i, (kind, label, val, sub, col) in enumerate(tiles):
+            r = pygame.Rect(58 + (i % 2) * 176, 292 + (i // 2) * 84, 168, 76)
+            ui.botw_box(surf, r, 150, ui.darker(col, 0.7), radius=6)
+            icons.glyph(surf, kind, (r.x + 20, r.y + 20), 9, col)
+            ui.draw_text(surf, label, (r.x + 36, r.y + 11), 13, SOFT, "bold", shadow=False)
+            ui.draw_text(surf, val, (r.x + 14, r.y + 32), 24, WHITE, "bold")
+            ui.draw_text(surf, sub, (r.right - 10, r.bottom - 8), 11, SOFT, anchor="bottomright", shadow=False)
+        # pouvoirs d'anima de l'ascension en cours
+        ui.draw_text(surf, "Anima", (62, 474), 13, SOFT, "bold", shadow=False)
+        if p.anima:
+            for i, (k, v) in enumerate(list(p.anima.items())[:6]):
+                ui.draw_text(surf, f"{ANIMA_POWERS[k]['name']} x{v}", (62 + (i % 2) * 176, 498 + (i // 2) * 22), 13,
+                             SHEIKAH, "bold", shadow=False)
+        else:
+            ui.draw_text(surf, "Aucun pouvoir pour cette ascension.", (62, 498), 13, TEXT_DIM, shadow=False)
         # records en bas de colonne
         recs = [("pillar", f"Étage {p.max_floor}", "Étage le plus haut atteint"),
                 ("skull", f"{p.kills}", "Monstres vaincus"), ("heart", f"{p.deaths}", "Morts")]
@@ -912,7 +929,8 @@ class MenuScreen(Panel):
             if r.collidepoint(mouse):
                 self.hover_info = [(tip, WHITE, 15)]
             x = r.right + 8
-        # ---- colonne attributs
+        # ---- colonne attributs : 9 rangées régulières sur toute la hauteur
+        ui.botw_box(surf, (432, 122, 402, 518), 150, FRAME, radius=4)
         ui.draw_text(surf, "Attributs", (446, 128), 22, WHITE, "title")
         if p.points:
             k = 0.55 + 0.45 * math.sin(self.t * 4)
@@ -924,45 +942,32 @@ class MenuScreen(Panel):
         self.hover_attr = None
         for i, a in enumerate(ATTRS):
             kind, col = self.ATTR_STYLE[a]
-            row = pygame.Rect(440, 160 + i * 38, 386, 35)
+            row = pygame.Rect(440, 166 + i * 52, 386, 48)
             hov = row.collidepoint(mouse)
             if hov:
                 self.hover_attr = a
             prim = a == p.cls["primary"]
             ui.botw_box(surf, row, 175 if hov else 125, col if hov else ((150, 140, 100) if prim else (96, 100, 98)),
                         radius=6, fill=(18, 26, 30) if hov else (0, 0, 0))
-            ui.rect(surf, col, (row.x + 1, row.y + 6, 3, row.h - 12), 0, 2)
-            c = (row.x + 24, row.centery)
-            ui.circle(surf, ui.darker(col, 0.3), c, 12)
-            ui.circle(surf, col, c, 12, 2)
-            icons.glyph(surf, kind, c, 6.5, ui.lighter(col, 1.3))
-            ui.draw_text(surf, ATTR_NAMES[a], (row.x + 44, row.y + 2), 14, WHITE, "bold")
+            ui.rect(surf, col, (row.x + 1, row.y + 7, 3, row.h - 14), 0, 2)
+            c = (row.x + 27, row.centery)
+            ui.circle(surf, ui.darker(col, 0.3), c, 15)
+            ui.circle(surf, col, c, 15, 2)
+            icons.glyph(surf, kind, c, 8, ui.lighter(col, 1.3))
+            ui.draw_text(surf, ATTR_NAMES[a], (row.x + 52, row.y + 5), 15, WHITE, "bold")
             if prim:
-                tw = ui.text_size(ATTR_NAMES[a], 14, "bold")[0]
-                ui.draw_text(surf, "PRINCIPALE", (row.x + 50 + tw, row.y + 6), 9, BOTW_YELLOW, "bold", shadow=False)
-            ui.draw_text(surf, self.attr_effect(a), (row.x + 44, row.y + 20), 11, SOFT, shadow=False)
-            ui.draw_text(surf, str(int(s[a])), (row.right - (50 if p.points else 16), row.centery), 20, WHITE,
+                tw = ui.text_size(ATTR_NAMES[a], 15, "bold")[0]
+                ui.draw_text(surf, "PRINCIPALE", (row.x + 58 + tw, row.y + 9), 9, BOTW_YELLOW, "bold", shadow=False)
+            ui.draw_text(surf, self.attr_effect(a), (row.x + 52, row.y + 27), 11, SOFT, shadow=False)
+            ui.draw_text(surf, str(int(s[a])), (row.right - (50 if p.points else 16), row.centery), 22, WHITE,
                          "bold", anchor="midright")
-            self.plus[a] = pygame.Rect(row.right - 36, row.centery - 12, 24, 24)
+            self.plus[a] = pygame.Rect(row.right - 38, row.centery - 13, 26, 26)
             if p.points:
                 rc = self.plus[a]
                 h2 = rc.collidepoint(mouse)
-                ui.circle(surf, (40, 120, 64) if h2 else (18, 60, 32), rc.center, 12)
-                ui.circle(surf, UP, rc.center, 12, 1)
-                ui.draw_text(surf, "+", rc.center, 18, WHITE, "bold", anchor="center", shadow=False)
-        # grandes tuiles
-        dr = p.damage_reduction() * 100
-        tiles = [("sword", "Attaque", f"{int(p.dps_estimate())}", "dégâts / seconde", (236, 140, 90)),
-                 ("shield", "Défense", f"{int(s['armor'])}", f"-{dr:.0f}% de dégâts subis", (170, 180, 200)),
-                 ("heart", "Vie", f"{int(p.hp)}", f"sur {int(s['max_hp'])}", (236, 80, 100)),
-                 ("drop", "Mana", f"{int(p.mana)}", f"sur {int(s['max_mana'])}", (100, 150, 255))]
-        for i, (kind, label, val, sub, col) in enumerate(tiles):
-            r = pygame.Rect(440 + (i % 2) * 196, 508 + (i // 2) * 67, 190, 62)
-            ui.botw_box(surf, r, 150, ui.darker(col, 0.7), radius=6)
-            icons.glyph(surf, kind, (r.x + 20, r.y + 18), 9, col)
-            ui.draw_text(surf, label, (r.x + 36, r.y + 10), 13, SOFT, "bold", shadow=False)
-            ui.draw_text(surf, val, (r.x + 14, r.y + 28), 22, WHITE, "bold")
-            ui.draw_text(surf, sub, (r.right - 12, r.bottom - 7), 11, SOFT, anchor="bottomright", shadow=False)
+                ui.circle(surf, (40, 120, 64) if h2 else (18, 60, 32), rc.center, 13)
+                ui.circle(surf, UP, rc.center, 13, 1)
+                ui.draw_text(surf, "+", rc.center, 19, WHITE, "bold", anchor="center", shadow=False)
         # ---- colonne statistiques + compétences
         box = ui.botw_box(surf, (846, 122, 394, 518), 150, FRAME, radius=4)
         ui.draw_text(surf, "Statistiques", (box.centerx, 134), 20, WHITE, "title", anchor="midtop")
@@ -1034,10 +1039,6 @@ class MenuScreen(Panel):
         self.pick_rects = []
         if self.spell_pick is not None:
             self.draw_spell_picker(surf, box, mouse)
-        if p.anima:
-            txt = "  ·  ".join(f"{ANIMA_POWERS[k]['name']} x{v}" for k, v in list(p.anima.items())[:3])
-            ui.draw_text(surf, "Anima : " + txt, (box.centerx, 620), 12, SHEIKAH, "bold", anchor="center",
-                         shadow=False)
 
     def draw_spell_picker(self, surf, box, mouse):
         """Grimoire : tous les sorts connus (classe + talents), à placer dans l'emplacement choisi."""
@@ -1542,8 +1543,6 @@ class InventoryPanel(Panel):
                         w.bag_right_click(key)
                     else:
                         w.unequip(key)
-                elif e.button == 1 and isinstance(w.left_panel, ForgePanel):
-                    w.left_panel.select(item)
             return True
         if e.type == pygame.KEYDOWN and e.key in (pygame.K_DELETE, pygame.K_BACKSPACE):
             hit = self.item_at(ui.mouse_pos())
@@ -1557,7 +1556,7 @@ class InventoryPanel(Panel):
         p = self.world.player
         ui.botw_panel(surf, self.rect, "Sac")
         mouse = ui.mouse_pos()
-        sel = self.world.left_panel.selected if isinstance(self.world.left_panel, ForgePanel) else None
+        sel = None
         for slot, rc in self.slot_rects.items():
             it = p.equipment[slot]
             item_slot(surf, rc, it, self.t, it is not None and it is sel, rc.collidepoint(mouse) and it is not None,
@@ -1586,78 +1585,6 @@ class InventoryPanel(Panel):
             eq = p.equipment.get(item["slot"])
             if eq:
                 ui.item_tooltip(surf, eq, (tip.x - 4, tip.y - 8), p, "Actuellement équipé", side="left")
-
-
-class ForgePanel(Panel):
-    def __init__(self, world):
-        super().__init__(world, (16, 16, 380, 620))
-        self.selected = None
-        r = self.rect
-        self.btn = ui.Button((r.x + 40, r.bottom - 76, r.w - 80, 44), "Améliorer", self.upgrade, 18)
-
-    def select(self, item):
-        self.selected = item
-        sfx.play("click")
-
-    def upgrade(self):
-        it = self.selected
-        p = self.world.player
-        if not it:
-            return
-        cost = upgrade_cost(it)
-        if it.get("upgrade", 0) >= MAX_UPGRADE:
-            self.world.message("Cet objet est déjà au maximum.", RED)
-        elif p.money < cost:
-            self.world.message("Pas assez d'argent.", RED)
-        else:
-            p.money -= cost
-            it["upgrade"] = it.get("upgrade", 0) + 1
-            p.recompute()
-            sfx.play("chest")
-            self.world.message(f"{it['name']} amélioré à +{it['upgrade']} !", GOLD_BRIGHT)
-
-    def handle_event(self, e):
-        if self.btn.handle(e):
-            return True
-        return e.type == pygame.MOUSEBUTTONDOWN and self.rect.collidepoint(e.pos)
-
-    def draw(self, surf):
-        r = self.rect
-        p = self.world.player
-        ui.botw_panel(surf, r, "Hilda la Forgeronne")
-        y = ui.draw_wrapped(surf, "« Apporte-moi ton équipement, je le rendrai plus redoutable. Chaque amélioration "
-                                  "renforce l'objet de 10% (jusqu'à +5). »", r.x + 24, r.y + 64, r.w - 48, 15, SOFT)
-        it = self.selected
-        if it and it not in p.inventory and it not in p.equipment.values():
-            self.selected = it = None
-        y += 14
-        if not it:
-            ui.draw_wrapped(surf, "Cliquez (gauche) sur un objet de votre sac ou de votre équipement.", r.x + 24,
-                            y + 20, r.w - 48, 16, (150, 156, 156))
-            self.btn.enabled = False
-        else:
-            item_slot(surf, (r.x + 24, y, 64, 64), it, 0, False)
-            ui.draw_text(surf, it["name"], (r.x + 100, y + 6), 17, RARITY_COLORS[it["rarity"]], "bold")
-            ui.draw_text(surf, f"Amélioration : +{it.get('upgrade', 0)} / {MAX_UPGRADE}", (r.x + 100, y + 32), 15, SOFT)
-            y += 82
-            nxt = dict(it, upgrade=min(MAX_UPGRADE, it.get("upgrade", 0) + 1))
-            keep = ((240, 240, 240), (125, 150, 255))
-            lc = [l for l in item_lines(it) if l[1] in keep]
-            ln = [l for l in item_lines(nxt) if l[1] in keep]
-            for a, b in zip(lc, ln):
-                ui.draw_text(surf, a[0], (r.x + 24, y), 14, TEXT)
-                if a[0] != b[0]:
-                    val = b[0].split(":")[-1].strip() if ":" in b[0] else b[0].split(" ")[0]
-                    ui.draw_text(surf, "→ " + val, (r.right - 24, y), 14, UP, "bold", anchor="topright")
-                y += 20
-            maxed = it.get("upgrade", 0) >= MAX_UPGRADE
-            cost = upgrade_cost(it)
-            self.btn.text = "Niveau maximum" if maxed else f"Améliorer — {coins.text(cost)}"
-            self.btn.enabled = not maxed and p.money >= cost
-        tr = ui.draw_text(surf, "Votre bourse :", (r.centerx - 70, self.btn.rect.y - 22), 16, GOLD, "bold",
-                          anchor="midright")
-        ui.draw_money(surf, p.money, (tr.right + 8, tr.centery), 16, "midleft")
-        self.btn.draw(surf)
 
 
 # =========================================================================== portail

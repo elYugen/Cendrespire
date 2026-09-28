@@ -5,9 +5,10 @@ import random
 from . import quests, sfx, ui
 from . import town as T
 from .dungeon import build_hub
-from .entities import NPC, Portal, Prop
+from .entities import NPC, Portal, Prop, Stash
 from .items import generate_item, generate_artifact
-from .panels import ForgePanel, PortalPanel, QuestPanel, ServicePanel
+from .forge import ForgeScreen
+from .panels import PortalPanel, QuestPanel, ServicePanel
 from .shop import ShopScreen
 from .r3d import models, objmodels
 from .training import TrainingDummy
@@ -48,6 +49,7 @@ class HubScene(World):
         grand = bool(objmodels.family("dungeon"))
         self.interactables.append(Portal(px * TILE, (pz + (0.05 if grand else 0.3)) * TILE, "Entrer dans la Tour",
                                          self.open_portal, (150, 110, 255), grand=grand))
+        self.interactables.append(Stash(T.STASH[0] * TILE, T.STASH[1] * TILE, self.open_stash))
         self.add_villagers()
         self.dummy = TrainingDummy(T.DUMMY[0] * TILE, T.DUMMY[1] * TILE)
         self.monsters.append(self.dummy)
@@ -150,8 +152,14 @@ class HubScene(World):
         sfx.play("click")
 
     def open_forge(self, world):
-        self.left_panel = ForgePanel(self)
-        self.show_inv = True
+        self.close_panels()
+        self.modal = ForgeScreen(self)
+        sfx.play("chest")
+
+    def open_stash(self, world):
+        from .stash import StashScreen
+        self.close_panels()
+        self.modal = StashScreen(self)
         sfx.play("chest")
 
     def open_wardrobe(self, world):

@@ -7,7 +7,7 @@
       "Un seul grand arbre par classe, qui se parcourt à la molette ou en le faisant glisser : il part d'une racine et s'étend dans trois domaines, reliés entre eux par des talents « ponts ».",
       "Un talent s'apprend s'il touche un talent déjà appris : on peut passer d'un domaine à l'autre. Les rangées profondes demandent un certain nombre de points dépensés dans l'arbre.",
       "52 talents par classe, jusqu'au niveau 100. Un point de talent par niveau à partir du niveau 10.",
-      "L'orbe à droite de l'arbre montre les points à dépenser et se remplit avec l'expérience ; le nom d'un talent et son domaine apparaissent au survol.",
+      "L'orbe à droite de l'arbre montre les points à dépenser et se remplit avec l'expérience ; l'infobulle d'un talent donne son nom et son domaine.",
       "Théodric l'Érudit, à la bibliothèque, efface l'arbre contre des pièces. Le retrait d'un point au clic droit disparaît.",
       "Les anciennes sauvegardes sont rattachées automatiquement au nouvel arbre."
     ]},
@@ -20,13 +20,24 @@
       "Cinq nouveaux attributs : Endurance (roulade, potion, déplacement), Résistance (dégâts subis, armure, entraves plus courtes), Harmonie (coût en mana des sorts, mana par seconde), Foi (soins reçus, recharge des sorts) et Chance (or, critiques, butin).",
       "Un point d'attribut par niveau. Les objets peuvent porter les nouveaux attributs.",
       "Oriane, Gardienne de l'Oubli, rend tous les points d'attribut contre une Larme d'oubli, lâchée par les champions et les gardiens de la tour.",
-      "Les infobulles des attributs sont plus compactes : une ligne par effet."
+      "Les infobulles des attributs sont plus compactes : une ligne par effet.",
+      "La fiche du personnage est réorganisée autour des attributs : identité, expérience et grandes valeurs à gauche, les 9 attributs au centre, les statistiques à droite."
+    ]},
+    {"name": "Nouveaux héros", "notes": [
+      "L'écran de création est entièrement redessiné : les classes en cartes (rôle, difficulté), le héros au centre sur son socle, la fiche de la classe à droite avec ses attributs et ses sorts, et un nom tiré au hasard d'un clic.",
+      "Nouvelle zone d'apprentissage, les Faubourgs, avant la première arrivée en ville : quelques monstres et une carte par étape qui montre les touches (clavier ou manette) pour se déplacer, attaquer, esquiver, lancer un sort, boire la potion, ouvrir un coffre et s'équiper. Le tutoriel se poursuit ensuite à Cendreval."
+    ]},
+    {"name": "Équilibrage", "notes": [
+      "Les bonus d'attributs et de vie des objets sont environ deux fois plus faibles ; les objets déjà obtenus sont ajustés.",
+      "Les cœurs sont plus petits et plus nombreux seulement en fin de partie : leur nombre croît lentement avec la vie maximale, jusqu'à 30."
     ]},
     {"name": "Cendreval", "notes": [
       "La ville s'agrandit : un quartier du Temple avec sa place des oracles, un sanctuaire, une bibliothèque et de nouvelles maisons.",
       "Nouveaux habitants et 8 nouvelles quêtes.",
       "Les habitants parlent dans des bulles au-dessus de leur tête et saluent le héros qui s'approche, en ville comme dans les camps de la tour.",
-      "Nouvelle fenêtre de marchand : étal, fiche de l'objet choisi comparée à l'équipement porté, sac à côté ; double-clic ou clic droit pour acheter ou vendre, rachat des objets vendus, vente du commun en un clic.",
+      "Nouvelle fenêtre de marchand : étal, fiche de l'objet choisi comparée à l'équipement porté, équipement et sac à côté ; double-clic ou clic droit pour acheter ou vendre, rachat des objets vendus, vente du commun en un clic.",
+      "Nouvelle fenêtre de forge : l'équipement et le sac à gauche, l'enclume à droite avec les niveaux d'amélioration, les caractéristiques avant et après, et le coût.",
+      "Un coffre de stockage de 60 places au bout de la terrasse de la taverne, pour garder ce qui ne tient plus dans le sac.",
       "Nouvelle fenêtre de quête en livre ouvert : la réplique de l'habitant à gauche, les objectifs et les récompenses à droite."
     ]},
     {"name": "Monnaie", "notes": [
@@ -47,7 +58,8 @@
     {"name": "Corrections", "notes": [
       "Cliquer sur un monstre n'envoie plus le héros vers un monstre situé de l'autre côté d'un mur.",
       "Les textes, noms et icônes ne sont plus crénelés ni trop gras au-dessus du décor.",
-      "Le message « Échap : menu » à l'arrivée en ville est supprimé."
+      "Le message « Échap : menu » à l'arrivée en ville est supprimé.",
+      "Le texte des choix de l'écran titre est bien centré dans son cadre."
     ]}
   ]
 }

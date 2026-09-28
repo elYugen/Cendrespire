@@ -33,16 +33,16 @@ ARMOR_FACTOR = {"casque": 0.6, "torse": 1.0, "gants": 0.4, "bottes": 0.5}
 
 # stat : (libellé, base, par niveau d'objet, plafond)
 AFFIX_DEF = {
-    "force": ("+{v} Force", 3, 1.4, None),
-    "dex": ("+{v} Dextérité", 3, 1.4, None),
-    "int": ("+{v} Intelligence", 3, 1.4, None),
-    "vit": ("+{v} Vitalité", 3, 1.4, None),
-    "foi": ("+{v} Foi", 3, 1.4, None),
-    "chance": ("+{v} Chance", 3, 1.4, None),
-    "endurance": ("+{v} Endurance", 3, 1.4, None),
-    "resistance": ("+{v} Résistance", 3, 1.4, None),
-    "harmonie": ("+{v} Harmonie", 3, 1.4, None),
-    "vie": ("+{v} Vie", 12, 9, None),
+    "force": ("+{v} Force", 2, 0.7, None),
+    "dex": ("+{v} Dextérité", 2, 0.7, None),
+    "int": ("+{v} Intelligence", 2, 0.7, None),
+    "vit": ("+{v} Vitalité", 2, 0.7, None),
+    "foi": ("+{v} Foi", 2, 0.7, None),
+    "chance": ("+{v} Chance", 2, 0.7, None),
+    "endurance": ("+{v} Endurance", 2, 0.7, None),
+    "resistance": ("+{v} Résistance", 2, 0.7, None),
+    "harmonie": ("+{v} Harmonie", 2, 0.7, None),
+    "vie": ("+{v} Vie", 8, 4.5, None),
     "mana": ("+{v} Mana", 8, 3, None),
     "armure": ("+{v} Armure", 5, 3, None),
     "dmg_pct": ("+{v}% de dégâts", 5, 0.7, 45),
@@ -100,6 +100,21 @@ def roll_rarity(rng=random, tier=0):
     return "commun"
 
 
+AFFIX_VERSION = 2            # v2 : attributs et vie des objets réduits de moitié environ
+AFFIX_RESCALE = 0.55         # facteur appliqué aux objets plus anciens (attributs, vie)
+
+
+def rescale_old(it):
+    """Objets d'avant la v2 : leurs bonus d'attributs et de vie sont ramenés au nouveau barème."""
+    if it.get("aff_v", 1) >= AFFIX_VERSION:
+        return
+    from .data import ATTRS
+    for k, v in list(it.get("affixes", {}).items()):
+        if k in ATTRS or k == "vie":
+            it["affixes"][k] = max(1, int(round(v * AFFIX_RESCALE)))
+    it["aff_v"] = AFFIX_VERSION
+
+
 def roll_affix(stat, ilvl, rarity, rng):
     _, base, per, cap = AFFIX_DEF[stat]
     v = (base + per * ilvl) * rng.uniform(0.55, 1.0)
@@ -117,7 +132,8 @@ def generate_item(ilvl, rarity=None, slot=None, cls_id=None, rng=random, tier=0,
         slot = rng.choices(slots, weights)[0]
     if slot == "artefact":
         return generate_artifact(ilvl, rarity, rng=rng)
-    it = {"uid": rng.getrandbits(48), "slot": slot, "rarity": rarity, "ilvl": ilvl, "upgrade": 0, "affixes": {}}
+    it = {"uid": rng.getrandbits(48), "slot": slot, "rarity": rarity, "ilvl": ilvl, "upgrade": 0, "affixes": {},
+          "aff_v": AFFIX_VERSION}
     p = RARITY_POWER[rarity]
     if slot == "arme":
         if wclass is None:

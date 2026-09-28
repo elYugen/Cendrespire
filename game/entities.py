@@ -8,7 +8,7 @@ from .data import (ATTR_K, CLASSES, SPELLS, BUFFS, MONSTERS, ATTRS, ELITE_AFFIXE
                    POINTS_PER_LEVEL, ANIMA_POWERS, POTION_CD, POTION_HEAL, ROLL_CD, ROLL_DUR, ROLL_DIST, xp_needed,
                    floor_scaling)
 from .fx import RingFX
-from .items import SLOTS, ART_SLOTS, EQUIP_SLOTS, item_stats, ench_stats, ench_spent
+from .items import SLOTS, ART_SLOTS, EQUIP_SLOTS, item_stats, ench_stats, ench_spent, rescale_old
 from .r3d import models
 from .settings import RARITY_COLORS
 
@@ -40,9 +40,11 @@ class Player:
         eq = data.get("equipment", {})
         self.equipment = {s: eq.get(s) for s in EQUIP_SLOTS}
         self.inventory = list(data.get("inventory", []))
+        self.stash = list(data.get("stash", []))       # coffre de la taverne de Cendreval
         self._unique_artifacts()
         for it in self.all_items():
             it.setdefault("ench", [])
+            rescale_old(it)
         self.kills = data.get("kills", 0)
         self.deaths = data.get("deaths", 0)
         from . import quests
@@ -116,12 +118,13 @@ class Player:
         self.loadout = lo
 
     def all_items(self):
-        return [it for it in list(self.equipment.values()) + self.inventory if it]
+        return [it for it in list(self.equipment.values()) + self.inventory + self.stash if it]
 
     def to_save(self):
         return {"name": self.name, "cls": self.cls_id, "level": self.level, "xp": self.xp, "alloc": self.alloc,
                 "points": self.points, "tears": self.tears, "money": self.money, "max_floor": self.max_floor,
                 "cleared": sorted(self.cleared), "equipment": self.equipment, "inventory": self.inventory,
+                "stash": self.stash,
                 "kills": self.kills, "deaths": self.deaths, "created_at": self.created_at, "look": dict(self.look),
                 "talents": dict(self.talents), "loadout": list(self.spells), "quests": self.quests,
                 "tutorial": self.tutorial}
@@ -872,6 +875,22 @@ class Chest(Interactable):
         models.chest(fr, self.x, self.y, self.opened, t)
         if not self.opened:
             fr.light(self.x, self.y, 30, 100, (255, 200, 90), 0.6)
+
+
+class Stash(Interactable):
+    """Coffre de stockage de la ville : ouvre la fenêtre du coffre."""
+    prompt = "Ouvrir le coffre"
+    label = "Coffre"
+
+    def __init__(self, x, y, action):
+        super().__init__(x, y)
+        self.action = action
+
+    def interact(self, world):
+        self.action(world)
+
+    def render(self, fr, t):
+        models.stash_chest(fr, self.x, self.y, t)
 
 
 class Portal(Interactable):

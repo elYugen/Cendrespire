@@ -6,7 +6,7 @@ import random
 
 import pygame
 
-from . import coins, looks, save, sfx, ui, updater, updates
+from . import coins, icons, looks, save, sfx, ui, updater, updates
 from .data import CLASSES, SPELLS, ATTR_NAMES, ATTRS
 from .entities import Player
 from .r3d import models
@@ -376,9 +376,9 @@ class CreateScene(Scene):
         self.t = 0.0
         self.error = ""
         self.cam = Camera3D(yaw=45, pitch=10, dist=5.6, fov=32)
-        self.class_rects = {cid: pygame.Rect(640 + (i % 3) * 206, 186 + (i // 3) * 62, 196, 54)
-                            for i, cid in enumerate(CLASSES)}
-        self.name_rect = pygame.Rect(640, 110, 402, 44)
+        # colonne des classes à gauche, héros au centre (nom dessous), fiche de la classe à droite
+        self.class_rects = {cid: pygame.Rect(40, 116 + i * 78, 300, 68) for i, cid in enumerate(CLASSES)}
+        self.name_rect = pygame.Rect(SCREEN_W // 2 - 190, 566, 380, 46)
         # étape 0 : nom et classe ; étape 1 : apparence
         self.step = 0
         self.look = looks.default_look(self.cls)
@@ -386,11 +386,11 @@ class CreateScene(Scene):
         self.editor = None
         self.rot = 0.0
         self.drag = None
-        self.go = ui.Button((SCREEN_W - 340, SCREEN_H - 84, 300, 50), "Suivant : apparence", self.forward, 20)
-        self.back = ui.Button((640, SCREEN_H - 84, 200, 50), "Retour", self.backward, 18)
-        self.rand = ui.Button((640, 540, 200, 42), "Aléatoire", self.randomize, 17)
-        self.tutorial = True           # tutoriel guidé à l'arrivée en ville
-        self.tut_rect = pygame.Rect(SCREEN_W - 340, SCREEN_H - 126, 300, 30)
+        self.go = ui.Button((SCREEN_W - 320, SCREEN_H - 74, 280, 48), "Suivant : apparence", self.forward, 19)
+        self.back = ui.Button((40, SCREEN_H - 74, 180, 48), "Retour", self.backward, 18)
+        self.rand = ui.Button((800, 560, 200, 40), "Aléatoire", self.randomize, 16)
+        self.tutorial = True           # zone d'apprentissage (les Faubourgs) puis tutoriel guidé en ville
+        self.tut_rect = pygame.Rect(SCREEN_W // 2 - 150, SCREEN_H - 64, 300, 30)
 
     def presence(self):
         return "Crée un personnage", None
@@ -403,7 +403,7 @@ class CreateScene(Scene):
         if self.tutorial:
             ui.line(surf, SHEIKAH, (box.x + 4, box.centery), (box.x + 8, box.bottom - 5), 3)
             ui.line(surf, SHEIKAH, (box.x + 8, box.bottom - 5), (box.right - 4, box.y + 5), 3)
-        ui.draw_text(surf, "Tutoriel guidé à l'arrivée en ville", (box.right + 10, r.centery), 15,
+        ui.draw_text(surf, "Commencer par le tutoriel", (box.right + 10, r.centery), 15,
                      WHITE if hov else SOFT, anchor="midleft")
 
     def name_ok(self):
@@ -428,7 +428,7 @@ class CreateScene(Scene):
         elif self.name_ok():
             self.step = 1
             self.error = ""
-            self.editor = LookEditor((640, 104, 600, 0), self.look, self.cls)
+            self.editor = LookEditor((800, 120, 440, 0), self.look, self.cls)
             self.go.text = "Entrer dans la Tour"
 
     def backward(self):
@@ -454,8 +454,12 @@ class CreateScene(Scene):
         if self.tutorial:
             data["tutorial"] = 0
         save.save_data(data)
-        from .hub import HubScene
         p = Player(data)
+        if self.tutorial:                      # d'abord les Faubourgs, zone d'apprentissage avant la ville
+            from .tutorial_zone import TutorialZoneScene
+            self.game.load_scene(lambda: TutorialZoneScene(self.game, p), "Les Faubourgs", "Aux portes de Cendreval")
+            return
+        from .hub import HubScene
         self.game.load_scene(lambda: HubScene(self.game, p, f"Bienvenue, {p.name}. La Tour vous attend."),
                              "Cendreval", "La ville au pied de Cendrespire")
 
@@ -473,6 +477,10 @@ class CreateScene(Scene):
             for cid, r in self.class_rects.items():
                 if r.collidepoint(e.pos):
                     self.set_class(cid)
+            if getattr(self, "dice_rect", None) and self.dice_rect.collidepoint(e.pos):
+                self.name = random.choice(NAMES)
+                self.error = ""
+                sfx.play("click")
         elif e.type == pygame.KEYDOWN:
             if e.key == pygame.K_BACKSPACE:
                 self.name = self.name[:-1]
@@ -480,9 +488,9 @@ class CreateScene(Scene):
                 self.forward()
             elif e.key == pygame.K_ESCAPE:
                 self.backward()
-            elif e.key in (pygame.K_LEFT, pygame.K_RIGHT):
+            elif e.key in (pygame.K_UP, pygame.K_DOWN):
                 ids = list(CLASSES)
-                self.set_class(ids[(ids.index(self.cls) + (1 if e.key == pygame.K_RIGHT else -1)) % len(ids)])
+                self.set_class(ids[(ids.index(self.cls) + (1 if e.key == pygame.K_DOWN else -1)) % len(ids)])
         elif e.type == pygame.TEXTINPUT:
             if len(self.name) < 16 and all(ch.isalnum() or ch in " -'" for ch in e.text):
                 self.name += e.text
@@ -497,7 +505,7 @@ class CreateScene(Scene):
             pass
         elif self.editor.handle_event(e):
             self.look_edited = True
-        elif e.type == pygame.MOUSEBUTTONDOWN and e.button == 1 and e.pos[0] < 600:
+        elif e.type == pygame.MOUSEBUTTONDOWN and e.button == 1 and e.pos[0] < 760:
             self.drag = e.pos[0]
         elif e.type == pygame.MOUSEBUTTONUP and e.button == 1:
             self.drag = None
@@ -528,75 +536,136 @@ class CreateScene(Scene):
         cam = self.cam
         cam.dist = 4.2 if self.step == 1 else 5.6
         cam.tx, cam.ty, cam.tz = PX, PY, 26
-        cam.ndc_shift = (300 / SCREEN_W * 2 - 1, 1 - 380 / SCREEN_H * 2)
+        cam.ndc_shift = ((460 if self.step == 1 else 640) / SCREEN_W * 2 - 1, 1 - 360 / SCREEN_H * 2)
         env = Env(clear=(0.03, 0.055, 0.07), shadow_extent=3.0, cut=0.0, fog=(30.0, 40.0),
                   amb_sky=(0.42, 0.45, 0.52), amb_ground=(0.14, 0.15, 0.17), sun_col=(0.55, 0.55, 0.6),
                   sun_dir=(-0.35, -1.0, -0.55), fog_col=(0.03, 0.055, 0.07), player=(PX, PY, 0))
         return cam, env
 
     def draw_ui(self, surf):
-        ui.draw_text(surf, "Nouveau héros" if self.step == 0 else "Apparence", (60, 50), 36, WHITE, "title")
-        ui.line(surf, (120, 124, 120), (60, 92), (520, 92))
         c = CLASSES[self.cls]
-        ui.draw_text(surf, c["name"] if self.step == 0 else self.name.strip(), (300, 610), 30, WHITE, "title",
-                     anchor="center")
-        ui.draw_text(surf, c["title"] if self.step == 0 else f"{c['name']} · glisser pour pivoter", (300, 646), 16,
-                     SOFT, anchor="center")
-        if self.step == 1:
-            self.editor.draw(surf, self.t)
-            self.rand.draw(surf)
-            self.draw_tutorial_toggle(surf)
-            self.go.draw(surf)
-            self.back.draw(surf)
-            return
-        # nom
-        ui.draw_text(surf, "Nom", (640, 84), 15, SOFT, "bold")
-        r = self.name_rect
-        ui.botw_box(surf, r, 190, SHEIKAH, radius=22, fill=(8, 24, 30))
-        cursor = "|" if int(self.t * 2) % 2 else " "
-        ui.draw_text(surf, self.name + cursor, (r.x + 22, r.centery), 22, WHITE, "title", anchor="midleft")
-        # classes
-        ui.draw_text(surf, "Classe", (640, 164), 15, SOFT, "bold")
+        cc = c["color"]
         mouse = ui.mouse_pos()
+        # ambiance : halo de la classe derrière le héros, voile sombre sur les bords
+        hx = 460 if self.step == 1 else SCREEN_W // 2
+        ui.glow(surf, hx, 360, 300, ui.darker(cc, 0.22))
+        # fil des étapes
+        steps = ("Classe et nom", "Apparence")
+        x = SCREEN_W // 2 - 190
+        for i, label in enumerate(steps):
+            act, done = i == self.step, i < self.step
+            cx = x + i * 250
+            col = cc if act else ((150, 200, 150) if done else (90, 94, 96))
+            ui.circle(surf, (10, 14, 16), (cx, 44), 15)
+            ui.circle(surf, col, (cx, 44), 15, 2)
+            if done:
+                ui.line(surf, WHITE, (cx - 6, 44), (cx - 2, 49), 2)
+                ui.line(surf, WHITE, (cx - 2, 49), (cx + 6, 39), 2)
+            else:
+                ui.draw_text(surf, str(i + 1), (cx, 44), 14, WHITE if act else TEXT_DIM, "bold", anchor="center",
+                             shadow=False)
+            ui.draw_text(surf, label, (cx + 24, 44), 16, WHITE if act else TEXT_DIM, "title", anchor="midleft")
+            if i == 0:
+                ui.line(surf, (70, 74, 76), (cx + 150, 44), (cx + 226, 44), 1)
+        ui.draw_text(surf, "Nouveau héros", (40, 44), 22, WHITE, "title", anchor="midleft")
+        if self.step == 1:
+            self.draw_look_step(surf, c)
+            return
+        # ---- classes
         for cid, rc in self.class_rects.items():
-            cc = CLASSES[cid]
+            k = CLASSES[cid]
             sel = cid == self.cls
             hov = rc.collidepoint(mouse)
-            ui.botw_box(surf, rc, 200 if sel else 130, cc["color"] if sel else (SHEIKAH if hov else (100, 102, 100)),
-                        radius=14, fill=(14, 30, 36) if sel else (0, 0, 0))
-            ui.circle(surf, ui.darker(cc["color"], 0.5), (rc.x + 30, rc.centery), 18)
-            ui.circle(surf, cc["color"], (rc.x + 30, rc.centery), 18, 2)
-            ui.draw_text(surf, cc["name"][0], (rc.x + 30, rc.centery), 18, WHITE, "title_bold", anchor="center")
-            ui.draw_text(surf, cc["name"], (rc.x + 58, rc.centery), 17 if len(cc["name"]) > 10 else 18,
-                         WHITE if sel else SOFT, "title", anchor="midleft")
+            kc = k["color"]
+            ui.rect(surf, (*ui.darker(kc, 0.22), 235) if sel else ((24, 28, 30, 220) if hov else (14, 16, 18, 210)),
+                    rc, 0, 10)
+            ui.rect(surf, kc if sel else ((110, 114, 116) if hov else (54, 58, 60)), rc, 2 if sel else 1, 10)
             if sel:
-                ui.selection_frame(surf, rc, self.t, cc["color"])
-        # description, caractéristiques, sorts
-        box = ui.botw_box(surf, (640, 318, 602, 300), 150, (100, 102, 100), radius=14)
-        y = ui.draw_wrapped(surf, c["desc"], box.x + 22, box.y + 16, box.w - 44, 16, SOFT)
+                ui.rect(surf, kc, (rc.x + 1, rc.y + 10, 4, rc.h - 20), 0, 2)
+            med = (rc.x + 38, rc.centery)
+            ui.circle(surf, ui.darker(kc, 0.35), med, 24)
+            ui.circle(surf, kc, med, 24, 2)
+            icons.spell_icon(surf, None, med, 20, kc, attack_cls=cid, flat=True)
+            ui.draw_text(surf, k["name"], (rc.x + 74, rc.y + 12), 18, WHITE if sel or hov else SOFT, "title")
+            role, diff = CLASS_ROLES.get(cid, ("", 1))
+            ui.draw_text(surf, role, (rc.x + 74, rc.y + 40), 12, TEXT_DIM if not sel else SOFT, shadow=False)
+            for d in range(3):
+                pc = (rc.right - 44 + d * 13, rc.y + 20)
+                ui.circle(surf, kc if d < diff else (50, 54, 56), pc, 4)
+        # ---- nom du héros, sous le personnage
+        r = self.name_rect
+        ui.draw_text(surf, "NOM DU HÉROS", (r.centerx, r.y - 14), 11, TEXT_DIM, "bold", anchor="center", shadow=False)
+        ui.rect(surf, (8, 12, 14, 220), r, 0, r.h // 2)
+        ui.rect(surf, cc, r, 2, r.h // 2)
+        cursor = "|" if int(self.t * 2) % 2 else " "
+        ui.draw_text(surf, self.name + cursor, r.center, 22, WHITE, "title", anchor="center")
+        dice = pygame.Rect(r.right + 10, r.y + 5, 36, 36)
+        self.dice_rect = dice
+        hov = dice.collidepoint(mouse)
+        ui.circle(surf, (30, 34, 36) if hov else (14, 16, 18), dice.center, 18)
+        ui.circle(surf, cc if hov else (90, 94, 96), dice.center, 18, 1)
+        for ox, oy in ((-5, -5), (5, 5), (0, 0)):
+            ui.circle(surf, WHITE if hov else SOFT, (dice.centerx + ox, dice.centery + oy), 2.2)
+        if self.error:
+            ui.draw_text(surf, self.error, (r.centerx, r.bottom + 16), 14, RED, "bold", anchor="center")
+        # ---- fiche de la classe
+        box = pygame.Rect(930, 100, 310, 530)
+        ui.rect(surf, (10, 13, 15, 225), box, 0, 12)
+        ui.rect(surf, ui.darker(cc, 0.7), box, 1, 12)
+        ui.draw_text(surf, c["name"], (box.x + 22, box.y + 18), 30, ui.lighter(cc, 1.15), "title")
+        ui.draw_text(surf, c["title"], (box.x + 24, box.y + 58), 14, SOFT)
+        y = ui.draw_wrapped(surf, c["desc"], box.x + 22, box.y + 88, box.w - 44, 13, (190, 196, 196))
         y += 10
+        ui.draw_text(surf, "ATTRIBUTS DE DÉPART", (box.x + 22, y), 11, TEXT_DIM, "bold", shadow=False)
+        y += 20
+        top = max(c["attrs"].values())
         for i, a in enumerate(ATTRS):
             v = c["attrs"].get(a, 0)
-            yy = y + i * 17
-            ui.draw_text(surf, ATTR_NAMES[a], (box.x + 22, yy), 12, WHITE if a != c["primary"] else GOLD_BRIGHT, "bold")
-            bar = pygame.Rect(box.x + 140, yy + 5, 160, 6)
-            ui.rect(surf, (0, 0, 0, 180), bar.inflate(2, 2), 0, 4)
-            ui.rect(surf, c["color"], (bar.x, bar.y, bar.w * v / 24, bar.h), 0, 4)
-        ui.draw_text(surf, "Sorts", (box.x + 330, y - 2), 15, WHITE, "bold")
+            col_x = box.x + 22 + (i % 2) * 138
+            yy = y + (i // 2) * 30
+            prim = a == c["primary"]
+            ui.draw_text(surf, ATTR_NAMES[a], (col_x, yy), 12, GOLD_BRIGHT if prim else SOFT, "bold", shadow=False)
+            ui.draw_text(surf, str(v), (col_x + 124, yy), 12, WHITE, "bold", anchor="topright", shadow=False)
+            bar = pygame.Rect(col_x, yy + 18, 124, 4)
+            ui.rect(surf, (40, 44, 46), bar, 0, 2)
+            ui.rect(surf, cc if not prim else GOLD_BRIGHT, (bar.x, bar.y, max(2, bar.w * v / top), bar.h), 0, 2)
+        y += ((len(ATTRS) + 1) // 2) * 30 + 8
+        ui.draw_text(surf, "SORTS", (box.x + 22, y), 11, TEXT_DIM, "bold", shadow=False)
+        y += 22
+        self.spell_tips = []
+        n = len(c["spells"])
         for i, sid in enumerate(c["spells"]):
             sp = SPELLS[sid]
-            yy = y + 22 + i * 24
-            ui.circle(surf, sp["color"], (box.x + 338, yy + 9), 5)
-            ui.draw_text(surf, f"{sp['name']}", (box.x + 350, yy), 14, SOFT)
-            ui.draw_text(surf, f"niv {sp['level']}", (box.right - 20, yy), 13, TEXT_DIM, anchor="topright")
-        ui.draw_text(surf, "Tous les héros disposent aussi de la roulade (Espace), d'une potion à recharge (F)",
-                     (box.x + 22, box.bottom - 46), 13, SOFT)
-        ui.draw_text(surf, "et de 3 emplacements d'artefacts (R, T, G).", (box.x + 22, box.bottom - 26), 13, SOFT)
-        if self.error:
-            ui.draw_text(surf, self.error, (SCREEN_W - 40, SCREEN_H - 134), 15, RED, "bold", anchor="bottomright")
+            sc = (box.x + 22 + 22 + i * (box.w - 88) / max(1, n - 1), y + 22)
+            icons.spell_icon(surf, sid, sc, 20, sp["color"], flat=True)
+            ui.draw_text(surf, f"niv {sp['level']}", (sc[0], sc[1] + 30), 10, TEXT_DIM, anchor="center", shadow=False)
+            if math.hypot(mouse[0] - sc[0], mouse[1] - sc[1]) < 22:
+                self.spell_tips = [(sp["name"], ui.lighter(sp["color"], 1.2), 16),
+                                   (f"Mana {sp['mana']}  ·  Recharge {sp['cd']} s  ·  Niveau {sp['level']}",
+                                    SHEIKAH, 12), (sp["desc"], SOFT, 13)]
         self.draw_tutorial_toggle(surf)
         self.go.draw(surf)
         self.back.draw(surf)
+        if self.spell_tips:
+            ui.draw_tooltip_lines(surf, self.spell_tips, mouse, cc, side="left")
+
+    def draw_look_step(self, surf, c):
+        cc = c["color"]
+        ui.draw_text(surf, self.name.strip(), (460, 120), 30, WHITE, "title", anchor="center")
+        ui.draw_text(surf, f"{c['name']}  ·  glisser pour pivoter", (460, 154), 14, SOFT, anchor="center")
+        box = pygame.Rect(780, 100, 480, 530)
+        ui.rect(surf, (10, 13, 15, 225), box, 0, 12)
+        ui.rect(surf, ui.darker(cc, 0.7), box, 1, 12)
+        self.editor.draw(surf, self.t)
+        self.rand.draw(surf)
+        self.draw_tutorial_toggle(surf)
+        self.go.draw(surf)
+        self.back.draw(surf)
+
+
+CLASS_ROLES = {"barbare": ("Mêlée · robuste", 1), "sorcier": ("Distance · magie élémentaire", 2),
+               "chasseur": ("Distance · précision", 1), "paladin": ("Mêlée · soins et protection", 1),
+               "necromancien": ("Invocations · malédictions", 3), "assassin": ("Mêlée · coups critiques", 3)}
 
 
 # =========================================================================== écran de démarrage et chargements

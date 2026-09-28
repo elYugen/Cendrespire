@@ -15,10 +15,18 @@ from .data import POTION_HEAL, SPELLS, BUFFS, ANIMA_POWERS, ARTIFACTS, anima_des
 from .items import ART_SLOTS
 from .settings import SCREEN_W, SCREEN_H, VIEW, TEXT, TEXT_DIM, GOLD_BRIGHT, WHITE, SHEIKAH, UI_LINE, RARITY_COLORS
 
-HEART = 19            # taille d'un cœur
+HEART = 15            # taille d'un cœur
 HEARTS_PER_ROW = 15
 HEART_GAP = 2
 MAX_HEARTS = 30
+HEARTS_FULL_HP = 5000        # vie maximale à partir de laquelle les 30 cœurs sont atteints (fin de partie)
+
+
+def heart_count(max_hp):
+    """Nombre de cœurs : il croît lentement avec la vie maximale (≈ 6 à 250 PV, 10 à 650, 18 à 2 000,
+    30 à 5 000 et au-delà)."""
+    k = max(0.0, min(1.0, (max_hp - 100) / (HEARTS_FULL_HP - 100)))
+    return max(3, min(MAX_HEARTS, round(3 + (MAX_HEARTS - 3) * k ** 0.6)))
 MM = pygame.Rect(SCREEN_W - 24 - 172, SCREEN_H - 24 - 172, 172, 172)
 SOFT = (210, 216, 216)
 
@@ -74,7 +82,7 @@ def draw_heart(surf, x, y, frac, size=HEART):
 def draw_hearts(surf, world, x, y):
     p = world.player
     mx = p.stats["max_hp"]
-    n = min(MAX_HEARTS, max(3, round(mx / 25)))
+    n = heart_count(mx)
     per = mx / n
     hp = max(0.0, p.hp)
     low = hp < mx * 0.3

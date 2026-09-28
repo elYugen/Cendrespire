@@ -14,6 +14,7 @@ UP = (110, 235, 120)
 DOWN = (240, 90, 80)
 INK = (236, 226, 200)
 DOUBLE_CLICK = 0.35
+EQ_SLOTS = ("arme", "casque", "torse", "gants", "bottes", "amulette", "anneau")
 
 
 def item_power(it):
@@ -98,7 +99,9 @@ class ShopScreen:
         self.cards = [pygame.Rect(self.stall.x + (i % 2) * 265, top + 50 + (i // 2) * 82, 255, 74) for i in range(10)]
         cols, step = 7, 42
         gx = self.bag.x + (self.bag.w - cols * step) // 2 + 2
-        self.cells = [pygame.Rect(gx + (i % cols) * step, top + 40 + (i // cols) * step, step - 4, step - 4)
+        # équipement porté (au-dessus du sac) : pour comparer d'un coup d'œil
+        self.eq_rects = {s: pygame.Rect(gx + i * step, top + 30, step - 4, step - 4) for i, s in enumerate(EQ_SLOTS)}
+        self.cells = [pygame.Rect(gx + (i % cols) * step, top + 118 + (i // cols) * step, step - 4, step - 4)
                       for i in range(BAG_SIZE)]
         self.act_btn = pygame.Rect(self.detail.x + 16, self.detail.bottom - 58, self.detail.w - 32, 42)
         self.junk_btn = pygame.Rect(self.bag.x + 12, self.cells[-1].bottom + 18, self.bag.w - 24, 38)
@@ -113,6 +116,8 @@ class ShopScreen:
         if not self.sel:
             return None
         src, i = self.sel
+        if src == "equip":
+            return self.world.player.equipment.get(i)
         items = self.stock() if src == "stock" else self.world.player.inventory
         return items[i] if i < len(items) else None
 
@@ -127,6 +132,8 @@ class ShopScreen:
     # ------------------------------------------------------------------ actions
     def act(self, src, i):
         w = self.world
+        if src == "equip":
+            return
         if src == "bag":
             w.sell_item(i)
         elif self.tab == 0:
@@ -159,6 +166,9 @@ class ShopScreen:
         for i, rc in enumerate(self.cells):
             if rc.collidepoint(pos) and i < len(self.world.player.inventory):
                 return "bag", i
+        for s, rc in self.eq_rects.items():
+            if rc.collidepoint(pos) and self.world.player.equipment.get(s):
+                return "equip", s
         return None
 
     def handle_event(self, e):
@@ -335,7 +345,7 @@ class ShopScreen:
                 ui.draw_text(surf, line, (d.x + 16, y), size, c, shadow=False)
                 y += size + 5
         # comparaison avec l'objet porté
-        if it["slot"] != "artefact" and p.can_equip(it) and y < limit - 30:
+        if src != "equip" and it["slot"] != "artefact" and p.can_equip(it) and y < limit - 30:
             eq = p.equipment.get(it["slot"]) if not (src == "bag" and it is p.equipment.get(it["slot"])) else None
             y += 6
             ui.line(surf, (60, 54, 42), (d.x + 16, y), (d.right - 16, y), 1)
@@ -356,6 +366,12 @@ class ShopScreen:
                            [(d.x + 18, y + 5), (d.x + 26, y + 5), (d.x + 22, y + 12)])
                 ui.draw_text(surf, text, (d.x + 34, y), 12, UP if good else DOWN, shadow=False)
                 y += 18
+        if src == "equip":
+            b = self.act_btn
+            ui.rect(surf, (30, 40, 34), b, 0, b.h // 2)
+            ui.rect(surf, UP, b, 1, b.h // 2)
+            ui.draw_text(surf, "Porté actuellement", b.center, 16, UP, "bold", anchor="center")
+            return
         # prix et bouton
         price = self.price(src, it)
         verb = "Vendre" if src == "bag" else ("Acheter" if self.tab == 0 else "Racheter")
@@ -374,8 +390,32 @@ class ShopScreen:
     def draw_bag(self, surf, mouse):
         r = self.bag
         p = self.world.player
-        ui.draw_text(surf, "Votre sac", (r.x + 4, r.y + 4), 17, WHITE, "title")
-        ui.draw_text(surf, f"{len(p.inventory)} / {BAG_SIZE}", (r.right - 4, r.y + 10), 13,
+        # équipement porté ; l'emplacement de l'objet examiné est éclairé
+        ui.draw_text(surf, "Équipé", (r.x + 4, r.y + 2), 15, WHITE, "title")
+        h = self.hit(mouse)
+        if h and h[0] != "equip":
+            focus = (self.stock() if h[0] == "stock" else p.inventory)[h[1]]
+        else:
+            focus = self.selected() if self.sel else None
+        for s, rc in self.eq_rects.items():
+            it = p.equipment.get(s)
+            lit = focus is not None and focus.get("slot") == s
+            hov = rc.collidepoint(mouse) and it is not None
+            if hov:
+                self.hover = ("equip", s, it)
+            if it:
+                col = RARITY_COLORS[it["rarity"]]
+                ui.rect(surf, ui.darker(col, 0.3) if it["rarity"] != "commun" else (34, 34, 36), rc, 0, 6)
+                ui.rect(surf, WHITE if hov else ui.darker(col, 0.75), rc, 1, 6)
+                ui.draw_item_icon(surf, it, rc.inflate(-10, -10), bg=False)
+            else:
+                ui.rect(surf, (22, 22, 24), rc, 0, 6)
+                ui.draw_text(surf, SLOT_NAMES[s][:3], rc.center, 10, (90, 92, 92), anchor="center", shadow=False)
+            if lit or self.sel == ("equip", s):
+                ui.rect(surf, BOTW_YELLOW, rc.inflate(4, 4), 2, 8)
+        top = self.cells[0].y - 30
+        ui.draw_text(surf, "Votre sac", (r.x + 4, top), 15, WHITE, "title")
+        ui.draw_text(surf, f"{len(p.inventory)} / {BAG_SIZE}", (r.right - 4, top + 4), 13,
                      RED if len(p.inventory) >= BAG_SIZE else TEXT_DIM, "bold", anchor="topright", shadow=False)
         for i, rc in enumerate(self.cells):
             it = p.inventory[i] if i < len(p.inventory) else None
@@ -410,4 +450,4 @@ class ShopScreen:
         if not self.hover or (self.hover[0], self.hover[1]) == self.sel:
             return
         src, i, it = self.hover
-        ui.item_tooltip(surf, it, ui.mouse_pos(), self.world.player, side="left" if src == "bag" else "right")
+        ui.item_tooltip(surf, it, ui.mouse_pos(), self.world.player, side="left" if src in ("bag", "equip") else "right")

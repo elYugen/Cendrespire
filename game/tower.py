@@ -9,7 +9,8 @@ from .dungeon import Dungeon, FLOOR, WALL
 from .entities import Monster, Chest, Portal, Loot, SecretWall, AnimaShrine, SpikeTrap, NPC, Prop
 from .fx import RingFX
 from .items import generate_item
-from .panels import DeathPanel, ForgePanel
+from .forge import ForgeScreen
+from .panels import DeathPanel
 from .r3d import level, models
 from .settings import TILE, GOLD_BRIGHT, WHITE
 from .world import World
@@ -196,8 +197,8 @@ class TowerScene(World):
         self.interactables.append(Chest(cx, cy + 90))
 
     def open_forge(self, world):
-        self.left_panel = ForgePanel(self)
-        self.show_inv = True
+        self.close_panels()
+        self.modal = ForgeScreen(self)
         sfx.play("chest")
 
     # ------------------------------------------------------------------ progression

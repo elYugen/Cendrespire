@@ -11,6 +11,17 @@
     {"name": "Pouvoirs d'anima", "notes": [
       "Les pouvoirs d'anima de l'ascension en cours ne sont plus mélangés aux effets : ils sont listés sous les artefacts, avec leur nom et leur nombre."
     ]},
+    {"name": "Cœurs", "notes": [
+      "Tout nouveau héros commence avec 3 cœurs, quelle que soit sa classe ; les cœurs s'ajoutent à mesure que sa vie maximale grandit, jusqu'à 30 en fin de partie.",
+      "Les héros existants sont recalculés sur la même échelle."
+    ]},
+    {"name": "Équilibrage des classes", "notes": [
+      "Chasseur : Piège 260% → 220%, Flèche perforante 230% → 200% (recharge 3 s → 3,5 s), attaque de base 78% → 75%.",
+      "Sorcier : Boule de feu 145% → 160%, Météore 250% → 280% ; vie de départ 100 → 105 (+11 par niveau au lieu de 10).",
+      "Nécromancien : Lance d'os 140% → 155%, Moisson 180% → 200%, attaque de base 82% → 86% ; vie de départ 105 → 108.",
+      "Assassin : vie de départ 110 → 122 (+13 par niveau au lieu de 11), pour tenir au contact.",
+      "Barbare : Séisme 135% → 160% par onde."
+    ]},
     {"name": "Cartes", "notes": [
       "La minicarte et la grande carte sont légèrement plus petites, pour dégager la vue."
     ]}

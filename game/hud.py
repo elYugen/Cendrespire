@@ -18,15 +18,21 @@ from .settings import SCREEN_W, SCREEN_H, VIEW, TEXT, TEXT_DIM, GOLD_BRIGHT, WHI
 HEART = 15            # taille d'un cœur
 HEARTS_PER_ROW = 15
 HEART_GAP = 2
-MAX_HEARTS = 30
-HEARTS_FULL_HP = 5000        # vie maximale à partir de laquelle les 30 cœurs sont atteints (fin de partie)
+MIN_HEARTS, MAX_HEARTS = 3, 30
+HEARTS_FULL = 4500           # vie gagnée depuis le début de partie pour atteindre les 30 cœurs (fin de partie)
 
 
-def heart_count(max_hp):
-    """Nombre de cœurs : il croît lentement avec la vie maximale (≈ 6 à 250 PV, 10 à 650, 18 à 2 000,
-    30 à 5 000 et au-delà)."""
-    k = max(0.0, min(1.0, (max_hp - 100) / (HEARTS_FULL_HP - 100)))
-    return max(3, min(MAX_HEARTS, round(3 + (MAX_HEARTS - 3) * k ** 0.6)))
+def start_hp(cls):
+    """Vie d'un héros tout neuf de cette classe (niveau 1, sans équipement)."""
+    from .data import ATTR_K
+    return cls["hp"] + cls["attrs"].get("vit", 0) * ATTR_K["vit_hp"]
+
+
+def heart_count(max_hp, cls):
+    """Nombre de cœurs : 3 pour un nouveau héros, quelle que soit sa classe, puis il croît avec la vie gagnée
+    depuis (≈ 5 cœurs à +150 PV, 9 à +400, 15 à +1 200, 22 à +2 500, 30 à +4 500)."""
+    k = max(0.0, min(1.0, (max_hp - start_hp(cls)) / HEARTS_FULL))
+    return max(MIN_HEARTS, min(MAX_HEARTS, round(MIN_HEARTS + (MAX_HEARTS - MIN_HEARTS) * k ** 0.6)))
 MM = pygame.Rect(SCREEN_W - 24 - 146, SCREEN_H - 24 - 146, 146, 146)
 SOFT = (210, 216, 216)
 
@@ -82,7 +88,7 @@ def draw_heart(surf, x, y, frac, size=HEART):
 def draw_hearts(surf, world, x, y):
     p = world.player
     mx = p.stats["max_hp"]
-    n = heart_count(mx)
+    n = heart_count(mx, p.cls)
     per = mx / n
     hp = max(0.0, p.hp)
     low = hp < mx * 0.3

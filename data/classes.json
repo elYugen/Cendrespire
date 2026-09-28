@@ -102,8 +102,8 @@
         "foi": 8,
         "chance": 8
       },
-      "hp": 100,
-      "hp_lvl": 10,
+      "hp": 105,
+      "hp_lvl": 11,
       "mana": 110,
       "mana_lvl": 5,
       "mana_regen": 7.0,
@@ -189,7 +189,7 @@
       "attack": {
         "kind": "projectile",
         "name": "Flèche",
-        "mult": 0.78,
+        "mult": 0.75,
         "speed": 820,
         "cd": 0.5,
         "color": [235, 215, 165],
@@ -345,7 +345,7 @@
         "foi": 10,
         "chance": 7
       },
-      "hp": 105,
+      "hp": 108,
       "hp_lvl": 11,
       "mana": 120,
       "mana_lvl": 5,
@@ -354,7 +354,7 @@
       "attack": {
         "kind": "projectile",
         "name": "Trait d'os",
-        "mult": 0.82,
+        "mult": 0.86,
         "speed": 600,
         "cd": 0.58,
         "color": [170, 255, 190],
@@ -426,8 +426,8 @@
         "foi": 6,
         "chance": 12
       },
-      "hp": 110,
-      "hp_lvl": 11,
+      "hp": 122,
+      "hp_lvl": 13,
       "mana": 70,
       "mana_lvl": 3,
       "mana_regen": 6.0,

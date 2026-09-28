@@ -1,0 +1,18 @@
+{
+  "version": "3.4",
+  "date": "2026-09-28",
+  "title": "Coup d'œil",
+  "sections": [
+    {"name": "Effets actifs", "notes": [
+      "Les effets actifs (Égide divine, Bénédiction, Frénésie, Cri de guerre...) s'affichent au-dessus de la barre de sorts, là où le regard se pose déjà.",
+      "Chaque effet a sa case : l'icône du sort qui l'a donné, un voile qui tourne à mesure que l'effet s'épuise et les secondes restantes dessous. La case clignote dans les 3 dernières secondes.",
+      "Au survol, l'infobulle détaille les bonus de l'effet (dégâts, armure, dégâts subis, vitesse...) et son temps restant."
+    ]},
+    {"name": "Pouvoirs d'anima", "notes": [
+      "Les pouvoirs d'anima de l'ascension en cours ne sont plus mélangés aux effets : ils sont listés sous les artefacts, avec leur nom et leur nombre."
+    ]},
+    {"name": "Cartes", "notes": [
+      "La minicarte et la grande carte sont légèrement plus petites, pour dégager la vue."
+    ]}
+  ]
+}

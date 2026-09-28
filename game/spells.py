@@ -277,6 +277,7 @@ def fx_zone(e, ctx, col):
 def fx_buff(e, ctx, col):
     p = ctx.p
     p.buffs[e["id"]] = e.get("duration", 5)
+    p.buffs_total[e["id"]] = p.buffs[e["id"]]          # durée complète (voile de recharge du HUD)
     if "value" in e:
         p.buffs_val[e["id"]] = num(ctx, e["value"])
 

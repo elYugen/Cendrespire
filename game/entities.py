@@ -82,6 +82,7 @@ class Player:
         self.roll_cd = 0.0
         self.roll_total = ROLL_CD
         self.buffs_val = {}
+        self.buffs_total = {}
         self.dead = False
         self.hp = self.mana = 1
         self.recompute()

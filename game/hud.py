@@ -27,7 +27,7 @@ def heart_count(max_hp):
     30 à 5 000 et au-delà)."""
     k = max(0.0, min(1.0, (max_hp - 100) / (HEARTS_FULL_HP - 100)))
     return max(3, min(MAX_HEARTS, round(3 + (MAX_HEARTS - 3) * k ** 0.6)))
-MM = pygame.Rect(SCREEN_W - 24 - 172, SCREEN_H - 24 - 172, 172, 172)
+MM = pygame.Rect(SCREEN_W - 24 - 146, SCREEN_H - 24 - 146, 146, 146)
 SOFT = (210, 216, 216)
 
 
@@ -266,24 +266,104 @@ def draw_slots(surf, world):
 
 
 # --------------------------------------------------------------------------- effets actifs (sous les cœurs)
+_buff_spell = {}
+
+
+def buff_spell(bid):
+    """Sort qui donne ce buff (pour afficher son icône), ou None."""
+    if not _buff_spell:
+        def walk(effects, sid):
+            for e in effects or []:
+                if isinstance(e, dict):
+                    if e.get("type") == "buff" and e.get("id"):
+                        _buff_spell.setdefault(e["id"], sid)
+                    for v in e.values():
+                        if isinstance(v, list):
+                            walk(v, sid)
+        for sid, sp in SPELLS.items():
+            walk(sp.get("effects"), sid)
+        _buff_spell.setdefault(None, None)
+    return _buff_spell.get(bid)
+
+
+BUFF_STATS = [("dmg_pct", "+{v:.0f}% de dégâts"), ("atk_speed", "+{v:.0f}% de vitesse d'attaque"),
+              ("dr", "-{v:.0f}% de dégâts subis"), ("armor_pct", "+{v:.0f}% d'armure"),
+              ("move_pct", "{v:+.0f}% de vitesse de déplacement"), ("poison", "Vos coups empoisonnent")]
+
+
+def buff_lines(p, bid):
+    b = BUFFS[bid]
+    out = []
+    for k, fmt in BUFF_STATS:
+        v = b.get(k)
+        if v is None:
+            continue
+        if v == "v":
+            v = p.buffs_val.get(bid, 0)
+        out.append(fmt.format(v=v))
+    return out
+
+
 def draw_effects(surf, world, x, y):
+    """Pouvoirs d'anima : pastilles nommées sous les artefacts (les buffs sont au-dessus de la barre de sorts)."""
     p = world.player
     world.anima_rects = []
-    items = []
-    for key, left in p.buffs.items():
-        b = BUFFS.get(key)
-        if b and not b.get("hidden"):
-            items.append(("buff", key, b["name"], b.get("color", (220, 220, 220)), left))
-    for pid, n in p.anima.items():
-        items.append(("anima", pid, ANIMA_POWERS[pid]["name"], ANIMA_POWERS[pid]["color"], n))
-    for i, (kind, key, name, col, val) in enumerate(items):
-        c = (x + 14 + (i % 9) * 32, y + 14 + (i // 9) * 32)
-        ui.circle(surf, (0, 0, 0, 170), c, 14)
-        ui.circle(surf, ui.darker(col, 0.55), c, 11)
-        ui.circle(surf, col, c, 14, 1)
-        txt = f"{val:.0f}" if kind == "buff" else f"x{val}"
-        ui.draw_text(surf, txt, c, 11, WHITE, "bold", anchor="center")
-        world.anima_rects.append((pygame.Rect(c[0] - 14, c[1] - 14, 28, 28), (kind, key, name, val)))
+    items = list(p.anima.items())
+    for i, (pid, n) in enumerate(items[:8]):
+        pw = ANIMA_POWERS[pid]
+        col = pw["color"]
+        name = pw["name"]
+        tw = ui.text_size(name, 11, "bold")[0]
+        r = pygame.Rect(x + 4, y + 4 + i * 24, tw + 58, 20)
+        ui.rect(surf, (8, 10, 12, 175), r, 0, 10)
+        ui.rect(surf, ui.darker(col, 0.7), r, 1, 10)
+        c = (r.x + 11, r.centery)
+        ui.polygon(surf, col, [(c[0], c[1] - 6), (c[0] + 6, c[1]), (c[0], c[1] + 6), (c[0] - 6, c[1])])
+        ui.draw_text(surf, name, (r.x + 22, r.centery), 11, WHITE, "bold", anchor="midleft", shadow=False)
+        ui.draw_text(surf, f"x{n}", (r.right - 8, r.centery), 11, col, "bold", anchor="midright", shadow=False)
+        world.anima_rects.append((r, ("anima", pid, name, n)))
+    if len(items) > 8:
+        ui.draw_text(surf, f"+{len(items) - 8} autres pouvoirs", (x + 8, y + 4 + 8 * 24), 11, TEXT_DIM, shadow=False)
+
+
+def draw_buffs(surf, world):
+    """Buffs actifs : une rangée de cases au-dessus de la barre de sorts, icône du sort, voile qui tourne
+    à mesure que l'effet s'épuise, secondes restantes dessous ; la case clignote dans les 3 dernières secondes."""
+    p = world.player
+    items = [(k, left) for k, left in p.buffs.items() if BUFFS.get(k) and not BUFFS[k].get("hidden")]
+    if not items:
+        return
+    S, G = 32, 8
+    x0 = SCREEN_W // 2 - (len(items) * (S + G) - G) // 2
+    y0 = SCREEN_H - BOTTOM - SLOT - 20 - S
+    for i, (bid, left) in enumerate(items):
+        b = BUFFS[bid]
+        col = tuple(b.get("color", (220, 220, 220)))
+        r = pygame.Rect(x0 + i * (S + G), y0, S, S)
+        total = max(left, p.buffs_total.get(bid, left)) or 1
+        frac = max(0.0, min(1.0, left / total))
+        blink = left < 3 and int(world.time * 6) % 2
+        ui.rect(surf, (*ui.darker(col, 0.25), 225), r, 0, 7)
+        sid = buff_spell(bid)
+        if sid:
+            icons.spell_icon(surf, sid, r.center, S * 0.42, col, flat=True)
+        else:
+            ui.draw_text(surf, b["name"][0], r.center, 15, col, "bold", anchor="center", shadow=False)
+        # voile sombre sur la part écoulée, dans le sens des aiguilles d'une montre depuis midi
+        if frac < 1:
+            c = r.center
+            a0 = -math.pi / 2 + math.tau * frac
+            steps = max(2, int(24 * (1 - frac)))
+            pts = [c] + [(c[0] + math.cos(a0 + (math.tau * (1 - frac)) * j / steps) * S,
+                          c[1] + math.sin(a0 + (math.tau * (1 - frac)) * j / steps) * S) for j in range(steps + 1)]
+            clip = surf.get_clip()
+            surf.set_clip(ui.R(r.inflate(-2, -2)))
+            ui.polygon(surf, (0, 0, 0, 150), pts)
+            surf.set_clip(clip)
+        ui.rect(surf, WHITE if blink else col, r, 2 if blink else 1, 7)
+        ui.draw_text(surf, f"{left:.0f}" if left >= 1 else f"{left:.1f}", (r.centerx, r.bottom + 8), 10,
+                     WHITE if not blink else col, "bold", anchor="center")
+        world.anima_rects.append((r, ("buff", bid, b["name"], left)))
 
 
 # --------------------------------------------------------------------------- HUD principal
@@ -390,6 +470,7 @@ def draw_hud(surf, world):
     y = draw_artifacts(surf, world, 22, y + 16)
     draw_effects(surf, world, 18, y + 2)
     draw_slots(surf, world)
+    draw_buffs(surf, world)
     draw_minimap(surf, world)
     draw_top(surf, world)
     draw_notifs(surf, world)
@@ -439,7 +520,11 @@ def draw_hud_tooltips(surf, world):
                 ui.draw_tooltip_lines(surf, [(f"{name}  x{val}", pw["color"], 16), (anima_desc(key, val), TEXT, 15),
                                              ("Pouvoir d'anima (dure l'ascension)", TEXT_DIM, 13)], mouse)
             else:
-                ui.draw_tooltip_lines(surf, [(name, GOLD_BRIGHT, 16), (f"{val:.1f} s restantes", TEXT, 14)], mouse)
+                col = tuple(BUFFS[key].get("color", (220, 220, 220)))
+                lines = [(name, ui.lighter(col, 1.15), 16)]
+                lines += [(line, TEXT, 14) for line in buff_lines(world.player, key)]
+                lines.append((f"Encore {val:.1f} s", TEXT_DIM, 13))
+                ui.draw_tooltip_lines(surf, lines, (rc.centerx, rc.y - 6), col, side="above")
             return
 
 
@@ -604,7 +689,7 @@ def draw_big_map(surf, world):
     for y in range(0, SCREEN_H, 64):
         ui.line(surf, (26, 50, 60), (0, y), (SCREEN_W, y))
     rot = pygame.transform.rotate(mm.surf, -45)
-    avail_w, avail_h = (SCREEN_W - 180) * VIEW.s, (SCREEN_H - 190) * VIEW.s
+    avail_w, avail_h = (SCREEN_W - 330) * VIEW.s, (SCREEN_H - 290) * VIEW.s
     k = min(avail_w / rot.get_width(), avail_h / rot.get_height())
     rot = pygame.transform.smoothscale(rot, (int(rot.get_width() * k), int(rot.get_height() * k)))
     r = rot.get_rect(center=(SCREEN_W / 2 * VIEW.s, (SCREEN_H / 2 + 12) * VIEW.s))

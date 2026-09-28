@@ -38,7 +38,6 @@ STAT_DESC = {
     "curse_amp": "Les ennemis maudits subissent +{v}% de dégâts en plus",
     "dot_pct": "+{v}% de dégâts du poison et des brûlures",
     "gold_find": "+{v}% d'or trouvé",
-    "hp_regen": "Régénère {v}% de la vie maximum par seconde",
 }
 FLAG_DESC = {
     "kill_cdr": "Tuer un ennemi réduit toutes les recharges de {v} s",

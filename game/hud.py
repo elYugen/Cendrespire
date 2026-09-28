@@ -33,7 +33,7 @@ def heart_count(max_hp, cls):
     depuis (≈ 5 cœurs à +150 PV, 9 à +400, 15 à +1 200, 22 à +2 500, 30 à +4 500)."""
     k = max(0.0, min(1.0, (max_hp - start_hp(cls)) / HEARTS_FULL))
     return max(MIN_HEARTS, min(MAX_HEARTS, round(MIN_HEARTS + (MAX_HEARTS - MIN_HEARTS) * k ** 0.6)))
-MM = pygame.Rect(SCREEN_W - 24 - 146, SCREEN_H - 24 - 146, 146, 146)
+MM = pygame.Rect(SCREEN_W - 24 - 124, SCREEN_H - 24 - 124, 124, 124)
 SOFT = (210, 216, 216)
 
 
@@ -695,7 +695,7 @@ def draw_big_map(surf, world):
     for y in range(0, SCREEN_H, 64):
         ui.line(surf, (26, 50, 60), (0, y), (SCREEN_W, y))
     rot = pygame.transform.rotate(mm.surf, -45)
-    avail_w, avail_h = (SCREEN_W - 330) * VIEW.s, (SCREEN_H - 290) * VIEW.s
+    avail_w, avail_h = (SCREEN_W - 470) * VIEW.s, (SCREEN_H - 355) * VIEW.s
     k = min(avail_w / rot.get_width(), avail_h / rot.get_height())
     rot = pygame.transform.smoothscale(rot, (int(rot.get_width() * k), int(rot.get_height() * k)))
     r = rot.get_rect(center=(SCREEN_W / 2 * VIEW.s, (SCREEN_H / 2 + 12) * VIEW.s))

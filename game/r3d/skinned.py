@@ -143,19 +143,46 @@ class Model:
                     images[src] = None
             return images[src]
 
+        def rigid_bind(ni):
+            """Pièce rigide (casque, capuche...) enfant d'un os : (numéro d'articulation, matrice qui la place
+            dans la pose de référence du squelette), ou None si aucun os parent (arme posée dans la main : ignorée,
+            le jeu dessine ses propres armes)."""
+            L = np.eye(4, dtype="f4")
+            i = ni
+            while i >= 0 and i not in jidx:
+                L = trs(*self.rest[i]) @ L
+                i = self.parent[i]
+            if i < 0:
+                return None
+            return jidx[i], np.linalg.inv(self.ibm[jidx[i]]) @ L
+
         verts = []
         for ni, n in enumerate(nodes):
-            if "mesh" not in n or "skin" not in n or n.get("name") in SKIP_MESHES:
-                continue            # objets non articulés (épée tenue...) : ignorés, le jeu dessine ses armes
-            sk = g["skins"][n["skin"]]
-            remap = np.array([jidx[j] for j in sk["joints"]], dtype="f4")
+            if "mesh" not in n or n.get("name") in SKIP_MESHES:
+                continue
+            rigid = None
+            if "skin" not in n:
+                rigid = rigid_bind(ni)
+                if rigid is None:
+                    continue
+            else:
+                sk = g["skins"][n["skin"]]
+                remap = np.array([jidx[j] for j in sk["joints"]], dtype="f4")
             for prim in g["meshes"][n["mesh"]]["primitives"]:
                 at = prim["attributes"]
                 pos = acc(at["POSITION"]).astype("f4")
                 nor = acc(at["NORMAL"]).astype("f4")
-                jn = remap[acc(at["JOINTS_0"]).astype("i4")]
-                wt = acc(at["WEIGHTS_0"]).astype("f4")
-                wt /= wt.sum(1, keepdims=True) + 1e-9
+                if rigid:
+                    j, B = rigid
+                    pos = pos @ B[:3, :3].T + B[:3, 3]
+                    nor = nor @ B[:3, :3].T
+                    nor /= np.linalg.norm(nor, axis=1, keepdims=True) + 1e-9
+                    jn = np.tile(np.array((j, 0, 0, 0), "f4"), (len(pos), 1))
+                    wt = np.tile(np.array((1, 0, 0, 0), "f4"), (len(pos), 1))
+                else:
+                    jn = remap[acc(at["JOINTS_0"]).astype("i4")]
+                    wt = acc(at["WEIGHTS_0"]).astype("f4")
+                    wt /= wt.sum(1, keepdims=True) + 1e-9
                 mi = prim.get("material", 0)
                 mat = np.full((len(pos), 1), mi, "f4")
                 base = np.array(self.base_colors[mi] if mi < len(self.base_colors) else (0.8, 0.8, 0.8), "f4")
@@ -334,6 +361,24 @@ class Prop:
                              for k in range(a["count"])])
         mats = g.get("materials", [])
         cols = [_srgb(mm.get("pbrMetallicRoughness", {}).get("baseColorFactor", (0.8, 0.8, 0.8, 1))) for mm in mats]
+        images = {}
+
+        def texture(mi):
+            """Atlas de couleurs du matériau (tableau largeur x hauteur x 3), ou None."""
+            t = mats[mi].get("pbrMetallicRoughness", {}).get("baseColorTexture") if mi < len(mats) else None
+            if t is None:
+                return None
+            src = g["textures"][t["index"]]["source"]
+            if src not in images:
+                import io
+                import pygame
+                v = g["bufferViews"][g["images"][src]["bufferView"]]
+                raw = binary[v.get("byteOffset", 0):v.get("byteOffset", 0) + v["byteLength"]]
+                try:
+                    images[src] = pygame.surfarray.array3d(pygame.image.load(io.BytesIO(raw))).astype("f4") / 255
+                except (pygame.error, ValueError):
+                    images[src] = None
+            return images[src]
         verts = []
         for i, n in enumerate(nodes):
             if "mesh" not in n:
@@ -349,6 +394,13 @@ class Prop:
                 nor /= np.linalg.norm(nor, axis=1, keepdims=True) + 1e-9
                 mi = prim.get("material", 0)
                 col = np.tile(np.array(cols[mi] if mi < len(cols) else (0.8, 0.8, 0.8), "f4"), (len(pos), 1))
+                tex = texture(mi)
+                if tex is not None and "TEXCOORD_0" in at:
+                    uv = acc(at["TEXCOORD_0"]).astype("f4")
+                    tw, th = tex.shape[0], tex.shape[1]
+                    xs = np.clip(((uv[:, 0] % 1.0) * tw).astype(int), 0, tw - 1)
+                    ys = np.clip(((uv[:, 1] % 1.0) * th).astype(int), 0, th - 1)
+                    col = tex[xs, ys]
                 n0 = len(pos)
                 v = np.hstack([pos, nor, np.full((n0, 1), mi, "f4"), col, np.zeros((n0, 4), "f4"),
                                np.tile((1, 0, 0, 0), (n0, 1)).astype("f4")]).astype("f4")

@@ -1,0 +1,21 @@
+{
+  "version": "3.5",
+  "date": "2026-09-28",
+  "title": "Os et sang",
+  "sections": [
+    {"name": "Vie", "notes": [
+      "La vie ne se régénère plus toute seule : il faut se soigner (potion, vol de vie, sorts et talents de soin).",
+      "La Vitalité ne donne plus que de la vie maximum.",
+      "Les talents qui régénéraient la vie sont remplacés : Sang épais, Endurance et Constance donnent +3% de vie maximum par rang, Bivouac +2%, Herboriste et Aura de paix rendent 1% de vie par ennemi tué, Miracle rend 1,5% de vie à chaque sort lancé.",
+      "Les nouveaux héros ne commencent plus avec l'artefact Éclair."
+    ]},
+    {"name": "Nouveaux squelettes", "notes": [
+      "Les squelettes ont de vrais modèles animés : le Squelette porte casque à pointes, cape, lame et bouclier ; l'Archer squelette, capuche et arbalète ; les serviteurs du Nécromancien, une hache et des yeux verts.",
+      "Ils avancent d'une démarche traînante de mort-vivant et frappent, tirent ou tranchent avec leurs propres animations.",
+      "Modèles : KayKit Skeletons de Kay Lousberg (licence CC0)."
+    ]},
+    {"name": "Cartes", "notes": [
+      "La minicarte et la grande carte sont encore réduites (environ 15% plus petites), pour mieux dégager la vue."
+    ]}
+  ]
+}

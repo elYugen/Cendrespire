@@ -254,7 +254,7 @@
           "max": 3,
           "branch": 1,
           "effects": [
-            ["stat", "hp_regen", 0.1]
+            ["stat", "max_hp_pct", 3]
           ],
           "links": ["ba_eveil"]
         },
@@ -1692,7 +1692,7 @@
           "max": 3,
           "branch": 1,
           "effects": [
-            ["stat", "hp_regen", 0.1]
+            ["flag", "kill_heal", 1]
           ],
           "links": ["ch_cuir"]
         },
@@ -1823,7 +1823,7 @@
           "max": 3,
           "branch": 1,
           "effects": [
-            ["stat", "hp_regen", 0.1]
+            ["stat", "max_hp_pct", 3]
           ],
           "links": ["ch_sang"]
         },
@@ -2061,7 +2061,7 @@
           "max": 3,
           "branch": -1,
           "effects": [
-            ["stat", "hp_regen", 0.05],
+            ["stat", "max_hp_pct", 2],
             ["stat", "spell_pct", 1]
           ],
           "links": ["ch_cuir", "ch_salve"]
@@ -2437,7 +2437,7 @@
           "max": 2,
           "branch": 1,
           "effects": [
-            ["stat", "hp_regen", 0.1]
+            ["stat", "max_hp_pct", 3]
           ],
           "links": ["pa_garde", "pa_p_vigile"]
         },
@@ -2699,7 +2699,7 @@
           "max": 2,
           "branch": 2,
           "effects": [
-            ["stat", "hp_regen", 0.15]
+            ["flag", "heal_on_spell", 1.5]
           ],
           "links": ["pa_saint"]
         },
@@ -2818,7 +2818,7 @@
           "max": 3,
           "branch": -1,
           "effects": [
-            ["stat", "hp_regen", 0.08]
+            ["flag", "kill_heal", 1]
           ],
           "links": ["pa_titan", "pa_eclat", "pa_p_benir"]
         }

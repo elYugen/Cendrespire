@@ -151,6 +151,13 @@ def _equipment(fr, M3, model, Mw, world, spec, facing, sc, flash, tint_col, stat
             bone[name] = _bone(Mw, world, i)
     tint = (1.0, 1.0, 1.0, 0.65) if flash else ((tint_col[0] / 255, tint_col[1] / 255, tint_col[2] / 255, 0.45)
                                                 if tint_col else (0.0, 0.0, 0.0, 0.0))
+    # objets des packs KayKit : fixés tels quels sur les os prévus pour (handslot.r / handslot.l)
+    for bone_name, prop_name in spec.get("rig", {}).get("slots", {}).items():
+        i = model.node(bone_name)
+        prop = skinned.load_prop(prop_name) if i >= 0 else None
+        if prop is None:
+            continue
+        fr.skin(prop, Mw @ world[i], np.eye(4, dtype="f4")[None], prop.palette(), tint, 0.0)
     held = spec.get("rig", {}).get("weapons", {})
     for side_name, bone_name, side in (("right", "Wrist.R", 1), ("left", "Wrist.L", -1)):
         item = held.get(side_name)

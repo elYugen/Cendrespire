@@ -223,7 +223,6 @@ class Player:
         # chaque attribut sert toutes les classes (l'attribut principal ajoute en plus +1% de dégâts par point)
         s["basic_pct"] = s["force"] * ATTR_K["force_basic"] + tv("basic_pct", 0)
         s["spell_pct"] = s["int"] * ATTR_K["int_spell"] + tv("spell_pct", 0)
-        s["hp_regen"] = s["vit"] * ATTR_K["vit_regen"] + s["max_hp"] * tv("hp_regen", 0) / 100
         s["move_speed"] = (s["endurance"] * ATTR_K["end_move"] + gear["move_speed"] + av("ombre") + ench["celerite"]
                            + tv("move_speed", 0))
         s["mana_cost"] = min(40, s["harmonie"] * ATTR_K["harm_cost"])      # -% de coût en mana des sorts
@@ -419,8 +418,6 @@ class Player:
         self.roll_cd = max(0.0, self.roll_cd - dt)
         self.swing = self.swing * max(0, 1 - dt * 12)
         self.mana = min(self.stats["max_mana"], self.mana + self.stats["mana_regen"] * dt)
-        if not self.dead:
-            self.hp = min(self.stats["max_hp"], self.hp + self.stats["hp_regen"] * dt)
 
     def render(self, fr, t):
         lift = 0.0

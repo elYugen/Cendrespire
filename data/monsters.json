@@ -26,7 +26,15 @@
         "skull": true,
         "weapon": "sword",
         "eyes": [255, 80, 40],
-        "ribs": true
+        "ribs": true,
+        "rig": {
+          "model": "skeleton_warrior",
+          "slots": {"handslot.r": "skel_blade", "handslot.l": "skel_shield_small_a"},
+          "anims": {"idle": "Idle_Combat", "run": "Walking_D_Skeletons", "attack_melee": "1H_Melee_Attack_Chop",
+                    "hit": "Hit_A", "death": "Death_C_Skeletons"},
+          "speed": 1.1,
+          "height": 1.15
+        }
       }
     },
     "zombie": {
@@ -79,7 +87,14 @@
         "skull": true,
         "weapon": "bow",
         "eyes": [255, 120, 40],
-        "hood": [74, 64, 54]
+        "hood": [74, 64, 54],
+        "rig": {
+          "model": "skeleton_rogue",
+          "slots": {"handslot.r": "skel_crossbow"},
+          "anims": {"idle": "Idle", "run": "Walking_D_Skeletons", "attack_ranged": "1H_Ranged_Shoot",
+                    "hit": "Hit_A", "death": "Death_C_Skeletons"},
+          "height": 1.06
+        }
       }
     },
     "diablotin": {

@@ -6,6 +6,9 @@ from .entities import Projectile
 from .r3d import models
 
 SPEC = dict(models.MONSTER_SPECS["squelette"], eyes=(120, 255, 160))
+SPEC["rig"] = dict(SPEC.get("rig", {}), model="skeleton_minion", slots={"handslot.r": "skel_axe"},
+                   anims={"idle": "Idle_Combat", "run": "Running_C", "attack_melee": "1H_Melee_Attack_Slice_Diagonal"},
+                   palette={"Glow": (120, 255, 160)})
 
 
 class SkeletonMinion:
@@ -64,8 +67,10 @@ class SkeletonMinion:
 
     def render(self, fr, t):
         rise = min(1.0, self.t / 0.4)
+        striking = self.swing < -0.2           # coup en cours : l'animation d'attaque suit l'élan du coup
         models.humanoid(fr, self.x, self.y, -36 * (1 - rise), self.facing, self.phase, SPEC, sc=0.9,
-                        swing=self.swing, moving=self.moving)
+                        swing=self.swing, moving=self.moving, anim="attack_melee" if striking else None,
+                        anim_t=(1 + self.swing / 1.4) * 0.5 if striking else None)
         fr.decal(self.x, self.y, 16, 16, (120, 255, 160), 0.35, kind=1, inner=0.75)
 
 

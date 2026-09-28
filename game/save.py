@@ -35,9 +35,8 @@ def exists(name):
 
 def new_character(name, cls_id):
     weapon = items.generate_item(1, rarity="commun", slot="arme", wclass=cls_id)
-    art = items.generate_artifact(1, "commun", aid="foudre")
     return {"name": name, "cls": cls_id, "level": 1, "xp": 0, "alloc": {a: 0 for a in ATTRS}, "points": 0,
-            "money": 250, "max_floor": 1, "cleared": [], "equipment": {"arme": weapon, "artefact1": art},
+            "money": 250, "max_floor": 1, "cleared": [], "equipment": {"arme": weapon},
             "inventory": [], "kills": 0, "deaths": 0, "created_at": time.time()}
 
 

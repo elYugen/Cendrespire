@@ -61,7 +61,7 @@ _SC = CONTENT["scaling"]
 
 # effet de chaque point d'attribut, pour toutes les classes
 ATTR_K = {"force_armor": 0.5, "force_basic": 0.3, "dex_crit": 0.1, "dex_speed": 0.2,
-          "int_mana": 1.5, "int_spell": 0.3, "int_regen": 1.0, "vit_hp": 5, "vit_regen": 0.1,
+          "int_mana": 1.5, "int_spell": 0.3, "int_regen": 1.0, "vit_hp": 5,
           "foi_heal": 0.6, "foi_cdr": 0.1, "chance_gold": 0.8, "chance_crit": 0.05, "chance_drop": 0.6,
           "end_roll": 0.4, "end_potion": 0.25, "end_move": 0.1,        # Endurance (plafond : -40% de recharge)
           "res_dr": 0.08, "res_armor": 0.3, "res_snare": 0.8,          # Résistance
@@ -70,7 +70,7 @@ ATTR_K = {"force_armor": 0.5, "force_basic": 0.3, "dex_crit": 0.1, "dex_speed": 
 ATTR_LINES = {"force": ["+0,5 armure", "+0,3% de dégâts de l'attaque de base"],
               "dex": ["+0,1% de chances de critique", "+0,2% de vitesse d'attaque"],
               "int": ["+1,5 mana", "+0,3% de dégâts des sorts", "+1% de régénération de mana"],
-              "vit": ["+5 points de vie", "+0,1 vie par seconde"],
+              "vit": ["+5 points de vie"],
               "endurance": ["-0,4% de recharge de la roulade", "-0,25% de recharge de la potion",
                             "+0,1% de vitesse de déplacement"],
               "resistance": ["+0,08% de réduction des dégâts subis", "+0,3 armure",

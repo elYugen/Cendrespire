@@ -850,7 +850,7 @@ class MenuScreen(Panel):
         elif a == "int":
             txt = f"+{v * k['int_mana']:.0f} mana · +{v * k['int_spell']:.1f}% aux sorts"
         elif a == "vit":
-            txt = f"+{v * k['vit_hp']:.0f} vie · +{v * k['vit_regen']:.1f} vie/s"
+            txt = f"+{v * k['vit_hp']:.0f} vie maximum"
         elif a == "endurance":
             txt = f"-{min(40, v * k['end_roll']):.0f}% roulade · +{v * k['end_move']:.1f}% déplacement"
         elif a == "resistance":
@@ -980,8 +980,8 @@ class MenuScreen(Panel):
              f"Les critiques infligent x{s['crit_mult']:.2f} dégâts."),
             ("bolt", "Vitesse d'attaque", f"+{s['atk_speed']:.0f}%", s["atk_speed"] / 60, None),
             ("drop", "Vol de vie", f"{s['lifesteal']:.0f}%", s["lifesteal"] / 15, None),
-            ("orb", "Régénération", f"{s['hp_regen']:.1f} vie · {s['mana_regen']:.1f} mana /s", None,
-             "Vie et mana rendus chaque seconde (Vitalité, Intelligence, talents)."),
+            ("orb", "Régénération du mana", f"{s['mana_regen']:.1f} mana /s", None,
+             "Mana rendu chaque seconde (Intelligence, Harmonie, talents). La vie ne se régénère pas : potion, vol de vie et soins."),
             ("clock", "Recharge des sorts", f"-{s['cdr']:.0f}%", s["cdr"] / 50, "Maximum : 50%."),
             ("boot", "Déplacement", f"+{s['move_speed']:.0f}%", s["move_speed"] / 40, None),
             ("heart", "Potion · roulade", f"{p.potion_total:.0f} s · {p.roll_total:.1f} s", None,

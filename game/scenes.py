@@ -377,7 +377,8 @@ class CreateScene(Scene):
         self.error = ""
         self.cam = Camera3D(yaw=45, pitch=10, dist=5.6, fov=32)
         # colonne des classes à gauche, héros au centre (nom dessous), fiche de la classe à droite
-        self.class_rects = {cid: pygame.Rect(40, 116 + i * 78, 300, 68) for i, cid in enumerate(CLASSES)}
+        step = min(78, 524 // len(CLASSES))          # la colonne s'arrête au-dessus du bouton Retour
+        self.class_rects = {cid: pygame.Rect(40, 116 + i * step, 300, step - 10) for i, cid in enumerate(CLASSES)}
         self.name_rect = pygame.Rect(SCREEN_W // 2 - 190, 566, 380, 46)
         # étape 0 : nom et classe ; étape 1 : apparence
         self.step = 0
@@ -588,7 +589,7 @@ class CreateScene(Scene):
             icons.spell_icon(surf, None, med, 20, kc, attack_cls=cid, flat=True)
             ui.draw_text(surf, k["name"], (rc.x + 74, rc.y + 12), 18, WHITE if sel or hov else SOFT, "title")
             role, diff = CLASS_ROLES.get(cid, ("", 1))
-            ui.draw_text(surf, role, (rc.x + 74, rc.y + 40), 12, TEXT_DIM if not sel else SOFT, shadow=False)
+            ui.draw_text(surf, role, (rc.x + 74, rc.bottom - 28), 12, TEXT_DIM if not sel else SOFT, shadow=False)
             for d in range(3):
                 pc = (rc.right - 44 + d * 13, rc.y + 20)
                 ui.circle(surf, kc if d < diff else (50, 54, 56), pc, 4)
@@ -665,7 +666,8 @@ class CreateScene(Scene):
 
 CLASS_ROLES = {"barbare": ("Mêlée · robuste", 1), "sorcier": ("Distance · magie élémentaire", 2),
                "chasseur": ("Distance · précision", 1), "paladin": ("Mêlée · soins et protection", 1),
-               "necromancien": ("Invocations · malédictions", 3), "assassin": ("Mêlée · coups critiques", 3)}
+               "necromancien": ("Invocations · malédictions", 3), "assassin": ("Mêlée · coups critiques", 3),
+               "mendiant": ("Toutes armes · tous les talents", 3)}
 
 
 # =========================================================================== écran de démarrage et chargements

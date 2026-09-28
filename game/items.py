@@ -136,8 +136,9 @@ def generate_item(ilvl, rarity=None, slot=None, cls_id=None, rng=random, tier=0,
           "aff_v": AFFIX_VERSION}
     p = RARITY_POWER[rarity]
     if slot == "arme":
-        if wclass is None:
-            wclass = cls_id if (cls_id and rng.random() < 0.75) else rng.choice(list(CLASSES))
+        if wclass is None or not CLASSES[wclass]["weapons"]:      # le Mendiant n'a pas d'armes à lui
+            armed = [c for c in CLASSES if CLASSES[c]["weapons"]]
+            wclass = cls_id if (cls_id in armed and rng.random() < 0.75) else rng.choice(armed)
         it["wclass"] = wclass
         it["base"] = rng.choice(CLASSES[wclass]["weapons"])
         dmin = (4 + ilvl * 3) * rng.uniform(0.85, 1.15) * p
@@ -250,7 +251,7 @@ def item_lines(item, player=None, header=None):
     if "dmg" in st:
         lines.append((f"Dégâts : {int(st['dmg'][0])} - {int(st['dmg'][1])}", (240, 240, 240), 18))
         cname = CLASSES[item["wclass"]]["name"]
-        ok = player is None or player.cls_id == item["wclass"]
+        ok = player is None or player.can_equip(item)
         lines.append((f"Arme de {cname}" + ("" if ok else " (inutilisable)"), TEXT_DIM if ok else RED, 15))
     if "armor" in st:
         lines.append((f"Armure : {st['armor']}", (240, 240, 240), 18))

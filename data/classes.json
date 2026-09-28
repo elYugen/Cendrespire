@@ -489,6 +489,82 @@
           "left": ["dagger2", 12]
         }
       }
+    },
+    "mendiant": {
+      "name": "Mendiant",
+      "title": "Va-nu-pieds des Routes",
+      "desc": "Il n'a rien et ramasse tout : il manie n'importe quelle arme et puise dans les talents de toutes les classes. Mais il frappe moins fort, attaque plus lentement et se traîne. Son attaque de base est celle de l'arme qu'il tient, en plus faible.",
+      "color": [168, 140, 98],
+      "primary": "chance",
+      "attrs": {
+        "force": 9,
+        "dex": 9,
+        "int": 9,
+        "vit": 10,
+        "endurance": 8,
+        "resistance": 8,
+        "harmonie": 8,
+        "foi": 8,
+        "chance": 14
+      },
+      "hp": 100,
+      "hp_lvl": 10,
+      "mana": 90,
+      "mana_lvl": 3,
+      "mana_regen": 4.0,
+      "speed": 185,
+      "all_weapons": true,
+      "talent_trees": "all",
+      "borrowed_attack": {"mult": 0.8, "cd": 1.15},
+      "attack": {
+        "kind": "melee",
+        "name": "Coup de poing",
+        "mult": 0.6,
+        "range": 50,
+        "arc": 90,
+        "cd": 0.62,
+        "mana_gain": 2,
+        "color": [214, 190, 150],
+        "icon": "fist"
+      },
+      "spells": ["tourbillon", "boule_feu", "tir_multiple", "pas_ombre"],
+      "weapons": [],
+      "legendary": ["Sébile d'Or", "Guenille du Roi Déchu", "Aumône du Destin"],
+      "headgear_name": "Couvre-chef",
+      "look_defaults": {
+        "skin": 2,
+        "build": 1,
+        "hair": 1,
+        "hair_col": 1,
+        "beard": 1,
+        "eyes": 2,
+        "marks": 2,
+        "main": 1,
+        "second": 10,
+        "headgear": 1
+      },
+      "model": {
+        "body": "main",
+        "legs": "second",
+        "arms": "skin",
+        "boots": [70, 52, 36],
+        "belt": [96, 70, 44],
+        "strap": [90, 66, 42],
+        "weapon": "staff"
+      },
+      "rig": {
+        "model": "farmer",
+        "colors": {
+          "Skin": "skin",
+          "Eyebrows": "hair",
+          "LightBlue": "main",
+          "Beige": "second",
+          "Red": "main:0.7",
+          "Brown": "second:0.55",
+          "Brown2": "second:0.4"
+        },
+        "weapons": {}
+      }
     }
   }
 }

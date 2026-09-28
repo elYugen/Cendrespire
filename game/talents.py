@@ -4,6 +4,8 @@
 - 1 point de talent par niveau à partir du niveau 10 (91 points au niveau 100).
 - La racine s'apprend seule ; tout autre talent doit toucher (links, dans un sens ou dans l'autre) un talent appris.
 - La ligne y de l'arbre demande ROW_COST x (y - 1) points déjà dépensés dans tout l'arbre.
+- Le Mendiant (« talent_trees »: "all" dans classes.json) puise dans les arbres de toutes les autres classes : chaque
+  arbre garde sa racine et ses seuils (comptés dans cet arbre seulement), les points viennent d'une seule réserve.
 - Un talent peut exiger qu'un autre soit maîtrisé (rang maximum) d'abord : « req ».
 - Chaque talent a un effet exprimé par rang : (type, cible, valeur par rang).
 - Réinitialisation en ville, contre de l'or.
@@ -15,7 +17,7 @@ Types d'effets :
   spell     : débloque un nouveau sort, à équiper dans l'un des 4 emplacements (page Personnage)
 """
 from .content import CONTENT, ContentError
-from .data import SPELLS
+from .data import CLASSES, SPELLS
 
 
 STAT_DESC = {
@@ -107,6 +109,13 @@ for _cls, _tree in TREES.items():
             NEIGHBORS[_o].add(_t["id"])
 
 
+def trees_of(cls_id):
+    """Arbres ouverts à une classe : le sien, ou tous pour une classe « talent_trees »: "all"."""
+    if CLASSES.get(cls_id, {}).get("talent_trees") == "all":
+        return list(TREES)
+    return [cls_id]
+
+
 # =========================================================================== règles
 def points_total(level):
     return max(0, level - FIRST_LEVEL + 1)
@@ -114,6 +123,11 @@ def points_total(level):
 
 def spent(ranks):
     return sum(ranks.values())
+
+
+def tree_spent(ranks, tree):
+    """Points dépensés dans un arbre donné."""
+    return sum(r for k, r in ranks.items() if k in TALENTS and TALENTS[k]["cls"] == tree)
 
 
 def row_need(t):
@@ -139,7 +153,7 @@ def can_learn(ranks, level, tid):
         return False, "Aucun point de talent disponible"
     if not connected(ranks, t):
         return False, "Doit toucher un talent déjà appris"
-    if spent(ranks) < row_need(t):
+    if tree_spent(ranks, t["cls"]) < row_need(t):
         return False, f"Requiert {row_need(t)} points dépensés dans l'arbre"
     if not req_met(ranks, t):
         return False, f"Requiert {TALENTS[t['req']]['name']} au rang maximum"
@@ -163,7 +177,7 @@ def _valid(ranks, cls_id):
         t = TALENTS[k]
         if not req_met(ranks, t):
             return False
-        below = sum(r for o, r in ranks.items() if TALENTS[o]["y"] < t["y"])
+        below = sum(r for o, r in ranks.items() if TALENTS[o]["cls"] == t["cls"] and TALENTS[o]["y"] < t["y"])
         if below < row_need(t):
             return False
     return True
@@ -217,13 +231,15 @@ def clean(ranks, cls_id, level=None):
     """Ne garde que des talents valides de la classe (sauvegardes anciennes ou arbre modifié) : les points
     d'un talent devenu inaccessible sont rendus au joueur."""
     res = {}
+    trees = trees_of(cls_id)
     for tid, r in (ranks or {}).items():
         t = TALENTS.get(tid)
-        if t and t["cls"] == cls_id and isinstance(r, int) and r > 0:
+        if t and t["cls"] in trees and isinstance(r, int) and r > 0:
             res[tid] = min(r, t["max"])
-    root = next((n["id"] for n in TREES[cls_id]["nodes"] if not n.get("links")), None)
-    if res and root and root not in res:           # arbre d'une ancienne version : on le rattache à la racine
-        res[root] = 1
+    for tree in trees:
+        root = next((n["id"] for n in TREES[tree]["nodes"] if not n.get("links")), None)
+        if root and root not in res and tree_spent(res, tree):   # arbre d'une ancienne version : rattaché à sa racine
+            res[root] = 1
     budget = points_total(level) if level else None
     while res and (not _valid(res, cls_id) or (budget is not None and spent(res) > budget)):
         top = max(res, key=lambda k: (TALENTS[k]["y"], TALENTS[k]["id"]))     # on retire par le haut de l'arbre

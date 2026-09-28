@@ -202,6 +202,8 @@ class MenuScreen(Panel):
         self.hover_talent = None
         self.flash_node = None
         self.tal_scroll = 0            # défilement vertical de l'arbre de talents
+        self.tal_tree = None           # arbre affiché (le Mendiant a un onglet par arbre)
+        self.tal_tabs = []
         self.tal_drag = None
         self.spell_pick = None         # emplacement de sort en cours de changement (page Personnage)
         self.skill_slots = []
@@ -1020,7 +1022,7 @@ class MenuScreen(Panel):
                 self.skill_slots.append((i - 1, c))
                 if self.spell_pick == i - 1:
                     ui.circle(surf, BOTW_YELLOW, c, 30, 2)
-            icons.spell_icon(surf, sid, c, 25, col, locked=not ok, attack_cls=p.cls_id if sid is None else None)
+            icons.spell_icon(surf, sid, c, 25, col, locked=not ok, attack_cls=p.attack_cls if sid is None else None)
             ui.key_badge(surf, key, (c[0], c[1] + 27), 10)
             if not ok:
                 ui.draw_text(surf, f"Niv {sp['level']}", (c[0], c[1] + 46), 11, TEXT_DIM, "bold", anchor="center",
@@ -1077,13 +1079,25 @@ class MenuScreen(Panel):
     TAL_VIEW = pygame.Rect(40, 118, 1124, 526)
     TAL_DX, TAL_DY, TAL_R = 98, 100, 22
 
+    def tal_trees(self):
+        from . import talents
+        return talents.trees_of(self.world.player.cls_id)
+
+    def cur_tree(self):
+        trees = self.tal_trees()
+        return self.tal_tree if self.tal_tree in trees else trees[0]
+
+    def tal_top(self):
+        """Marge au-dessus de la racine (plus grande quand une rangée d'onglets d'arbres s'affiche)."""
+        return 64 + (38 if len(self.tal_trees()) > 1 else 0)
+
     def talent_pos(self, t):
         v = self.TAL_VIEW
-        return v.x + 76 + t["x"] * self.TAL_DX, v.y + 64 + t["y"] * self.TAL_DY - self.tal_scroll
+        return v.x + 76 + t["x"] * self.TAL_DX, v.y + self.tal_top() + t["y"] * self.TAL_DY - self.tal_scroll
 
     def tal_max_scroll(self):
         from . import talents
-        h = 64 + talents.ROWS[self.world.player.cls_id] * self.TAL_DY + 76
+        h = self.tal_top() + talents.ROWS[self.cur_tree()] * self.TAL_DY + 76
         return max(0, h - self.TAL_VIEW.h)
 
     def scroll_talents(self, d):
@@ -1092,7 +1106,7 @@ class MenuScreen(Panel):
     def talent_nodes(self):
         from . import talents
         p = self.world.player
-        return [(t, self.talent_pos(t)) for t in talents.TREES[p.cls_id]["nodes"]]
+        return [(t, self.talent_pos(t)) for t in talents.TREES[self.cur_tree()]["nodes"]]
 
     def talent_click(self, e):
         from . import talents
@@ -1100,6 +1114,12 @@ class MenuScreen(Panel):
         p = w.player
         if e.button != 1 or not self.TAL_VIEW.collidepoint(e.pos):
             return
+        for tree, rc in self.tal_tabs:
+            if rc.collidepoint(e.pos):
+                if tree != self.cur_tree():
+                    self.tal_tree, self.tal_scroll = tree, 0
+                    sfx.play("click")
+                return
         for t, c in self.talent_nodes():
             if math.hypot(e.pos[0] - c[0], e.pos[1] - c[1]) > self.TAL_R + 6:
                 continue
@@ -1129,7 +1149,8 @@ class MenuScreen(Panel):
         from . import icons, talents
         p = self.world.player
         ranks = p.talents
-        tree = talents.TREES[p.cls_id]
+        cur = self.cur_tree()
+        tree = talents.TREES[cur]
         v = self.TAL_VIEW
         R = self.TAL_R
         self.hover_talent = None
@@ -1138,9 +1159,9 @@ class MenuScreen(Panel):
         ui.botw_box(surf, v, 150, FRAME, radius=6)
         clip = surf.get_clip()
         surf.set_clip(ui.R(v.inflate(-4, -4)))
-        spent = talents.spent(ranks)
-        last = talents.ROWS[p.cls_id]
-        top = v.y + 64 - self.tal_scroll
+        spent = talents.tree_spent(ranks, cur)          # les seuils se comptent dans l'arbre affiché
+        last = talents.ROWS[cur]
+        top = v.y + self.tal_top() - self.tal_scroll
         hov = None                                    # talent survolé (l'infobulle en donne le nom et le domaine)
         if v.collidepoint(mouse):
             hov = next((t for t in tree["nodes"]
@@ -1202,6 +1223,7 @@ class MenuScreen(Panel):
             if t is hov:
                 self.hover_talent = (t, rk, ok)
         surf.set_clip(clip)
+        self.draw_tree_tabs(surf, mouse)
         # barre de défilement
         m = self.tal_max_scroll()
         if m > 0:
@@ -1211,6 +1233,29 @@ class MenuScreen(Panel):
             ui.rect(surf, (255, 255, 255, 40), (v.right - 10, v.y + 8, 4, v.h - 16), 0, 2)
             ui.rect(surf, (255, 255, 255, 150), (v.right - 10, by, 4, bar_h), 0, 2)
         self.draw_talent_orb(surf, mouse)
+
+    def draw_tree_tabs(self, surf, mouse):
+        """Mendiant : un onglet par arbre de classe, avec les points qui y sont dépensés."""
+        from . import talents
+        self.tal_tabs = []
+        trees = self.tal_trees()
+        if len(trees) < 2:
+            return
+        v = self.TAL_VIEW
+        cur = self.cur_tree()
+        ui.rect(surf, (6, 9, 12, 235), (v.x + 3, v.y + 3, v.w - 6, 42), 0, 5)
+        w = (v.w - 24 - 8 * (len(trees) - 1)) / len(trees)
+        for i, tree in enumerate(trees):
+            rc = pygame.Rect(v.x + 12 + i * (w + 8), v.y + 9, w, 28)
+            self.tal_tabs.append((tree, rc))
+            col = CLASSES[tree]["color"]
+            on, hov = tree == cur, rc.collidepoint(mouse)
+            ui.botw_box(surf, rc, 230 if on else 150, col if on else (ui.darker(col, 0.75) if hov else (80, 84, 86)),
+                        radius=6, fill=ui.darker(col, 0.3) if on else (10, 12, 14))
+            n = talents.tree_spent(self.world.player.talents, tree)
+            label = CLASSES[tree]["name"] + (f"  ·  {n}" if n else "")
+            ui.draw_text(surf, label, rc.center, 13, WHITE if on or hov else SOFT, "bold", anchor="center",
+                         shadow=False)
 
     def draw_talent_orb(self, surf, mouse):
         """Orbe des points de talent (en haut à droite de l'arbre) : le nombre à dépenser, un anneau qui se remplit
@@ -1269,7 +1314,7 @@ class MenuScreen(Panel):
         if rk < t["max"]:
             if not talents.connected(p.talents, t):
                 lines.append(("Doit toucher un talent déjà appris", DOWN, 13))
-            elif talents.spent(p.talents) < talents.row_need(t):
+            elif talents.tree_spent(p.talents, t["cls"]) < talents.row_need(t):
                 lines.append((f"Requiert {talents.row_need(t)} points dépensés dans l'arbre", DOWN, 13))
             elif not talents.req_met(p.talents, t):
                 lines.append((f"Requiert {talents.TALENTS[t['req']]['name']} au rang maximum", DOWN, 13))
@@ -1749,7 +1794,7 @@ class DeathPanel(Panel):
     """« Vous êtes mort » seul à l'écran, puis retour automatique au campement."""
     modal = True
     hide_hud = True              # le HUD s'efface derrière cette fenêtre
-    DURATION = 12.0
+    DURATION = 5.0
 
     def __init__(self, world, lost):
         super().__init__(world, (0, 0, SCREEN_W, SCREEN_H))

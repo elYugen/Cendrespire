@@ -108,8 +108,8 @@ def load_all():
         need(cl["attack"], ("kind", "name", "mult", "cd"), where + ", attack")
     tal = load("talents.json")
     c["talents"] = tal
-    for cid in c["classes"]:
-        if cid not in tal["trees"]:
+    for cid, cl in c["classes"].items():
+        if cid not in tal["trees"] and cl.get("talent_trees") != "all":
             raise ContentError(f"talents.json : aucun arbre pour la classe « {cid} ».")
     mon = load("monsters.json")
     c["monsters"], c["elites"], c["scaling"] = mon["monsters"], mon["elites"], mon["scaling"]

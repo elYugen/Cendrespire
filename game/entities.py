@@ -13,6 +13,7 @@ from .r3d import models
 from .settings import RARITY_COLORS
 
 SPELL_SLOTS = 4          # sorts équipés (touches 1 à 4)
+_BORROWED = {}           # Mendiant : (classe, classe de l'arme) -> classe avec l'attaque empruntée
 
 
 # =========================================================================== joueur
@@ -90,7 +91,31 @@ class Player:
 
     @property
     def cls(self):
-        return CLASSES[self.cls_id]
+        """La classe (classes.json). Le Mendiant (« all_weapons ») y prend l'attaque de base de la classe de son
+        arme, affaiblie par « borrowed_attack » (mult : dégâts, cd : lenteur) ; à mains nues, la sienne."""
+        c = CLASSES[self.cls_id]
+        wc = self.weapon_class
+        if not c.get("all_weapons") or not wc:
+            return c
+        key = (self.cls_id, wc)
+        if key not in _BORROWED:
+            k = c.get("borrowed_attack", {})
+            a = CLASSES[wc]["attack"]
+            _BORROWED[key] = dict(c, attack=dict(a, mult=a["mult"] * k.get("mult", 1), cd=a["cd"] * k.get("cd", 1)))
+        return _BORROWED[key]
+
+    @property
+    def weapon_class(self):
+        """Classe de l'arme équipée qui donne l'attaque de base (la sienne, sauf pour le Mendiant)."""
+        if not CLASSES[self.cls_id].get("all_weapons"):
+            return self.cls_id
+        w = self.equipment.get("arme")
+        return w.get("wclass") if w else None
+
+    @property
+    def attack_cls(self):
+        """Classe dont l'attaque de base est utilisée (icône de l'attaque)."""
+        return self.weapon_class or self.cls_id
 
     @property
     def known_spells(self):
@@ -133,9 +158,13 @@ class Player:
     @property
     def spec(self):
         """Spécification du modèle 3D, recalculée quand l'apparence change."""
-        key = tuple(sorted(self.look.items()))
+        wc = self.weapon_class
+        key = (tuple(sorted(self.look.items())), wc)
         if not self._spec or self._spec[0] != key:
-            self._spec = (key, looks.hero_spec(self.cls_id, self.look))
+            spec = looks.hero_spec(self.cls_id, self.look)
+            if spec.get("rig") and wc != self.cls_id:      # le Mendiant tient l'arme qu'il a trouvée
+                spec["rig"]["weapons"] = CLASSES[wc]["rig"]["weapons"] if wc else {}
+            self._spec = (key, spec)
         return self._spec[1]
 
     # ------------------------------------------------------------------ enchantements
@@ -395,7 +424,7 @@ class Player:
         sfx.play("swing", 0.5)
 
     def can_equip(self, item):
-        return item["slot"] != "arme" or item.get("wclass") == self.cls_id
+        return item["slot"] != "arme" or item.get("wclass") == self.cls_id or bool(self.cls.get("all_weapons"))
 
     def spell_unlocked(self, sid):
         return self.level >= SPELLS[sid]["level"]

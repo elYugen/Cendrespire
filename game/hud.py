@@ -236,7 +236,7 @@ def draw_slots(surf, world):
     rc = pygame.Rect(x, y0, SLOT, SLOT)
     acol = atk.get("color", p.cls["color"])
     _flat_slot(surf, world, rc, "attack", "" if pad_btn("attack") else "Clic", acol,
-               lambda s, c, lk: icons.spell_icon(s, None, c, SLOT * 0.5, acol, attack_cls=p.cls_id, flat=True),
+               lambda s, c, lk: icons.spell_icon(s, None, c, SLOT * 0.5, acol, attack_cls=p.attack_cls, flat=True),
                p.atk_cd / max(0.01, p.atk_total))
     _slot_pad(surf, rc, "attack")
     world.skill_rects.append((rc, ("attack", None)))

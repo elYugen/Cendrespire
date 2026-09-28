@@ -1,0 +1,17 @@
+{
+  "version": "3.6",
+  "date": "2026-09-28",
+  "title": "Le Mendiant",
+  "sections": [
+    {"name": "Nouvelle classe : le Mendiant", "notes": [
+      "Le Mendiant n'a rien et ramasse tout : il peut équiper toutes les armes du jeu, quelle que soit leur classe.",
+      "Son attaque de base est celle de l'arme qu'il tient (hache, bâton, arc, épée et bouclier, faux, dagues), mais à 80% des dégâts et 15% plus lente. À mains nues, il se bat au poing.",
+      "Il a accès aux arbres de talents de toutes les autres classes : un onglet par arbre, une seule réserve de points. Chaque arbre garde sa racine et ses seuils, comptés dans cet arbre seulement.",
+      "En contrepartie, il est plus faible : attributs de départ plus bas, 100 points de vie (+10 par niveau) et la démarche la plus lente du jeu.",
+      "Son attribut principal est la Chance ; il commence avec Tourbillon, Boule de feu, Tir multiple et Pas de l'ombre, et une arme trouvée au hasard."
+    ]},
+    {"name": "Mort", "notes": [
+      "L'écran « Vous êtes mort » dure 5 secondes au lieu de 12 avant le retour au campement."
+    ]}
+  ]
+}

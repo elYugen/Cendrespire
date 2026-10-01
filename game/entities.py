@@ -203,6 +203,7 @@ class Player:
         self.art_cds = {}
         self.potion_cd = self.roll_cd = 0.0
         self.leap = self.dash = None
+        self.fall = None
         self.snare = self.hexed = 0.0
         self.recompute()
         self.full_restore()
@@ -454,13 +455,18 @@ class Player:
         if self.leap:
             k = self.leap["t"] / self.leap["dur"]
             lift = math.sin(math.pi * k) * 90
+        fall = getattr(self, "fall", None)
+        if fall:                             # chute dans un gouffre : le héros s'enfonce et rapetisse
+            k = min(1.0, fall["t"] / 0.75)
+            lift = -k * k * 150
+            sc = 1 - 0.45 * k
         if self.dash and self.dash.get("roll"):
             k = self.dash["t"] / self.dash["dur"]
             sc = 1 - 0.3 * math.sin(math.pi * k)
         if self.invuln > 0 and not (self.leap or self.dash) and int(self.invuln * 20) % 2 and not self.dead:
             return
         anim, anim_t = self.current_anim()
-        if self.spec.get("rig"):
+        if self.spec.get("rig") and not fall:
             sc = 1.0          # la roulade est jouée par l'animation
         models.humanoid(fr, self.x, self.y, lift, self.facing, self.walk, self.spec, sc=sc,
                         flash=self.flash > 0, swing=self.swing, moving=self.moving or bool(self.dash),
@@ -749,7 +755,7 @@ class Projectile:
         for _ in range(n):
             self.x += self.vx * dt / n
             self.y += self.vy * dt / n
-            if world.solid_at(self.x, self.y):
+            if world.wall_at(self.x, self.y):
                 self.end(world)
                 return
             if self.owner == "player":
@@ -808,6 +814,12 @@ class Projectile:
             r = self.radius * 1.2
             fr.part("sphere", (self.x, self.y, z), (r, 0, 0), (0, 0, r), (0, r, 0), self.color, 1.0)
             fr.glow(self.x, self.y, z, r * 5, self.color, 0.9)
+            # traînée : halos de plus en plus petits le long de la trajectoire
+            sp = math.hypot(self.vx, self.vy) or 1.0
+            ux, uy = self.vx / sp, self.vy / sp
+            for i in range(1, 6):
+                d = i * r * 1.6
+                fr.glow(self.x - ux * d, self.y - uy * d, z, r * (4.2 - i * 0.6), self.color, 0.55 - i * 0.08)
             fr.light(self.x, self.y, z, 160 if self.explode else 110, self.color, 1.0)
 
 
@@ -1122,3 +1134,122 @@ class SpikeTrap:
             for oy in (-10, 0, 10):
                 fr.part("cone", (self.x + ox, self.y + oy, h / 2), (2.2, 0, 0), (0, 0, h / 2), (0, 2.2, 0),
                         (190, 186, 180))
+
+
+class FlameVent:
+    """Grille au sol : braises qui rougeoient (avertissement), puis une colonne de flammes qui brûle tant qu'on y reste."""
+    IDLE, WARN, BURN = 2.2, 0.8, 1.3
+
+    def __init__(self, x, y, dmg, phase):
+        self.x, self.y, self.dmg = x, y, dmg * 0.55
+        self.t = phase
+        self.tick = 0.0
+
+    def update(self, dt, world):
+        cyc = self.IDLE + self.WARN + self.BURN
+        self.t = (self.t + dt) % cyc
+        p = world.player
+        self.tick -= dt
+        if self.t >= self.IDLE + self.WARN:
+            if random.random() < 0.7:
+                world.particles.emit(self.x + random.uniform(-10, 10), self.y + random.uniform(-10, 10),
+                                     random.choice(((255, 140, 40), (255, 200, 90), (255, 90, 30))), n=1, speed=20,
+                                     life=0.55, size=4.5, up=220, zs=0.1)
+            if self.tick <= 0 and abs(p.x - self.x) < 20 + p.r * 0.5 and abs(p.y - self.y) < 20 + p.r * 0.5:
+                self.tick = 0.4
+                p.take_damage(world, self.dmg)
+        elif self.t >= self.IDLE and random.random() < 0.25:
+            world.particles.emit(self.x, self.y, (255, 120, 40), n=1, speed=30, life=0.3, size=2, up=60)
+
+    def render(self, fr, t):
+        fr.box(self.x, self.y, 0, 18, 18, 0.8, (52, 46, 44))
+        for o in (-9, -3, 3, 9):                 # barreaux de la grille
+            fr.box(self.x + o, self.y, 0.8, 1.2, 16, 0.6, (30, 26, 24))
+        if self.t >= self.IDLE + self.WARN:
+            k = 0.85 + 0.15 * math.sin(t * 30)
+            fr.part("cone", (self.x, self.y, 34), (11 * k, 0, 0), (0, 0, 34 * k), (0, 11 * k, 0), (255, 130, 40),
+                    0.9, additive=True)
+            fr.part("cone", (self.x, self.y, 22), (6, 0, 0), (0, 0, 24 * k), (0, 6, 0), (255, 230, 150), 1.0,
+                    additive=True)
+            fr.light(self.x, self.y, 30, 170, (255, 120, 40), 1.6 * k)
+        elif self.t >= self.IDLE:
+            w = (self.t - self.IDLE) / self.WARN
+            fr.decal(self.x, self.y, 20, 20, (255, 90, 30), 0.3 + 0.5 * w, kind=7, p1=self.x % 9)
+            fr.light(self.x, self.y, 8, 60 + 60 * w, (255, 90, 30), 0.8 * w)
+
+
+class DartLauncher:
+    """Bouche sculptée dans un mur : crache une fléchette à intervalles réguliers, droit devant elle."""
+    PERIOD = 2.4
+
+    def __init__(self, x, y, dx, dy, dmg, phase):
+        self.x, self.y, self.dx, self.dy, self.dmg = x, y, dx, dy, dmg * 0.8
+        self.t = phase
+
+    def update(self, dt, world):
+        self.t += dt
+        if self.t >= self.PERIOD:
+            self.t -= self.PERIOD
+            ang = math.atan2(self.dy, self.dx)
+            pr = Projectile(self.x + self.dx * 14, self.y + self.dy * 14, ang, 430, "enemy", (200, 190, 170),
+                            dmg=self.dmg, radius=5, life=1.6, kind="arrow")
+            world.projectiles.append(pr)
+            world.particles.emit(self.x + self.dx * 16, self.y + self.dy * 16, (140, 130, 120), n=4, speed=50,
+                                 life=0.4, size=3, glow=False, z=26)
+
+    def render(self, fr, t):
+        x, y = self.x - self.dx * 4, self.y - self.dy * 4
+        fr.box(x, y, 16, 9, 9, 16, (88, 82, 76))                  # tête de gargouille
+        fr.box(x + self.dx * 7, y + self.dy * 7, 24, 3, 3, 3, (24, 20, 18))
+        warn = self.t > self.PERIOD - 0.5
+        if warn:
+            fr.glow(x + self.dx * 9, y + self.dy * 9, 27, 7, (255, 80, 50), 0.8)
+
+
+class SawBlade:
+    """Lame circulaire qui file le long d'un rail creusé dans le sol, d'un bout à l'autre."""
+    SPEED = 150
+
+    def __init__(self, x0, y0, x1, y1, dmg, phase):
+        self.ax, self.ay, self.bx, self.by, self.dmg = x0, y0, x1, y1, dmg
+        self.L = math.hypot(x1 - x0, y1 - y0) or 1.0
+        self.s = phase * self.L
+        self.dir = 1
+        self.cd = 0.0
+        self.x, self.y = x0, y0
+        self.spin = 0.0
+
+    def update(self, dt, world):
+        self.s += self.dir * self.SPEED * dt
+        if self.s >= self.L or self.s <= 0:
+            self.s = max(0.0, min(self.L, self.s))
+            self.dir = -self.dir
+        k = self.s / self.L
+        self.x, self.y = self.ax + (self.bx - self.ax) * k, self.ay + (self.by - self.ay) * k
+        self.spin += dt * 25
+        self.cd -= dt
+        p = world.player
+        if self.cd <= 0 and math.hypot(p.x - self.x, p.y - self.y) < 18 + p.r:
+            self.cd = 0.6
+            p.take_damage(world, self.dmg)
+            world.particles.emit(p.x, p.y, (255, 220, 150), n=8, speed=200, life=0.25, size=1.8, z=20, up=100,
+                                 gravity=600)
+
+    def render(self, fr, t):
+        mx, my = (self.ax + self.bx) / 2, (self.ay + self.by) / 2
+        ux, uy = (self.bx - self.ax) / self.L, (self.by - self.ay) / self.L
+        fr.part("cube", (mx, my, 0.4), (ux * (self.L / 2 + 14), uy * (self.L / 2 + 14), 0), (0, 0, 0.4),
+                (-uy * 3, ux * 3, 0), (20, 18, 18))                  # rainure
+        R = 17
+        c, s = math.cos(self.spin), math.sin(self.spin)
+        # disque vertical dans l'axe du rail, à moitié enfoncé dans le sol, avec des dents qui tournent
+        fr.part("cylinder", (self.x, self.y, 6), (ux * R, uy * R, 0), (-uy * 1.2, ux * 1.2, 0), (0, 0, R),
+                (170, 172, 178))
+        for i in range(8):
+            a = self.spin + i * math.tau / 8
+            ca, sa = math.cos(a), math.sin(a)
+            px, py, pz = self.x + ux * ca * (R + 2), self.y + uy * ca * (R + 2), 6 + sa * (R + 2)
+            if pz > 0:
+                fr.part("cone", (px, py, pz), (-uy * 1.0, ux * 1.0, 0), (ux * ca * 3.5, uy * ca * 3.5, sa * 3.5),
+                        (-ux * sa * 2, -uy * sa * 2, ca * 2), (200, 200, 205))
+        fr.part("cylinder", (self.x, self.y, 6), (ux * 4, uy * 4, 0), (-uy * 1.6, ux * 1.6, 0), (0, 0, 4), (60, 54, 50))

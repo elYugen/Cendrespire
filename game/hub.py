@@ -25,10 +25,22 @@ class HubScene(World):
     def __init__(self, game, player, message=None):
         d = build_hub()
         super().__init__(game, player, d, "camp", random.Random(4))
-        self.env.sky = ((0.10, 0.12, 0.25), (0.32, 0.26, 0.42), (0.55, 0.36, 0.34), (0.8, 0.9, 0.5), (0.5, 0.35, 0.3))
-        self.env.fog_col = (0.16, 0.14, 0.24)
-        self.env.fog = (16.0, 28.0)
-        self.env.sun_dir = (-0.6, -0.8, -0.25)
+        # Cendreval à la nuit tombée : lune froide, lanternes chaudes, brume bleutée et cendres qui tombent de la tour
+        e = self.env
+        e.sky = ((0.02, 0.03, 0.07), (0.07, 0.07, 0.13), (0.18, 0.09, 0.08), (0.75, 0.85, 0.35), (0.35, 0.4, 0.55))
+        e.sun_col = (0.26, 0.31, 0.48)
+        e.amb_sky = (0.2, 0.23, 0.34)
+        e.amb_ground = (0.08, 0.08, 0.09)
+        e.fog_col = (0.025, 0.03, 0.055)
+        e.clear = e.fog_col
+        e.fog = (15.0, 30.0)
+        e.sun_dir = (-0.6, -0.8, -0.25)
+        e.exposure = 1.2
+        self.torch_power, self.lantern_power = 1.05, 0.9
+        e.sat = 0.75
+        e.shadow_tint = (0.84, 0.92, 1.12)
+        e.high_tint = (1.12, 1.0, 0.84)
+        self.atmo = dict(motes=(170, 160, 150), rise=-10.0, mist=(40, 46, 72), mist_a=0.24)
         player.reset_run()
         player.x, player.y = T.SPAWN[0] * TILE, T.SPAWN[1] * TILE
         player.facing = -math.pi / 2

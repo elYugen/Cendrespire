@@ -6,7 +6,8 @@ from . import seals, sfx
 from .bosses import make_boss
 from .data import MONSTERS, ELITE_AFFIXES, floor_name, floor_boss, boss_floor
 from .dungeon import Dungeon, FLOOR, WALL
-from .entities import Monster, Chest, Portal, Loot, SecretWall, AnimaShrine, SpikeTrap, NPC, Prop
+from .entities import (Monster, Chest, Portal, Loot, SecretWall, AnimaShrine, SpikeTrap, FlameVent, DartLauncher,
+                       SawBlade, NPC, Prop)
 from .fx import RingFX
 from .items import generate_item
 from .forge import ForgeScreen
@@ -43,11 +44,12 @@ class TowerScene(World):
         if self.arena:
             d = Dungeon(80, 60)
             d.generate(rng, n_rooms=2, boss_size=(29, 23))
-            d.secrets, d.traps = [], []
+            d.secrets, d.traps, d.trap_rooms, d.darts, d.saws = [], [], [], [], []
         else:
-            # étages vastes : de nombreuses salles, des cachettes derrière des murs fissurés et des pièges
-            d = Dungeon(170, 120)
-            d.generate(rng, n_rooms=56 + min(10, floor))
+            # étages compacts (~10 min) : une vingtaine de salles, des cachettes derrière des murs fissurés,
+            # des salles piégées et des pointes
+            d = Dungeon(96, 70)
+            d.generate(rng, n_rooms=15 + min(5, floor // 2))
         # les murs fissurés sont dessinés à part (ils se brisent) : le décor fixe les traite comme du sol
         for _room, (tx, ty), _kind in d.secrets:
             d.tiles[ty][tx] = FLOOR
@@ -124,11 +126,41 @@ class TowerScene(World):
                 self.interactables.append(c)
             else:
                 self.interactables.append(AnimaShrine(cx, cy))
+        # une estrade sur deux porte un coffre : il faut trouver l'escalier pour l'atteindre
+        for x, y, w, h in d.daises:
+            if rng.random() < 0.5:
+                self.interactables.append(Chest((x + w / 2) * TILE, (y + h / 2) * TILE))
+        # salles piégées : le coffre attend au centre du champ de pointes
+        for room in d.trap_rooms:
+            c = Chest(*room.center_px)
+            c.rich = rng.random() < 0.5
+            self.interactables.append(c)
         dmg = 9 * (1 + 0.28 * (f - 1))
-        self.traps = [SpikeTrap((tx + 0.5) * TILE, (ty + 0.5) * TILE, dmg, rng.uniform(0, 3.8)) for tx, ty in d.traps]
+        self.traps = []
+        for tx, ty in d.traps:
+            cls = FlameVent if d.trap_kinds.get((tx, ty)) == "flames" else SpikeTrap
+            self.traps.append(cls((tx + 0.5) * TILE, (ty + 0.5) * TILE, dmg,
+                                  d.trap_phases.get((tx, ty), rng.uniform(0, 3.8))))
+        for wx, wy, dx, dy in d.darts:
+            self.traps.append(DartLauncher((wx + 0.5 + dx * 0.5) * TILE, (wy + 0.5 + dy * 0.5) * TILE, dx, dy, dmg,
+                                           rng.uniform(0, 2.4)))
+        for (ax, ay), (bx, by) in d.saws:
+            self.traps.append(SawBlade((ax + 0.5) * TILE, (ay + 0.5) * TILE, (bx + 0.5) * TILE, (by + 0.5) * TILE,
+                                       dmg, rng.random()))
         bx, by = d.boss_room.center_px
         self.boss = make_boss(floor_boss(f), bx, by, f, d.boss_room)
         self.monsters.append(self.boss)
+
+    def objective_point(self):
+        """Salle du gardien : flèche au bord de l'écran une fois le sceau brisé, jusqu'au début du combat."""
+        if self.arena or self.boss_dead or self.barrier_active or self.boss_started:
+            return None
+        room = self.dungeon.boss_room
+        p = self.player
+        if room.contains(int(p.x // TILE), int(p.y // TILE), -1):
+            return None
+        x, y = room.center_px
+        return x, y, "Gardien", (255, 90, 70)
 
     def setup_seal(self, rooms):
         """Condition d'ouverture de l'arène du gardien (voir seals.py)."""
@@ -361,7 +393,9 @@ class TowerScene(World):
         p = self.player
         for trap in self.traps:
             if abs(trap.x - p.x) < 900 and abs(trap.y - p.y) < 900:
+                self.on_ground(fr, trap)
                 trap.render(fr, self.time)
+        fr.zoff = 0.0
         t = self.time
         p = self.player
         room = self.dungeon.boss_room
@@ -377,7 +411,8 @@ class TowerScene(World):
             if abs(x - p.x) > 900 or abs(y - p.y) > 900:
                 continue
             k = 0.6 + 0.4 * math.sin(t * 4 + tx + ty)
-            fr.part("cube", (x, y, 36), (20, 0, 0), (0, 0, 36), (0, 20, 0), (255, 50, 30), 0.55 * k, additive=True)
+            z = self.ground_z(x, y)
+            fr.part("cube", (x, y, 36 + z), (20, 0, 0), (0, 0, 36), (0, 20, 0), (255, 50, 30), 0.55 * k, additive=True)
             fr.decal(x, y, 22, 22, (255, 60, 40), 0.5, kind=2)
             if i % 2 == 0:
-                fr.light(x, y, 30, 150, (255, 50, 30), 0.9)
+                fr.light(x, y, 30 + z, 150, (255, 50, 30), 0.9)

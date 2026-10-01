@@ -76,17 +76,31 @@ def build(mb, geo, d, th, rng, is_floor):
     walls = [("template-wall", 0.72), ("template-wall-detail-a", 0.28)]
     W, H = d.w, d.h
     # dalles
+    from ..dungeon import PIT, STAIRS, PLAT_H
+    raised = getattr(d, "raised", set())
     for y in range(H):
         for x in range(W):
-            if not is_floor(x, y):
+            if not is_floor(x, y) or d.tiles[y][x] in (PIT, STAIRS):
                 continue
             r = rng.random()
             name = floors[0][0] if r < floors[0][1] else (floors[1][0] if r < 0.9 else floors[2][0])
-            col = th["alt"] if rng.random() < 0.12 else th["floor"]
-            inst.add(name, kit(name, flag_floor), x + 0.5, 0.0, y + 0.5, rng.randrange(4) * math.pi / 2,
+            # dalles usées : légère variation, quelques dalles d'une autre pierre, plus sombres au pied des murs
+            col = th["floor"]
+            if rng.random() < 0.14:
+                col = tuple(a + (b - a) * 0.35 for a, b in zip(col, th["alt"]))
+            walls_near = sum(1 for dx in (-1, 0, 1) for dy in (-1, 0, 1) if not is_floor(x + dx, y + dy))
+            k = max(0.62, 1.0 - 0.075 * walls_near) * rng.uniform(0.86, 1.04)
+            col = tuple(ch * k for ch in col)
+            base = d.zb[y][x] / 40 + (PLAT_H / 40 if (x, y) in raised else 0.0)
+            inst.add(name, kit(name, flag_floor), x + 0.5, base, y + 0.5, rng.randrange(4) * math.pi / 2,
                      S, S, S, _tint(col, rng))
     # murs : une pièce par bord de case murale qui donne sur le sol ; colonnes aux angles saillants
     sides = ((1, 0, math.pi / 2), (-1, 0, -math.pi / 2), (0, 1, 0.0), (0, -1, math.pi))
+    from .level import floor_low, lifted, zt
+    HT = 4.15 * WALL_H                      # haut des murs (en cases) : identique partout
+
+    def wall_h(b):                          # échelle verticale d'un mur qui part du sol b (b <= 0)
+        return WALL_H * (HT - b) / HT
     for y in range(-1, H + 1):
         for x in range(-1, W + 1):
             if is_floor(x, y):
@@ -94,29 +108,35 @@ def build(mb, geo, d, th, rng, is_floor):
             open_sides = [(dx, dy, rot) for dx, dy, rot in sides if is_floor(x + dx, y + dy)]
             if not open_sides:
                 continue
+            lows = {(dx, dy): min(0.0, floor_low(d, x + dx, y + dy)) for dx, dy, _ in open_sides}
             if len(open_sides) == 4:          # pilier isolé
-                inst.add("template-detail", kit("template-detail", flag_wall), x + 0.5, 0.0, y + 0.5, 0.0,
-                         S * 1.6, WALL_H, S * 1.6, _tint(th["wall"], rng))
+                b = min(lows.values())
+                inst.add("template-detail", kit("template-detail", flag_wall), x + 0.5, b, y + 0.5, 0.0,
+                         S * 1.6, wall_h(b), S * 1.6, _tint(th["wall"], rng))
                 continue
             for dx, dy, rot in open_sides:
                 r = rng.random()
                 name = walls[0][0] if r < walls[0][1] else walls[1][0]
-                inst.add(name, kit(name, flag_wall), x + 0.5 + dx * 0.5, 0.0, y + 0.5 + dy * 0.5, rot,
-                         S, WALL_H, S, _tint(th["wall"], rng, 0.04))
+                b = lows[(dx, dy)]
+                inst.add(name, kit(name, flag_wall), x + 0.5 + dx * 0.5, b, y + 0.5 + dy * 0.5, rot,
+                         S, wall_h(b), S, _tint(th["wall"], rng, 0.04))
             for (ax, ay, _), (bx, by, _) in ((open_sides[i], open_sides[j]) for i in range(len(open_sides))
                                              for j in range(i + 1, len(open_sides))):
                 if ax and by or ay and bx:        # deux bords perpendiculaires : angle saillant
                     cx, cz = x + 0.5 + (ax or bx) * 0.5, y + 0.5 + (ay or by) * 0.5
-                    inst.add("template-detail", kit("template-detail", flag_wall), cx, 0.0, cz, 0.0,
-                             S * 0.9, WALL_H * 1.02, S * 0.9, _tint(th["wall"], rng, 0.03))
+                    b = min(lows[(ax, ay)], lows[(bx, by)])
+                    inst.add("template-detail", kit("template-detail", flag_wall), cx, b, cz, 0.0,
+                             S * 0.9, wall_h(b) * 1.02, S * 0.9, _tint(th["wall"], rng, 0.03))
     # torches sur les murs
     for (tx, ty) in d.torches:
         for dx, dy in ((1, 0), (0, 1), (-1, 0), (0, -1)):
             if is_floor(tx + dx, ty + dy):
                 px, pz = tx + 0.5 + dx * 0.55, ty + 0.5 + dy * 0.55
-                mb.box(px - 0.05, 0.9, pz - 0.05, px + 0.05, 1.2, pz + 0.05, (0.3, 0.22, 0.14), 1.0)
-                mb.add("frustum", (px, 1.26, pz), (0.09, 0, 0), (0, 0.07, 0), (0, 0, 0.09), (0.2, 0.2, 0.22), 1.0)
-                geo.torches.append((px * 40, pz * 40, 1.4 * 40))
+                z = zt(d, tx + dx, ty + dy)           # torche à hauteur d'homme au-dessus du sol de ce palier
+                with lifted(mb, z):
+                    mb.box(px - 0.05, 0.9, pz - 0.05, px + 0.05, 1.2, pz + 0.05, (0.3, 0.22, 0.14), 1.0)
+                    mb.add("frustum", (px, 1.26, pz), (0.09, 0, 0), (0, 0.07, 0), (0, 0, 0.09), (0.2, 0.2, 0.22), 1.0)
+                geo.torches.append((px * 40, pz * 40, (1.4 + z) * 40))
                 break
     # masse rocheuse au-delà des murs (blocs fusionnés par rangées) et bordure hors de la carte
     top = tuple(c / 255.0 for c in th["top"])
@@ -149,7 +169,8 @@ def _props(mb, d, th, rng, is_floor):
     density = th.get("prop_density", 0.07)
     for y in range(d.h):
         for x in range(d.w):
-            if not is_floor(x, y) or rng.random() > density:
+            if not is_floor(x, y) or d.tiles[y][x] != 1 or (x, y) in getattr(d, "raised", ()) \
+                    or rng.random() > density:
                 continue
             walls = [(dx, dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)) if not is_floor(x + dx, y + dy)]
             if not walls:
@@ -166,4 +187,4 @@ def _props(mb, d, th, rng, is_floor):
             arr = objmodels.load(path)
             px, pz = x + 0.5 + dx * 0.28, y + 0.5 + dy * 0.28
             rot = math.atan2(-dx, -dy) + rng.uniform(-0.3, 0.3)
-            mb.add_model(arr, (px, 0.0, pz), rng.uniform(0.85, 1.1), rot, 0.0, rng.uniform(0.85, 1.05))
+            mb.add_model(arr, (px, d.zb[y][x] / 40, pz), rng.uniform(0.85, 1.1), rot, 0.0, rng.uniform(0.85, 1.05))

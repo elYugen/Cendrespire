@@ -38,7 +38,7 @@ def pine(mb, x, base, z, rng, scale=1.0):
     h = rng.uniform(1.7, 2.8) * scale
     r = rng.uniform(0.42, 0.6) * scale
     mb.add("cylinder", (x, base + 0.3, z), (0.09, 0, 0), (0, 0.3, 0), (0, 0, 0.09), (0.34, 0.24, 0.15), 1.0)
-    g = _jit((0.20, 0.38, 0.23), 16, rng)
+    g = _jit((0.12, 0.2, 0.14), 14, rng)
     for i in range(3):
         k = 1 - i * 0.27
         mb.add("cone", (x, base + 0.45 + i * h * 0.23 + h * 0.17, z), (r * k, 0, 0), (0, h * 0.22, 0), (0, 0, r * k),
@@ -48,7 +48,7 @@ def pine(mb, x, base, z, rng, scale=1.0):
 def leafy(mb, x, base, z, rng, scale=1.0):
     h = rng.uniform(0.8, 1.2) * scale
     mb.add("cylinder", (x, base + h / 2, z), (0.1, 0, 0), (0, h / 2, 0), (0, 0, 0.1), (0.36, 0.26, 0.17), 1.0)
-    g = _jit((0.30, 0.46, 0.22), 18, rng)
+    g = _jit(rng.choice(((0.2, 0.26, 0.14), (0.24, 0.24, 0.13), (0.34, 0.2, 0.1))), 16, rng)   # feuillage d'automne
     for i in range(3):
         a = rng.random() * math.tau
         r = rng.uniform(0.35, 0.5) * scale
@@ -67,7 +67,7 @@ def tree(mb, x, base, z, rng, scale=1.0):
 def forest(mb, d, rng, is_floor):
     """Falaises basses couvertes de pins autour de la clairière, et forêt au-delà des bords de la carte."""
     W, H = d.w, d.h
-    ground = (0.20, 0.30, 0.16)
+    ground = (0.13, 0.16, 0.1)
     # sol de forêt tout autour de la carte (cache le vide)
     mb.mat = mb.GRASS
     for x0, z0, x1, z1 in ((-14, -12, W + 14, 0), (-14, H, W + 14, H + 12), (-14, 0, 0, H), (W, 0, W + 14, H)):

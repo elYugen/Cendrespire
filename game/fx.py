@@ -46,12 +46,14 @@ class Particles:
         self.items = keep[-2500:]
 
     def render(self, fr):
+        ground = fr.ground
         for p in self.items:
             k = p[6] / p[7]
+            z = p[2] + ground(p[0], p[1]) if ground else p[2]       # hauteur au-dessus du sol (paliers)
             if p[12]:
-                fr.glow(p[0], p[1], p[2], p[9] * 3.2 * (0.4 + 0.6 * k), p[8], min(1.0, 0.25 + k))
+                fr.glow(p[0], p[1], z, p[9] * 3.2 * (0.4 + 0.6 * k), p[8], min(1.0, 0.25 + k))
             else:
-                fr.solid(p[0], p[1], p[2], p[9] * 1.3 * (0.5 + 0.5 * k), p[8], 1.0)
+                fr.solid(p[0], p[1], z, p[9] * 1.3 * (0.5 + 0.5 * k), p[8], 1.0)
 
 
 class Effect:
@@ -116,6 +118,10 @@ class Blast(Effect):
             world.particles.emit(self.x, self.y, (90, 80, 70), n=int(self.r / 5), speed=self.r * 2, life=0.9,
                                  size=4, glow=False, gravity=500, up=260, z=4)
             world.effects.append(RingFX(self.x, self.y, self.r * 0.3, self.r, 0.35, self.color, 6))
+            world.effects.append(RingFX(self.x, self.y, self.r * 0.5, self.r * 1.35, 0.22, (255, 240, 210), 2))
+            world.effects.append(Scorch(self.x, self.y, self.r * 0.75, self.color))
+            world.particles.emit(self.x, self.y, (255, 236, 190), n=int(6 + self.r / 10), speed=self.r * 4, life=0.35,
+                                 size=2, z=8, up=200, gravity=900, drag=1.0)
             world.flash_light(self.x, self.y, self.r * 3, self.color)
             world.shake_screen(4 + self.r / 25)
             if self.sound:
@@ -132,6 +138,26 @@ class Blast(Effect):
             fr.part("sphere", (mx, my, mz), (14, 0, 0), (0, 0, 14), (0, 14, 0), (255, 170, 80), 1.0)
             fr.glow(mx, my, mz, 70, (255, 140, 50), 1.0)
             fr.light(mx, my, mz, 260, (255, 130, 50), 1.5)
+
+
+class Scorch(Effect):
+    """Brûlure laissée au sol par une explosion : braises qui s'éteignent, puis tache sombre qui s'efface."""
+
+    def __init__(self, x, y, r, color, dur=4.0):
+        self.x, self.y, self.r, self.color, self.dur = x, y, r, color, dur
+        self.t = 0.0
+        self.seed = random.random() * 9
+
+    def update(self, dt, world):
+        self.t += dt
+        self.alive = self.t < self.dur
+
+    def render(self, fr):
+        k = 1 - self.t / self.dur
+        fr.decal(self.x, self.y, self.r, self.r, (14, 10, 8), 0.75 * min(1.0, k * 2), kind=8, p1=self.seed, lift=0.001)
+        hot = max(0.0, 1 - self.t / 1.2)
+        if hot > 0:
+            fr.decal(self.x, self.y, self.r * 0.9, self.r * 0.9, self.color, hot, kind=7, p1=self.seed, lift=0.002)
 
 
 class Telegraph(Effect):

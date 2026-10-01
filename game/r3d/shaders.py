@@ -115,6 +115,16 @@ vec3 texture_detail(vec3 c, vec3 wp, vec3 n, vec3 op, float mat) {
     return c * (0.82 + 0.3 * fbm(wp * 3.0)) + pebble * c;
 }
 
+// relief des pierres : la normale suit les creux et bosses d'un bruit (aucune texture)
+float bumph(vec3 p) { return vnoise(p * 3.1) * 0.6 + vnoise(p * 8.3 + 2.7) * 0.4; }
+vec3 bump(vec3 n, vec3 p, float k) {
+    float e = 0.02;
+    float h0 = bumph(p);
+    vec3 g = vec3(bumph(p + vec3(e, 0, 0)), bumph(p + vec3(0, e, 0)), bumph(p + vec3(0, 0, e))) - h0;
+    g /= e;
+    return normalize(n - (g - n * dot(g, n)) * k);
+}
+
 float shadow_at() {
     vec3 p = v_lpos.xyz / v_lpos.w * 0.5 + 0.5;
     if (p.x < 0.0 || p.x > 1.0 || p.y < 0.0 || p.y > 1.0 || p.z > 1.0) return 1.0;
@@ -129,7 +139,7 @@ float shadow_at() {
 void main() {
     if (v_col.r < -0.5) discard;       // matériau masqué d'un personnage animé
     // murs coupés quand ils masquent le héros (comme dans Minecraft Dungeons)
-    if (v_flag > 0.5 && u_cut > 0.0 && v_wpos.y > 0.08) {
+    if (v_flag > 0.5 && u_cut > 0.0 && v_wpos.y > u_player.y - 0.47) {
         vec3 toP = u_player - u_cam;
         vec3 toF = v_wpos - u_cam;
         float t = dot(toF, toP) / dot(toP, toP);
@@ -142,14 +152,26 @@ void main() {
     }
     vec3 n = normalize(v_norm);
     vec3 base = texture_detail(v_col, v_wpos, n, v_opos, u_toon > 0.5 ? 8.0 : v_mat);
-    vec3 light = mix(u_ground, u_sky, n.y * 0.5 + 0.5);
+    bool rock = u_toon < 0.5 && v_mat > 0.5 && v_mat < 2.5;
+    float gloss = 0.1;
+    if (rock) {
+        n = bump(n, v_wpos * 0.7, 0.03);
+        gloss = 0.18 + 0.5 * smoothstep(0.55, 0.8, fbm(v_wpos * 0.9 + 3.0));   // flaques et pierre humide
+    } else if (u_toon > 0.5) {
+        gloss = 0.22;
+    }
+    // occlusion ambiante bon marché : pied des murs et des objets plus sombre
+    float ao = 1.0;
+    if (u_toon < 0.5 && abs(n.y) < 0.6 && v_wpos.y > -0.05) ao = mix(0.42, 1.0, smoothstep(0.0, 0.75, v_wpos.y));
+    vec3 light = mix(u_ground, u_sky, n.y * 0.5 + 0.5) * ao;
+    vec3 V = normalize(u_cam - v_wpos);
+    vec3 spec = vec3(0.0);
     float sh = u_shadow_on > 0.5 ? shadow_at() : 1.0;
     float ndl = dot(n, -u_sun_dir);
     if (u_toon > 0.5) {
         // personnages : lumière en paliers doux (cel shading) et liseré de lumière sur les bords
         float band = smoothstep(0.0, 0.18, ndl) * 0.75 + smoothstep(0.55, 0.7, ndl) * 0.25;
         light += u_sun_col * band * max(sh, 0.35) * 1.15;
-        vec3 V = normalize(u_cam - v_wpos);
         float rim = pow(1.0 - max(dot(n, V), 0.0), 3.0);
         light += (u_sky * 1.3 + u_sun_col * 0.6 + 0.08) * rim * 0.9;
     } else {
@@ -162,11 +184,14 @@ void main() {
         if (d < r) {
             float a = 1.0 - d / r;
             a *= a;
-            float nd = max(dot(n, L / max(d, 0.001)), 0.0) * 0.8 + 0.2;
-            light += u_lcol[i].rgb * u_lcol[i].a * a * nd;
+            vec3 Ld = L / max(d, 0.001);
+            float nd = max(dot(n, Ld), 0.0) * 0.85 + 0.15;
+            vec3 lc = u_lcol[i].rgb * u_lcol[i].a * a;
+            light += lc * nd * mix(1.0, ao, 0.6);
+            spec += lc * pow(max(dot(n, normalize(Ld + V)), 0.0), 36.0) * gloss;
         }
     }
-    vec3 c = base * light;
+    vec3 c = base * light + spec;
     c = mix(c, base * 1.35, v_emis);
     float fd = length(v_wpos.xz - u_fog_center.xz);
     float fog = clamp((fd - u_fog.x) / max(u_fog.y - u_fog.x, 0.001), 0.0, 1.0);
@@ -203,13 +228,14 @@ in vec4 v_lpos;
 in float v_emis;
 in float v_flag;
 uniform vec3 u_cam;
+uniform float u_gain;
 out vec4 f_col;
 void main() {
     vec3 n = normalize(v_norm);
     vec3 vd = normalize(u_cam - v_wpos);
     float rim = 1.0 - abs(dot(n, vd));
     float a = v_emis * (0.35 + 0.65 * rim);
-    f_col = vec4(v_col * a, 1.0);
+    f_col = vec4(v_col * a * u_gain, 1.0);
 }
 """
 
@@ -242,6 +268,12 @@ in vec2 v_uv;
 in vec4 v_col;
 in vec4 v_shape;
 out vec4 f_col;
+float h2(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float n2(vec2 p) {
+    vec2 i = floor(p), f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    return mix(mix(h2(i), h2(i + vec2(1, 0)), f.x), mix(h2(i + vec2(0, 1)), h2(i + vec2(1, 1)), f.x), f.y);
+}
 void main() {
     int kind = int(v_shape.x + 0.5);
     float r = length(v_uv);
@@ -270,6 +302,19 @@ void main() {
         float inside = (1.0 - smoothstep(0.97, 1.0, d.x)) * (1.0 - smoothstep(0.9, 1.0, d.y));
         float fill = 1.0 - smoothstep(v_shape.z * 2.0 - 1.0 - 0.02, v_shape.z * 2.0 - 1.0, v_uv.x);
         a = inside * (0.45 + 0.55 * fill);
+    } else if (kind == 7) {          // fissure incandescente (v_shape.z = graine) : lumineuse, alimente le halo
+        vec2 p = v_uv * 2.0 + v_shape.z * 7.0;
+        float line = abs(n2(p) - 0.5) + abs(n2(p * 2.7 + 5.0) - 0.5) * 0.3;
+        float fade = 1.0 - smoothstep(0.55, 1.0, r);
+        float core = 1.0 - smoothstep(0.015, 0.05, line);
+        float halo = 1.0 - smoothstep(0.0, 0.2, line);
+        a = (core + halo * 0.3) * fade;
+        f_col = vec4(v_col.rgb * (1.0 + core * 2.5), a * v_col.a);
+        if (f_col.a <= 0.003) discard;
+        return;
+    } else if (kind == 8) {          // brume : tache très douce et irrégulière
+        float m = n2(v_uv * 1.6 + v_shape.z) * 0.6 + n2(v_uv * 3.3 - v_shape.z) * 0.4;
+        a = (1.0 - smoothstep(0.2, 1.0, r)) * smoothstep(0.3, 0.75, m);
     }
     a *= v_col.a;
     if (a <= 0.003) discard;
@@ -299,14 +344,17 @@ void main() {
 PART_FS = """
 #version 330
 uniform int u_mode;
+uniform float u_gain;
 in vec2 v_uv;
 in vec4 v_col;
 out vec4 f_col;
 void main() {
     float r = length(v_uv);
     if (u_mode == 0) {
+        // halo coloré et cœur presque blanc (énergie surchauffée) : les deux nourrissent le bloom
         float a = pow(max(0.0, 1.0 - r), 1.8) * v_col.a;
-        f_col = vec4(v_col.rgb * a, 1.0);
+        float core = pow(max(0.0, 1.0 - r * 2.2), 3.0) * v_col.a;
+        f_col = vec4((v_col.rgb * a + mix(v_col.rgb, vec3(1.0), 0.6) * core * 0.9) * u_gain, 1.0);
     } else {
         if (max(abs(v_uv.x), abs(v_uv.y)) > 0.8) discard;
         f_col = vec4(v_col.rgb, v_col.a);
@@ -495,5 +543,110 @@ void main() {
     vec4 pal = u_pal[int(in_mat + 0.5)];
     v_col = pal.a > 0.5 ? pal.rgb : in_color;
     gl_Position = c;
+}
+"""
+
+
+# ============================================================================ post-traitement
+# La scène est rendue en HDR (RGBA16F) ; le halo lumineux (bloom) est tiré des zones très claires, réduit puis
+# flouté sur une chaîne de mips, puis l'image est composée : compression des hautes lumières, étalonnage sombre
+# (désaturation, ombres froides, lumières chaudes), vignettage et grain.
+POST_VS = """
+#version 330
+in vec2 in_uv;
+out vec2 v_uv;
+void main() { v_uv = in_uv * 0.5 + 0.5; gl_Position = vec4(in_uv, 0.0, 1.0); }
+"""
+
+# réduction 13 points (Jimenez) ; en première passe, seuil doux et écrêtage des lucioles
+DOWN_FS = """
+#version 330
+uniform sampler2D u_src;
+uniform vec2 u_texel;
+uniform float u_prefilter;
+uniform float u_threshold;
+in vec2 v_uv;
+out vec4 f_col;
+vec3 tap(vec2 o) { return texture(u_src, v_uv + o * u_texel).rgb; }
+void main() {
+    vec3 a = tap(vec2(-2, 2)), b = tap(vec2(0, 2)), c = tap(vec2(2, 2));
+    vec3 d = tap(vec2(-2, 0)), e = tap(vec2(0, 0)), f = tap(vec2(2, 0));
+    vec3 g = tap(vec2(-2, -2)), h = tap(vec2(0, -2)), i = tap(vec2(2, -2));
+    vec3 j = tap(vec2(-1, 1)), k = tap(vec2(1, 1)), l = tap(vec2(-1, -1)), m = tap(vec2(1, -1));
+    vec3 col = e * 0.125 + (a + c + g + i) * 0.03125 + (b + d + f + h) * 0.0625 + (j + k + l + m) * 0.125;
+    if (u_prefilter > 0.5) {
+        float br = max(col.r, max(col.g, col.b));
+        float knee = u_threshold * 0.5;
+        float soft = clamp(br - u_threshold + knee, 0.0, 2.0 * knee);
+        soft = soft * soft / (4.0 * knee + 1e-4);
+        float w = max(soft, br - u_threshold) / max(br, 1e-4);
+        col = min(col * w, vec3(12.0));
+    }
+    f_col = vec4(col, 1.0);
+}
+"""
+
+# agrandissement en tente 3x3, ajouté au niveau supérieur
+UP_FS = """
+#version 330
+uniform sampler2D u_src;
+uniform vec2 u_texel;
+uniform float u_radius;
+in vec2 v_uv;
+out vec4 f_col;
+void main() {
+    vec2 t = u_texel * u_radius;
+    vec3 c = texture(u_src, v_uv).rgb * 4.0;
+    c += (texture(u_src, v_uv + vec2(t.x, 0)).rgb + texture(u_src, v_uv - vec2(t.x, 0)).rgb
+        + texture(u_src, v_uv + vec2(0, t.y)).rgb + texture(u_src, v_uv - vec2(0, t.y)).rgb) * 2.0;
+    c += texture(u_src, v_uv + t).rgb + texture(u_src, v_uv - t).rgb
+       + texture(u_src, v_uv + vec2(t.x, -t.y)).rgb + texture(u_src, v_uv + vec2(-t.x, t.y)).rgb;
+    f_col = vec4(c / 16.0, 1.0);
+}
+"""
+
+POST_FS = """
+#version 330
+uniform sampler2D u_hdr;
+uniform sampler2D u_bloom;
+uniform float u_exposure;
+uniform float u_bloom_k;
+uniform float u_sat;
+uniform float u_contrast;
+uniform vec3 u_shadow_tint;
+uniform vec3 u_high_tint;
+uniform float u_vignette;
+uniform float u_grain;
+uniform float u_aberr;
+uniform float u_time;
+uniform vec2 u_res;
+in vec2 v_uv;
+out vec4 f_col;
+float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+vec3 shoulder(vec3 c) {          // linéaire jusqu'à 0,72 puis compression douce des hautes lumières
+    float k = 0.72;
+    vec3 o = k + (1.0 - k) * (1.0 - exp(-(c - k) / (1.0 - k)));
+    return mix(c, o, step(vec3(k), c));
+}
+void main() {
+    vec2 d = v_uv - 0.5;
+    vec3 c;
+    if (u_aberr > 0.0) {             // légère aberration chromatique vers les bords
+        vec2 o = d * dot(d, d) * u_aberr * 0.012;
+        c = vec3(texture(u_hdr, v_uv + o).r, texture(u_hdr, v_uv).g, texture(u_hdr, v_uv - o).b);
+    } else {
+        c = texture(u_hdr, v_uv).rgb;
+    }
+    c = c * u_exposure + texture(u_bloom, v_uv).rgb * u_bloom_k;
+    c = shoulder(max(c, 0.0));
+    float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+    c = mix(vec3(l), c, u_sat);
+    c *= mix(u_shadow_tint, u_high_tint, smoothstep(0.05, 0.6, l));
+    c = clamp((c - 0.5) * u_contrast + 0.5 + (u_contrast - 1.0) * 0.08, 0.0, 1.0);
+    c = mix(c, c * c * (3.0 - 2.0 * c), (u_contrast - 1.0) * 0.6);
+    float v = smoothstep(0.85, 0.2, length(d * vec2(1.15, 1.0)));
+    c *= mix(1.0, v, u_vignette);
+    c += (hash(v_uv * u_res + fract(u_time) * 91.7) - 0.5) * u_grain;
+    f_col = vec4(clamp(c, 0.0, 1.0), 1.0);
 }
 """

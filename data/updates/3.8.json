@@ -1,0 +1,39 @@
+{
+  "version": "3.8",
+  "date": "2026-10-01",
+  "title": "Les Profondeurs",
+  "sections": [
+    {"name": "Des étages plus compacts", "notes": [
+      "Les étages de la tour sont environ trois fois plus petits : 15 à 20 salles au lieu de plus de 50. Un étage se boucle désormais en une dizaine de minutes.",
+      "Il y a toujours environ cinq salles secrètes par étage, cachées derrière un mur fissuré à briser. Leur trésor est maintenant gardé par des pièges."
+    ]},
+    {"name": "Relief et paliers", "notes": [
+      "Chaque étage est découpé en deux ou trois paliers de hauteurs différentes, de plus en plus profonds en approchant du gardien. Des escaliers relient les paliers entre eux.",
+      "Des estrades à escaliers et des mezzanines le long des murs apparaissent dans certaines salles. Une estrade sur deux cache un coffre au sommet.",
+      "Des gouffres coupent certaines salles en deux (un pont permet de passer) et des trous s'ouvrent dans d'autres. Attention où vous mettez les pieds : tomber dans le vide est mortel. Le Phylactère vous sauve et vous ramène au bord.",
+      "Les monstres contournent les gouffres, mais vos projectiles passent au-dessus."
+    ]},
+    {"name": "Pièges", "notes": [
+      "Nouveau : les bouches de flammes. Les braises rougeoient pour prévenir, puis une colonne de feu vous brûle tant que vous restez dessus.",
+      "Nouveau : les lanceurs de fléchettes. Des têtes de gargouille dans les murs crachent une fléchette à intervalles réguliers ; leurs yeux s'allument juste avant.",
+      "Nouveau : les lames tournantes, qui filent d'un bout à l'autre d'un rail creusé dans le sol.",
+      "Nouveau : les salles piégées. Un coffre attend au centre d'un champ de pointes ou de flammes qui jaillissent en vague : observez le rythme pour passer."
+    ]},
+    {"name": "Refonte graphique", "notes": [
+      "Nouvelle ambiance « dark fantasy » : la lanterne du héros et les torches éclairent la pénombre, avec des ombres froides et des lumières chaudes.",
+      "Ajout d'un halo lumineux autour des sources de lumière, d'un vignettage et d'un léger grain d'image.",
+      "Les pierres ont du relief et brillent comme si elles étaient humides ; le pied des murs est plus sombre.",
+      "Les étages sont plus habités : éboulis, chaînes, ossements, crasse au sol, poussière ou braises en suspension, nappes de brume. Dans les étages de lave, des fissures incandescentes remplacent les anciennes taches orange.",
+      "Les sorts et les effets ont plus d'impact : cœur lumineux des halos, traînées derrière les projectiles, étincelles à chaque coup (plus nombreuses sur un critique), onde de choc et brûlure au sol après les explosions.",
+      "Cendreval passe à la nuit tombée : lune froide, lanternes chaudes, brume bleutée, herbe fanée, feuillages d'automne et cendres qui tombent de la tour."
+    ]},
+    {"name": "Interface", "notes": [
+      "Une fois le sceau brisé, une flèche au bord de l'écran indique la salle du gardien et sa distance. La salle est aussi signalée sur la minicarte.",
+      "À Cendreval, la minicarte affiche des icônes de quête au-dessus des personnages : « ! » pour une nouvelle quête, « ? » pour une quête à rendre. Elles restent visibles au bord de la carte quand le personnage est loin."
+    ]},
+    {"name": "Corrections", "notes": [
+      "Déplacement au clic : cliquer sur un toit, un mur ou un obstacle ne fait plus partir le héros dans la direction opposée pour un long détour. Il marche maintenant tout droit vers le point cliqué.",
+      "Avec une manette branchée, les clics de souris ne visent plus le monstre le plus proche."
+    ]}
+  ]
+}

@@ -566,6 +566,33 @@ def _in_disc(box, x, y):
     return (x - box.centerx) ** 2 + (y - box.centery) ** 2 <= (box.w / 2 - 4) ** 2
 
 
+def _badge(surf, x, y, text, color, r=7.5):
+    """Pastille ronde avec un signe (« ! » de quête, crâne du gardien...)."""
+    ui.circle(surf, (14, 12, 16), (x, y), r + 1.5)
+    ui.circle(surf, color, (x, y), r, 2)
+    if text == "skull":           # crâne dessiné (la police n'a pas de symbole)
+        k = r / 13
+        ui.circle(surf, color, (x, y - 1.5 * k), 6.5 * k)
+        ui.rect(surf, color, (x - 4 * k, y + 2 * k, 8 * k, 5 * k), 0, max(1, int(1.5 * k)))
+        for ex in (-2.6, 2.6):
+            ui.circle(surf, (14, 12, 16), (x + ex * k, y - 1 * k), 1.9 * k)
+        for tx in (-2, 0, 2):
+            ui.line(surf, (14, 12, 16), (x + tx * k, y + 4.5 * k), (x + tx * k, y + 7 * k), max(1, int(k)))
+        return
+    ui.draw_text(surf, text, (x, y + 0.5), int(r * 1.9), color, "title", anchor="center")
+
+
+def _to_edge(clip, x, y, inset=9):
+    """Ramène un point sur le bord du disque de la minicarte (repères importants hors de vue)."""
+    cx, cy = clip.center
+    R = clip.w / 2 - inset
+    dx, dy = x - cx, y - cy
+    d = math.hypot(dx, dy)
+    if d <= R:
+        return x, y, False
+    return cx + dx / d * R, cy + dy / d * R, True
+
+
 def _markers(surf, world, cx, cy, scale, clip):
     """Repères en coordonnées de conception ; scale = unités de conception par unité monde."""
     p = world.player
@@ -574,6 +601,11 @@ def _markers(surf, world, cx, cy, scale, clip):
     def pos(x, y):
         u, v = _rot((x - p.x) * scale, (y - p.y) * scale)
         return cx + u, cy + v
+    obj = world.objective_point()
+    if obj:                       # salle du gardien : toujours visible, épinglée au bord si elle est loin
+        x, y, edge = _to_edge(clip, *pos(obj[0], obj[1]))
+        k = 0.75 + 0.25 * math.sin(world.time * 4)
+        _badge(surf, x, y, "skull", tuple(int(c * k) for c in obj[3]))
     for m in world.monsters:
         if m.dead or (int(m.x // 40), int(m.y // 40)) not in seen:
             continue
@@ -612,6 +644,16 @@ def _markers(surf, world, cx, cy, scale, clip):
         elif name == "NPC":
             ui.circle(surf, (250, 222, 130), (x, y), 4.5)
             ui.circle(surf, (60, 40, 10), (x, y), 4.5, 1)
+    # quêtes : « ! » (nouvelle) et « ? » (à rendre) au-dessus des PNJ, épinglés au bord de la carte s'ils sont loin
+    for o in world.interactables:
+        if o.__class__.__name__ != "NPC":
+            continue
+        mark = world.npc_marker(o)
+        if not mark:
+            continue
+        x, y, _ = _to_edge(clip, *pos(o.x, o.y))
+        bob = 1.5 * math.sin(world.time * 3 + o.x)
+        _badge(surf, x, y - 8 + bob, mark[0], mark[1], 7)
     for l in world.loot:
         if l.kind == "anima":
             x, y = pos(l.x, l.y)
@@ -653,6 +695,42 @@ def draw_minimap(surf, world):
             y -= 18
     if title:
         ui.draw_text(surf, title, (box.right, y - 2), 14, WHITE, "text", anchor="bottomright")
+
+
+def draw_objective_pointer(surf, world):
+    """Flèche au bord de l'écran vers l'objectif (salle du gardien), avec la distance ; repère au sol s'il est visible."""
+    obj = world.objective_point()
+    if not obj:
+        return
+    x, y, label, col = obj
+    p = world.player
+    pt = world.project(x, y, 0)
+    if not pt:
+        return
+    dist = math.hypot(x - p.x, y - p.y) / 40
+    k = 0.8 + 0.2 * math.sin(world.time * 4)
+    c = tuple(int(ch * k) for ch in col)
+    # ellipse autour du centre : la flèche ne passe jamais sous les éléments d'interface des coins
+    cx, cy = SCREEN_W / 2, SCREEN_H / 2 - 10
+    rx, ry = SCREEN_W / 2 - 190, SCREEN_H / 2 - 95
+    sx, sy = pt
+    dx, dy = sx - cx, sy - cy
+    e = math.hypot(dx / rx, dy / ry)
+    if e <= 1.0:                       # visible : repère qui flotte au-dessus de l'entrée
+        bob = 4 * math.sin(world.time * 3)
+        _badge(surf, sx, sy - 40 + bob, "skull", c, 13)
+        ui.draw_text(surf, label, (sx, sy - 58 + bob), 14, c, "text", anchor="midbottom", shadow=True)
+        return
+    ex, ey = cx + dx / e, cy + dy / e
+    a = math.atan2(dy, dx)
+    ca, sa = math.cos(a), math.sin(a)
+    tip = (ex + ca * 22, ey + sa * 22)
+    pts = [tip, (ex - sa * 11 + ca * 4, ey + ca * 11 + sa * 4), (ex + sa * 11 + ca * 4, ey - ca * 11 + sa * 4)]
+    ui.polygon(surf, (14, 12, 16), [(px + ca * 2, py + sa * 2) for px, py in pts])
+    ui.polygon(surf, c, pts)
+    _badge(surf, ex - ca * 10, ey - sa * 10, "skull", c, 13)
+    ui.draw_text(surf, f"{label} · {dist:.0f} m", (ex - ca * 10, ey - sa * 10 + 20), 13, c, "text",
+                 anchor="midtop", shadow=True)
 
 
 def draw_gauges(surf, world):

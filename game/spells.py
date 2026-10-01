@@ -259,7 +259,7 @@ def fx_line(e, ctx, col):
     for i in range(int(e["count"])):
         d = e.get("start", 60) + i * e.get("spacing", 58)
         x, y = p.x + math.cos(ang) * d, p.y + math.sin(ang) * d
-        if w.solid_at(x, y):
+        if w.wall_at(x, y):
             break
         w.effects.append(Blast(x, y, e["radius"], e.get("delay", 0.08) + i * e.get("delay_step", 0.09),
                                mult_of(e, ctx), col, knock=e.get("knock", 0), stun=e.get("stun", 0),

@@ -33,9 +33,14 @@ class Frame:
         self.lights = []
         self.outline = False       # vrai pendant le dessin d'un personnage : contour cartoon et ombrage en paliers
         self.skinned = []          # personnages animés : (modèle, matrice, articulations, palette, teinte, émission)
+        self.zoff = 0.0            # hauteur du sol sous l'objet en cours de dessin (estrades), ajoutée à tout
+        self.ground = None         # fonction (x, y) -> hauteur du sol : les décalques et particules s'y posent
 
     def skin(self, model, matrix, joints, palette, tint=(0.0, 0.0, 0.0, 0.0), emis=0.0):
         """Personnage animé (glTF) : matrice de placement en coordonnées 3D du moteur."""
+        if self.zoff:
+            matrix = matrix.copy()
+            matrix[1, 3] += self.zoff * U
         self.skinned.append((model, matrix, joints, palette, tint, emis))
 
     @staticmethod
@@ -43,6 +48,8 @@ class Frame:
         return (v[0] * U, v[2] * U, v[1] * U)
 
     def part(self, mesh, c, ax, ay, az, color, emis=0.0, additive=False):
+        if self.zoff:
+            c = (c[0], c[1], c[2] + self.zoff)
         a, b, d, p = self._v(ax), self._v(ay), self._v(az), self._v(c)
         col = _c(color)
         if additive:
@@ -58,19 +65,20 @@ class Frame:
 
     def decal(self, x, y, rx, ry, color, alpha, kind=0, rot=0.0, inner=0.0, p1=0.0, lift=0.0):
         c = _c(color)
-        self.decals.extend((x * U, 0.015 + lift, y * U, rx * U, ry * U, rot, c[0], c[1], c[2], alpha,
+        g = self.ground(x, y) if self.ground else self.zoff
+        self.decals.extend((x * U, 0.015 + lift + g * U, y * U, rx * U, ry * U, rot, c[0], c[1], c[2], alpha,
                             kind, inner, p1, 0.0))
 
     def glow(self, x, y, z, size, color, alpha=1.0):
         c = _c(color)
-        self.glows.extend((x * U, z * U, y * U, size * U, c[0], c[1], c[2], alpha))
+        self.glows.extend((x * U, (z + self.zoff) * U, y * U, size * U, c[0], c[1], c[2], alpha))
 
     def solid(self, x, y, z, size, color, alpha=1.0):
         c = _c(color)
-        self.solids.extend((x * U, z * U, y * U, size * U, c[0], c[1], c[2], alpha))
+        self.solids.extend((x * U, (z + self.zoff) * U, y * U, size * U, c[0], c[1], c[2], alpha))
 
     def light(self, x, y, z, radius, color, intensity=1.0):
-        self.lights.append((x * U, z * U, y * U, radius * U, color[0] / 255, color[1] / 255, color[2] / 255,
+        self.lights.append((x * U, (z + self.zoff) * U, y * U, radius * U, color[0] / 255, color[1] / 255, color[2] / 255,
                             intensity))
 
 
@@ -90,6 +98,18 @@ class Env:
         self.fog_col = (0.0, 0.0, 0.0)
         self.fog = (16.0, 30.0)
         self.player = (0.0, 0.0, 0.0)
+        # post-traitement (voir shaders.POST_FS) : exposition, halo, étalonnage, vignettage, grain
+        self.exposure = 1.0
+        self.bloom = 0.3
+        self.bloom_threshold = 0.95
+        self.sat = 1.0
+        self.contrast = 1.0
+        self.shadow_tint = (1.0, 1.0, 1.0)
+        self.high_tint = (1.0, 1.0, 1.0)
+        self.vignette = 0.25
+        self.grain = 0.0
+        self.aberr = 0.0
+        self.glow = 1.0                     # intensité des halos et formes additives (énergie, sorts)
         self.__dict__.update(kw)
 
 
@@ -146,6 +166,16 @@ class Renderer:
         self.vao_ui = ctx.vertex_array(self.p_ui, [(q, "2f", "in_uv")])
         self.p_dim = ctx.program(vertex_shader=S.DIM_VS, fragment_shader=S.DIM_FS)
         self.vao_dim = ctx.vertex_array(self.p_dim, [(q, "2f", "in_uv")])
+        self.p_down = ctx.program(vertex_shader=S.POST_VS, fragment_shader=S.DOWN_FS)
+        self.p_up = ctx.program(vertex_shader=S.POST_VS, fragment_shader=S.UP_FS)
+        self.p_post = ctx.program(vertex_shader=S.POST_VS, fragment_shader=S.POST_FS)
+        self.vao_down = ctx.vertex_array(self.p_down, [(q, "2f", "in_uv")])
+        self.vao_up = ctx.vertex_array(self.p_up, [(q, "2f", "in_uv")])
+        self.vao_post = ctx.vertex_array(self.p_post, [(q, "2f", "in_uv")])
+        self.hdr = None             # (fbo, texture) : image résolue (sans anticrénelage multiple)
+        self.bloom_chain = []       # [(fbo, texture, taille)] de 1/2 à 1/64
+        self.post_env = None        # réglages de l'image principale, réutilisés pour le portrait par-dessus
+        self.time = 0.0
         self.shadow_tex = ctx.depth_texture((2048, 2048))
         self.shadow_tex.compare_func = "<="
         self.shadow_tex.filter = (moderngl.LINEAR, moderngl.LINEAR)
@@ -256,9 +286,28 @@ class Renderer:
         if self.msaa:
             for o in self.msaa:
                 o.release()
-        color = self.ctx.renderbuffer(size, samples=self.samples)
-        depth = self.ctx.depth_renderbuffer(size, samples=self.samples)
-        self.msaa = (self.ctx.framebuffer(color_attachments=[color], depth_attachment=depth), color, depth)
+        if self.hdr:
+            for o in self.hdr:
+                o.release()
+        for fbo, tex, _ in self.bloom_chain:
+            fbo.release()
+            tex.release()
+        ctx = self.ctx
+        color = ctx.renderbuffer(size, 4, samples=self.samples, dtype="f2")
+        depth = ctx.depth_renderbuffer(size, samples=self.samples)
+        self.msaa = (ctx.framebuffer(color_attachments=[color], depth_attachment=depth), color, depth)
+        tex = ctx.texture(size, 4, dtype="f2")
+        tex.filter = (moderngl.LINEAR, moderngl.LINEAR)
+        tex.repeat_x = tex.repeat_y = False
+        self.hdr = (ctx.framebuffer(color_attachments=[tex]), tex)
+        self.bloom_chain = []
+        w, h = size
+        for _ in range(6):
+            w, h = max(1, w // 2), max(1, h // 2)
+            t = ctx.texture((w, h), 4, dtype="f2")
+            t.filter = (moderngl.LINEAR, moderngl.LINEAR)
+            t.repeat_x = t.repeat_y = False
+            self.bloom_chain.append((ctx.framebuffer(color_attachments=[t]), t, (w, h)))
 
     @staticmethod
     def _set(prog, name, value):
@@ -433,6 +482,7 @@ class Renderer:
         pa = self.p_add
         pa["u_vp"].write(vp_bytes)
         self._set(pa, "u_cam", tuple(cam.eye))
+        self._set(pa, "u_gain", env.glow)
         for name, data in frame.adds.items():
             arr = np.array(data, dtype="f4")
             self._write(self.meshes[name]["ibuf"], arr)
@@ -443,6 +493,7 @@ class Renderer:
         pp["u_vp"].write(vp_bytes)
         self._set(pp, "u_right", tuple(float(v) for v in cam.right))
         self._set(pp, "u_up", tuple(float(v) for v in cam.up))
+        self._set(pp, "u_gain", env.glow)
         if frame.solids:
             arr = np.array(frame.solids, dtype="f4")
             self._write(self.part_buf, arr)
@@ -459,7 +510,57 @@ class Renderer:
             self.vao_part.render(instances=len(arr) // 8)
         fbo.depth_mask = True
         ctx.disable(moderngl.BLEND)
-        ctx.copy_framebuffer(screen, fbo)
+        if not overlay:
+            self.post_env = env
+        self._post(screen, self.post_env or env)
+
+    def _post(self, screen, env):
+        """Résolution de l'anticrénelage, halo lumineux, puis composition finale dans screen."""
+        ctx = self.ctx
+        ctx.copy_framebuffer(self.hdr[0], self.msaa[0])
+        ctx.disable(moderngl.DEPTH_TEST)
+        ctx.disable(moderngl.BLEND)
+        src, src_size = self.hdr[1], self.size
+        pd = self.p_down
+        for i, (fbo, tex, size) in enumerate(self.bloom_chain):
+            fbo.use()
+            ctx.viewport = (0, 0, *size)
+            src.use(location=0)
+            pd["u_src"].value = 0
+            pd["u_texel"].value = (1.0 / src_size[0], 1.0 / src_size[1])
+            pd["u_prefilter"].value = 1.0 if i == 0 else 0.0
+            self._set(pd, "u_threshold", env.bloom_threshold)
+            self.vao_down.render()
+            src, src_size = tex, size
+        pu = self.p_up
+        ctx.enable(moderngl.BLEND)
+        ctx.blend_func = moderngl.ONE, moderngl.ONE
+        for i in range(len(self.bloom_chain) - 1, 0, -1):
+            fbo, _, size = self.bloom_chain[i - 1]
+            _, tex, tsize = self.bloom_chain[i]
+            fbo.use()
+            ctx.viewport = (0, 0, *size)
+            tex.use(location=0)
+            pu["u_src"].value = 0
+            pu["u_texel"].value = (1.0 / tsize[0], 1.0 / tsize[1])
+            self._set(pu, "u_radius", 1.0)
+            self.vao_up.render()
+        ctx.disable(moderngl.BLEND)
+        screen.use()
+        ctx.viewport = (0, 0, *screen.size)
+        pp = self.p_post
+        self.hdr[1].use(location=0)
+        self.bloom_chain[0][1].use(location=1)
+        pp["u_hdr"].value = 0
+        self._set(pp, "u_bloom", 1)
+        self.time += 1 / 60
+        for name, val in (("u_exposure", env.exposure), ("u_bloom_k", env.bloom), ("u_sat", env.sat),
+                          ("u_contrast", env.contrast), ("u_shadow_tint", env.shadow_tint),
+                          ("u_high_tint", env.high_tint), ("u_vignette", env.vignette), ("u_grain", env.grain),
+                          ("u_aberr", env.aberr), ("u_time", self.time), ("u_res", tuple(map(float, screen.size)))):
+            self._set(pp, name, val)
+        self.vao_post.render()
+        ctx.enable(moderngl.DEPTH_TEST)
 
     # ------------------------------------------------------------------ composition finale
     def clear(self, target, color=(0.0, 0.0, 0.0)):

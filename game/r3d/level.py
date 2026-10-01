@@ -1,10 +1,11 @@
 """Transforme la grille d'un étage en maillage 3D statique (sol, murs, piliers, torches, décor)."""
 import math
 import random
+from contextlib import contextmanager
 
-from ..dungeon import WALL, FLOOR, BARRIER
+from ..dungeon import WALL, FLOOR, BARRIER, PIT, LEDGE, STAIRS, PLAT_H
 from ..settings import TILE
-from . import camp, city, dungeon_kit, objmodels
+from . import camp, city, dressing, dungeon_kit, objmodels
 from .meshes import MeshBuilder
 
 # Ambiances : couleurs du sol / des murs, torches, lumière
@@ -111,6 +112,24 @@ FLOOR_THEMES = ["geoles", "ossuaire", "forges", "sanctuaire", "cryptes", "fosse"
                 "bibliotheque", "jardins", "catacombes", "engloutie", "magma", "reliquaire", "neant", "necropole",
                 "cristal", "arene", "sommet"]
 
+def dark_env(th):
+    """Ambiance « dark fantasy » d'un étage : lumière ambiante basse, flaques de lumière chaude des torches,
+    brouillard teinté, étalonnage froid dans les ombres et chaud dans les lumières."""
+    from .renderer import Env
+
+    def k(c, f):
+        return tuple(ch * f for ch in c)
+    sky = th["sky"]
+    # les ambiances claires (givre, reliquaire, cristal...) sont exposées moins fort : même pénombre partout
+    lum = (sum(th["floor"]) + sum(th["wall"])) / (6 * 255)
+    expo = 1.3 * min(1.0, (0.36 / max(lum, 0.1)) ** 0.85)
+    return Env(sun_col=k(th["sun"], 0.6), amb_sky=k(sky, 0.72), amb_ground=k(th["ground"], 0.6),
+               fog=(14.0, 28.0), fog_col=k(sky, 0.05), clear=k(sky, 0.05),
+               exposure=expo, bloom=0.5, bloom_threshold=0.85, sat=0.82, contrast=1.1,
+               shadow_tint=(0.86, 0.94, 1.1), high_tint=(1.1, 1.0, 0.86), vignette=0.6, grain=0.03, aberr=0.5,
+               glow=1.5)
+
+
 def floor_theme(floor):
     return FLOOR_THEMES[(min(floor, MAX_FLOOR) - 1) % len(FLOOR_THEMES)]
 
@@ -130,6 +149,7 @@ class LevelGeometry:
         self.torches = []    # (x, y, z) logiques des flammes
         self.candles = []
         self.lava = []       # (x, y) des fissures incandescentes
+        self.stains = []     # (x, y, rayon, opacité, graine) : crasse et taches sombres au sol
         self.tower = None    # hub : position de la tour
 
 
@@ -146,22 +166,43 @@ def build(d, theme_name, rng=None, hub=False):
 
     house_cells = (getattr(d, "house_cells", set()) | getattr(d, "rampart", set())) if hub else set()
 
-    # dessous sombre (visible dans les joints entre les dalles)
-    mb.box(-2, -0.3, -2, d.w + 2, -0.1, d.h + 2, (0.03, 0.03, 0.035))
+    # dessous sombre (visible dans les joints entre les dalles), percé au droit des gouffres, des marches et
+    # des paliers inférieurs
+    pits = {(x, y) for y in range(d.h) for x in range(d.w)
+            if tiles[y][x] in (PIT, STAIRS) or zt(d, x, y) < 0}
+    if pits:
+        for x0, z0, x1, z1 in ((-2, -2, d.w + 2, 0), (-2, d.h, d.w + 2, d.h + 2), (-2, 0, 0, d.h), (d.w, 0, d.w + 2, d.h)):
+            mb.box(x0, -0.3, z0, x1, -0.1, z1, (0.03, 0.03, 0.035))
+        for y in range(d.h):
+            x = 0
+            while x < d.w:
+                if (x, y) in pits:
+                    x += 1
+                    continue
+                x0 = x
+                while x < d.w and (x, y) not in pits:
+                    x += 1
+                mb.box(x0, -0.3, y, x, -0.1, y + 1, (0.03, 0.03, 0.035))
+    else:
+        mb.box(-2, -0.3, -2, d.w + 2, -0.1, d.h + 2, (0.03, 0.03, 0.035))
     use_kit = not hub and dungeon_kit.available()
     if use_kit:
         dungeon_kit.build(mb, geo, d, th, rng, is_floor)
         for y in range(d.h):
             for x in range(d.w):
-                if is_floor(x, y) and th.get("lava") and rng.random() < 0.05:
+                if _plain(d, x, y) and th.get("lava") and rng.random() < 0.05:
                     geo.lava.append(((x + 0.5) * TILE, (y + 0.5) * TILE))
     else:
         for y in range(d.h):
             for x in range(d.w):
-                if not is_floor(x, y):
+                if not is_floor(x, y) or tiles[y][x] in (PIT, STAIRS):
                     continue
-                alt = rng.random() < 0.12
-                c = _jit(th["alt"] if alt else th["floor"], 9, rng)
+                alt = rng.random() < 0.14
+                c = _jit(th["floor"], 9, rng)
+                if alt:
+                    c = tuple(a + (b / 255.0 - a) * 0.35 for a, b in zip(c, th["alt"]))
+                near = sum(1 for dx in (-1, 0, 1) for dy in (-1, 0, 1) if not is_floor(x + dx, y + dy))
+                c = tuple(ch * max(0.62, 1.0 - 0.075 * near) for ch in c)
                 if hub:
                     _camp_floor(mb, d, x, y, rng)
                     mb.mat = 0
@@ -169,8 +210,9 @@ def build(d, theme_name, rng=None, hub=False):
                     mb.mat = mb.STONE
                     g = 0.03
                     h = rng.uniform(-0.015, 0.0)
-                    mb.box(x + g, -0.12, y + g, x + 1 - g, h, y + 1 - g, c)
-                if th.get("lava") and rng.random() < 0.05:
+                    b = zt(d, x, y) + (PLAT_H / TILE if (x, y) in d.raised else 0.0)
+                    mb.box(x + g, b - 0.12, y + g, x + 1 - g, b + h, y + 1 - g, c)
+                if _plain(d, x, y) and th.get("lava") and rng.random() < 0.05:
                     geo.lava.append(((x + 0.5) * TILE, (y + 0.5) * TILE))
         mb.mat = 0
         walls = []
@@ -193,25 +235,26 @@ def build(d, theme_name, rng=None, hub=False):
                 mb.box(x + 0.08, 1.85, y + 0.08, x + 0.92, 2.1, y + 0.92, _f(th["top"]), 1.0)
                 continue
             if hub and d.tiles[y][x] == WALL and getattr(d, "tower_tiles", None) and (x, y) in d.tower_tiles:
-                mb.box(x, 0, y, x + 1, 0.1, y + 1, _jit((70, 96, 58), 6, rng))
+                mb.box(x, 0, y, x + 1, 0.1, y + 1, _jit((54, 62, 44), 6, rng))
                 continue
             if hub and (x, y) in house_cells:
-                mb.box(x, 0, y, x + 1, 0.1, y + 1, _jit((70, 96, 58), 6, rng))
+                mb.box(x, 0, y, x + 1, 0.1, y + 1, _jit((54, 62, 44), 6, rng))
                 continue
             if hub:
                 # clairière : talus herbeux bas couverts d'arbres
                 H = rng.uniform(0.3, 0.55)
                 mb.mat = mb.DIRT
-                mb.box(x, 0, y, x + 1, H, y + 1, _jit((104, 96, 84), 10, rng), 1.0)
+                mb.box(x, 0, y, x + 1, H, y + 1, _jit((78, 70, 62), 10, rng), 1.0)
                 mb.mat = mb.GRASS
-                mb.box(x - 0.02, H, y - 0.02, x + 1.02, H + 0.08, y + 1.02, _jit((64, 104, 52), 8, rng), 1.0)
+                mb.box(x - 0.02, H, y - 0.02, x + 1.02, H + 0.08, y + 1.02, _jit((50, 62, 40), 8, rng), 1.0)
                 mb.mat = 0
                 if rng.random() < 0.8:
                     camp.tree(mb, x + rng.uniform(0.3, 0.7), H + 0.08, y + rng.uniform(0.3, 0.7), rng)
                 continue
             H = rng.uniform(1.5, 1.9) if not hub else rng.uniform(1.0, 2.2)
             c = _jit(th["wall"], 8, rng)
-            mb.box(x, 0, y, x + 1, H, y + 1, c, 1.0)
+            b0 = min([floor_low(d, x + dx, y + dy) for dx, dy in near] + [0.0])
+            mb.box(x, b0, y, x + 1, H, y + 1, c, 1.0)
             mb.box(x - 0.03, H, y - 0.03, x + 1.03, H + 0.12, y + 1.03, _jit(th["top"], 6, rng), 1.0)
             # pierres en relief sur les faces visibles
             for dx, dy in ((1, 0), (0, 1), (-1, 0), (0, -1)):
@@ -235,8 +278,23 @@ def build(d, theme_name, rng=None, hub=False):
                         geo.torches.append((px * TILE, pz * TILE, 1.4 * TILE))
                         break
     mb.mat = 0
+    if not hub:
+        relief(mb, d, th, rng)
+        dressing.build(mb, geo, d, th, rng, is_floor)
     # décor au sol
     for kind, x, y in d.decor:
+        with lifted(mb, zt(d, x, y)):
+            _decor(mb, geo, kind, x, y, rng)
+    if hub:
+        camp.forest(mb, d, rng, is_floor)
+        city.build(mb, geo, d, rng, TILE)
+    geo.mesh = mb.build()
+    return geo
+
+
+def _decor(mb, geo, kind, x, y, rng):
+    """Un élément de décor posé au sol de la case (x, y), au niveau 0 (relevé ensuite au palier)."""
+    if True:
         cx, cz = x + rng.uniform(0.25, 0.75), y + rng.uniform(0.25, 0.75)
         if kind == "os":
             a = rng.random() * math.pi
@@ -286,11 +344,128 @@ def build(d, theme_name, rng=None, hub=False):
         elif kind == "rocher":
             s = rng.uniform(0.12, 0.3)
             mb.add("sphere", (cx, s * 0.5, cz), (s, 0, 0), (0, s * 0.7, 0), (0, 0, s * 1.1), _jit((120, 116, 110), 10, rng))
-    if hub:
-        camp.forest(mb, d, rng, is_floor)
-        city.build(mb, geo, d, rng, TILE)
-    geo.mesh = mb.build()
-    return geo
+
+
+def _plain(d, x, y):
+    """Sol ordinaire, au niveau 0 (ni gouffre, ni estrade, ni marches)."""
+    return d.tiles[y][x] in (FLOOR, BARRIER) and (x, y) not in getattr(d, "raised", ())
+
+
+def zt(d, x, y):
+    """Hauteur (en cases) du palier d'une case ; 0 hors de la carte."""
+    zb = getattr(d, "zb", None)
+    if zb is None or not (0 <= x < d.w and 0 <= y < d.h):
+        return 0.0
+    return zb[y][x] / TILE
+
+
+def floor_low(d, x, y):
+    """Point le plus bas du sol d'une case (bas des marches) : les murs voisins descendent jusque-là."""
+    z = zt(d, x, y)
+    st = getattr(d, "stairs", {}).get((x, y)) if 0 <= x < d.w and 0 <= y < d.h else None
+    if st:
+        z += min(0.0, st[2] / TILE)
+    return z
+
+
+@contextmanager
+def lifted(mb, dz):
+    """Tout ce qui est ajouté au maillage dans ce bloc est décalé en hauteur de dz (en cases)."""
+    n = len(mb.parts)
+    yield
+    if dz:
+        for arr in mb.parts[n:]:
+            arr[:, 1] += dz
+
+
+def relief(mb, d, th, rng):
+    """Estrades (masse de pierre, garde-corps), escaliers (estrades et paliers) et gouffres."""
+    tiles = d.tiles
+    H = PLAT_H / TILE
+    raised = getattr(d, "raised", set())
+    wall, top = th["wall"], th["top"]
+
+    def top_of(x, y):
+        return zt(d, x, y) + (H if (x, y) in raised else 0.0)
+    mb.mat = mb.BRICK
+    for x, y in raised:
+        z = zt(d, x, y)
+        mb.box(x, z - 0.1, y, x + 1, z + H - 0.005, y + 1, _jit(wall, 6, rng))
+    # garde-corps sur le rebord, du côté du vide
+    mb.mat = mb.STONE
+    for y in range(d.h):
+        for x in range(d.w):
+            if tiles[y][x] != LEDGE:
+                continue
+            B = top_of(x, y)
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                nx, ny = x + dx, y + dy
+                if (nx, ny) in raised or not (0 <= nx < d.w and 0 <= ny < d.h) or tiles[ny][nx] == WALL:
+                    continue
+                c = _jit(top, 8, rng)
+                t, hh = 0.09, 0.34
+                if dx:
+                    ex = x + (1 if dx > 0 else 0)
+                    mb.box(ex - t * (dx > 0) * 2, B, y, ex + t * (dx < 0) * 2, B + hh, y + 1, c)
+                    for py in (y + 0.08, y + 0.92):
+                        mb.box(ex - 0.12 if dx > 0 else ex, B, py - 0.07, ex if dx > 0 else ex + 0.12, B + hh + 0.1,
+                               py + 0.07, _jit(wall, 5, rng))
+                else:
+                    ey = y + (1 if dy > 0 else 0)
+                    mb.box(x, B, ey - t * (dy > 0) * 2, x + 1, B + hh, ey + t * (dy < 0) * 2, c)
+                    for px in (x + 0.08, x + 0.92):
+                        mb.box(px - 0.07, B, ey - 0.12 if dy > 0 else ey, px + 0.07, B + hh + 0.1,
+                               ey if dy > 0 else ey + 0.12, _jit(wall, 5, rng))
+    # marches : quatre degrés par case, du bas vers le haut de la rampe
+    for (x, y), (ux, uy, z0, z1) in getattr(d, "stairs", {}).items():
+        base = zt(d, x, y)
+        lo, hi = base + z0 / TILE, base + z1 / TILE
+        bottom = min(lo, base) - 0.15
+        for i in range(4):
+            a, b = i / 4, (i + 1) / 4
+            h = lo + (hi - lo) * (i + 1) / 4
+            c = _jit(th["floor"], 10, rng)
+            if ux:
+                x0, x1 = (x + a, x + b) if ux > 0 else (x + 1 - b, x + 1 - a)
+                mb.box(x0, bottom, y, x1, h, y + 1, c)
+            else:
+                y0, y1 = (y + a, y + b) if uy > 0 else (y + 1 - b, y + 1 - a)
+                mb.box(x, bottom, y0, x + 1, h, y1, c)
+    # gouffres : parois qui plongent dans le noir (de plus en plus sombres), rebord de pierres, fond
+    D = 3.0
+    bottom_col = (0.55, 0.16, 0.04) if th.get("lava") else (0.012, 0.012, 0.016)
+    bands = ((0.0, -0.8, 0.55), (-0.8, -1.7, 0.28), (-1.7, -D, 0.1))
+    mb.mat = 0
+    for y in range(d.h):
+        for x in range(d.w):
+            if tiles[y][x] != PIT:
+                continue
+            z = zt(d, x, y)
+            mb.box(x, z - D - 0.1, y, x + 1, z - D, y + 1, bottom_col)
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                nx, ny = x + dx, y + dy
+                if 0 <= nx < d.w and 0 <= ny < d.h and tiles[ny][nx] == PIT:
+                    continue
+                lip = _jit(top, 10, rng)
+                for za, zb_, k in bands:
+                    rock = tuple(ch / 255.0 * k * rng.uniform(0.9, 1.1) for ch in wall)
+                    if dx:
+                        ex = x + (1 if dx > 0 else 0)
+                        s = -1 if dx > 0 else 1
+                        mb.box(min(ex, ex + s * 0.06), z + zb_, y, max(ex, ex + s * 0.06), z + za, y + 1, rock)
+                    else:
+                        ey = y + (1 if dy > 0 else 0)
+                        s = -1 if dy > 0 else 1
+                        mb.box(x, z + zb_, min(ey, ey + s * 0.06), x + 1, z + za, max(ey, ey + s * 0.06), rock)
+                if dx:
+                    ex = x + (1 if dx > 0 else 0)
+                    s = -1 if dx > 0 else 1
+                    mb.box(min(ex, ex + s * 0.14), z - 0.18, y - 0.02, max(ex, ex + s * 0.14), z + 0.02, y + 1.02, lip)
+                else:
+                    ey = y + (1 if dy > 0 else 0)
+                    s = -1 if dy > 0 else 1
+                    mb.box(x - 0.02, z - 0.18, min(ey, ey + s * 0.14), x + 1.02, z + 0.02, max(ey, ey + s * 0.14), lip)
+    mb.mat = 0
 
 
 def _camp_floor(mb, d, x, y, rng):
@@ -308,11 +483,11 @@ def _camp_floor(mb, d, x, y, rng):
     if (x, y) in getattr(d, "paths", ()):
         # herbe dessous, puis un disque de terre : les disques voisins se chevauchent en un chemin aux bords ronds
         mb.mat = mb.GRASS
-        mb.box(x, -0.12, y, x + 1, 0, y + 1, _jit((84, 128, 58), 4, rng))
+        mb.box(x, -0.12, y, x + 1, 0, y + 1, _jit((60, 74, 46), 4, rng))
         mb.mat = mb.DIRT
         r = rng.uniform(0.66, 0.78)
         mb.add("cylinder", (x + 0.5 + rng.uniform(-0.08, 0.08), 0.004, y + 0.5 + rng.uniform(-0.08, 0.08)), (r, 0, 0),
-               (0, 0.004, 0), (0, 0, r), _f((118, 96, 68)))
+               (0, 0.004, 0), (0, 0, r), _f((92, 76, 58)))
         if rng.random() < 0.5:
             s = rng.uniform(0.05, 0.09)
             px, pz = x + rng.uniform(0.2, 0.8), y + rng.uniform(0.2, 0.8)
@@ -320,5 +495,6 @@ def _camp_floor(mb, d, x, y, rng):
         return
     mb.mat = mb.GRASS
     n = 0.5 + 0.5 * math.sin(x * 0.45 + y * 0.2) * math.cos(y * 0.37 - x * 0.13)
-    base = tuple(a + (b - a) * n for a, b in zip((72, 120, 52), (108, 150, 66)))
+    # herbe fanée, presque grise sous la cendre, avec des plaques plus vertes
+    base = tuple(a + (b - a) * n for a, b in zip((56, 66, 46), (80, 94, 56)))
     mb.box(x, -0.12, y, x + 1, 0, y + 1, _jit(base, 4, rng))

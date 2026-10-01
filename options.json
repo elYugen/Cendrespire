@@ -1,7 +1,7 @@
 {
-  "master": 0.72,
-  "music": 0.12,
-  "sfx": 0.33,
+  "master": 0.3,
+  "music": 0.07,
+  "sfx": 0.18,
   "keys": {
     "up": 26,
     "down": 22,

@@ -7,14 +7,14 @@ import pygame
 
 from . import artifacts, coins, controls, gamepad, hud, nav, quests, save, sfx, spells, ui
 from .data import ANIMA_POWERS, ANIMA_TIERS, BAG_SIZE, POINTS_PER_LEVEL, SPELLS, TEAR_DROP
-from .dungeon import WALL, BARRIER, Minimap
+from .dungeon import WALL, BARRIER, PIT, LEDGE, PLAT_H, Minimap
 from .entities import Loot
 from .fx import Particles, RingFX, Blast, Lightning
 from .items import generate_item, item_value, buy_price, ench_spent, ART_SLOTS
 from .panels import (InventoryPanel, MenuScreen, AnimaPanel, DeathPanel, MENU_KEYS,
                      PAGE_SYS)
 from .r3d import level, models
-from .r3d.camera import Camera3D
+from .r3d.camera import Camera3D, U
 from .r3d.renderer import Env
 from .settings import SCREEN_W, SCREEN_H, TILE, VIEW, GOLD, GOLD_BRIGHT, TEXT, RED, WHITE, RARITY_COLORS
 
@@ -64,7 +64,15 @@ class World(Scene):
         self.geo = level.build(dungeon, theme, self.rng, hub=self.hub)
         self.obstacles = []        # (x, y, rayon) : décor qui bloque le passage (étal, tentes, charrette...)
         self.torch_col = th["torch"]
-        self.env = Env(sun_col=th["sun"], amb_sky=th["sky"], amb_ground=th["ground"])
+        self.torch_power = 1.8         # intensité des torches et de la lanterne du héros (plus douces en ville)
+        self.lantern_power = 1.45
+        # atmosphère : poussières (ou braises dans les étages de lave) qui flottent, nappes de brume au sol
+        if th.get("lava"):
+            self.atmo = dict(motes=(255, 120, 50), rise=26.0, mist=(60, 30, 20), mist_a=0.22)
+        else:
+            self.atmo = dict(motes=tuple(min(255, int(c * 0.5 + 110)) for c in th["torch"]), rise=4.0,
+                             mist=tuple(int(c * 255 * 0.55) for c in th["sky"]), mist_a=0.2)
+        self.env = level.dark_env(th)
         self.cam = Camera3D()
         self.barrier_active = False
         self.monsters, self.projectiles, self.effects, self.loot, self.interactables = [], [], [], [], []
@@ -105,20 +113,52 @@ class World(Scene):
         self.click_fx = None
 
     # ------------------------------------------------------------------ utilitaires
-    def solid(self, tx, ty):
+    def solid(self, tx, ty, pits=True):
+        """pits=False : le héros peut s'avancer au-dessus d'un gouffre (et y tomber) ; les monstres et le
+        déplacement au clic, eux, le contournent toujours."""
+        if not (0 <= tx < self.W and 0 <= ty < self.H):
+            return True
+        t = self.tiles[ty][tx]
+        return t == WALL or (t == PIT and pits) or t == LEDGE or (t == BARRIER and self.barrier_active)
+
+    def solid_at(self, x, y):
+        return self.solid(int(x // TILE), int(y // TILE))
+
+    def wall_at(self, x, y):
+        """Obstacle qui arrête la vue et les tirs : les gouffres et les garde-corps se franchissent par les airs."""
+        tx, ty = int(x // TILE), int(y // TILE)
         if not (0 <= tx < self.W and 0 <= ty < self.H):
             return True
         t = self.tiles[ty][tx]
         return t == WALL or (t == BARRIER and self.barrier_active)
 
-    def solid_at(self, x, y):
-        return self.solid(int(x // TILE), int(y // TILE))
+    def ground_z(self, x, y):
+        """Hauteur du sol sous un point : palier de la case, estrades, marches (pixels logiques, 0 ou négatif)."""
+        d = self.dungeon
+        tx, ty = int(x // TILE), int(y // TILE)
+        if not (0 <= tx < self.W and 0 <= ty < self.H):
+            return 0.0
+        z = d.zb[ty][tx]
+        if (tx, ty) in d.raised:
+            return z + PLAT_H
+        st = d.stairs.get((tx, ty))
+        if not st:
+            return z
+        ux, uy, z0, z1 = st
+        u, v = x / TILE - tx, y / TILE - ty
+        k = u if ux > 0 else 1 - u if ux < 0 else v if uy > 0 else 1 - v
+        return z + z0 + (z1 - z0) * k
 
-    def blocked(self, x, y, r):
+    def on_ground(self, fr, o):
+        """Place la suite du dessin à la hauteur du sol sous o (x, y)."""
+        x = getattr(o, "x", None)
+        fr.zoff = self.ground_z(x, o.y) if x is not None else 0.0
+
+    def blocked(self, x, y, r, pits=True):
         T = TILE
         for ty in range(int((y - r) // T), int((y + r) // T) + 1):
             for tx in range(int((x - r) // T), int((x + r) // T) + 1):
-                if self.solid(tx, ty):
+                if self.solid(tx, ty, pits):
                     cx = min(max(x, tx * T), tx * T + T)
                     cy = min(max(y, ty * T), ty * T + T)
                     if (x - cx) ** 2 + (y - cy) ** 2 < r * r:
@@ -131,10 +171,11 @@ class World(Scene):
     def move_circle(self, e, dx, dy):
         steps = int(max(abs(dx), abs(dy)) / 8) + 1
         sx, sy = dx / steps, dy / steps
+        pits = e is not self.player
         for _ in range(steps):
-            if sx and not self.blocked(e.x + sx, e.y, e.r):
+            if sx and not self.blocked(e.x + sx, e.y, e.r, pits):
                 e.x += sx
-            if sy and not self.blocked(e.x, e.y + sy, e.r):
+            if sy and not self.blocked(e.x, e.y + sy, e.r, pits):
                 e.y += sy
 
     def los(self, x1, y1, x2, y2):
@@ -142,7 +183,7 @@ class World(Scene):
         n = int(d / 16) + 1
         for i in range(1, n):
             t = i / n
-            if self.solid_at(x1 + (x2 - x1) * t, y1 + (y2 - y1) * t):
+            if self.wall_at(x1 + (x2 - x1) * t, y1 + (y2 - y1) * t):
                 return False
         return True
 
@@ -170,7 +211,21 @@ class World(Scene):
     def ground_point(self):
         if gamepad.PAD.active:
             return gamepad.aim_point(self)
-        return self.cam.ray_ground(*self.mouse_px(), height=0)
+        return self.mouse_ground()
+
+    def mouse_ground(self):
+        """Point du sol sous le curseur de la souris (jamais la visée de la manette). Le rayon est recoupé avec
+        la hauteur réelle du sol (paliers, estrades) en quelques itérations."""
+        mx, my = self.mouse_px()
+        h = self.ground_z(self.player.x, self.player.y)
+        x, y = self.cam.ray_ground(mx, my, height=h)
+        for _ in range(3):
+            h2 = self.ground_z(x, y)
+            if abs(h2 - h) < 0.5:
+                break
+            h = h2
+            x, y = self.cam.ray_ground(mx, my, height=h)
+        return x, y
 
     def is_moving(self):
         return (any(self.held(a) for a in ("up", "down", "left", "right")) or bool(self.nav and self.path)
@@ -371,6 +426,9 @@ class World(Scene):
             bone = m.mid in ("squelette", "archer", "golem", "liche")
             self.particles.emit(m.x, m.y, (210, 205, 185) if bone else (140, 12, 12), n=5, speed=90, life=0.5,
                                 size=2.6, glow=False, gravity=500, up=160, z=m.height() * 0.6)
+            # étincelles d'impact (plus nombreuses sur un coup critique)
+            self.particles.emit(m.x, m.y, (255, 220, 150), n=7 if crit else 3, speed=240, life=0.22, size=1.6,
+                                z=m.height() * 0.55, up=120, gravity=700, drag=1.0)
             sfx.play("hit", 0.35)
         if m.hp <= 0:
             self.kill_monster(m)
@@ -812,6 +870,7 @@ class World(Scene):
             self.open_anima_choice()
             return
         self.update_player(dt)
+        self.check_fall(dt)
         self.update_flow()
         for m in list(self.monsters):
             if not m.dead:
@@ -909,7 +968,7 @@ class World(Scene):
 
     def update_player(self, dt):
         p = self.player
-        if p.dead:
+        if p.dead or getattr(p, "fall", None):
             return
         p.tick(dt)
         p.moving = False
@@ -942,6 +1001,8 @@ class World(Scene):
         self.update_hover()
         if p.attack_lock > 0:            # le coup part : le héros reste planté un court instant
             return
+        if held:
+            gamepad.PAD.active = False   # bouton de la souris enfoncé : la souris reprend la main
         if gamepad.PAD.active:           # manette : stick gauche pour marcher, gâchette ou A pour frapper
             sx, sy = gamepad.PAD.stick("left")
             attack = gamepad.attack_held()
@@ -968,6 +1029,34 @@ class World(Scene):
         if held:
             self.hold_update(dt)
         self.follow_nav(dt, held)
+
+    def check_fall(self, dt):
+        """Gouffres : le héros dont le centre passe au-dessus du vide tombe et meurt (sauf en plein saut)."""
+        p = self.player
+        f = getattr(p, "fall", None)
+        if f is not None:
+            f["t"] += dt
+            if f["t"] >= 0.75:
+                p.fall = None
+                p.hp = 0
+                self.on_player_death()
+                if not p.dead:                   # sauvé par le Phylactère : retour au dernier sol sûr
+                    p.x, p.y = f["safe"]
+            return
+        if p.dead or p.leap:
+            return
+        tx, ty = int(p.x // TILE), int(p.y // TILE)
+        if not (0 <= tx < self.W and 0 <= ty < self.H):
+            return
+        if self.tiles[ty][tx] == PIT:
+            p.dash = None
+            p.fall = {"t": 0.0, "safe": getattr(self, "safe_spot", (p.x, p.y))}
+            self.nav, self.path = None, []
+            sfx.play("hit", 0.5)
+            self.message("Vous basculez dans le gouffre...", (230, 120, 110), 3)
+        elif not any(self.tiles[ty + dy][tx + dx] == PIT for dx in (-1, 0, 1) for dy in (-1, 0, 1)
+                     if 0 <= tx + dx < self.W and 0 <= ty + dy < self.H):
+            self.safe_spot = (p.x, p.y)
 
     # ------------------------------------------------------------------ déplacement au clic (façon Diablo)
     def turn_to(self, ang, dt, speed=16.0):
@@ -997,10 +1086,11 @@ class World(Scene):
         for m in self.monsters:
             if m.dead or not m.targetable:
                 continue
-            sp = self.cam.project(m.x, m.y, 20)
+            gz = 20 + self.ground_z(m.x, m.y)
+            sp = self.cam.project(m.x, m.y, gz)
             if not sp:
                 continue
-            rad = (m.r + 14) * self.cam.pixel_scale(m.x, m.y, 20)
+            rad = (m.r + 14) * self.cam.pixel_scale(m.x, m.y, gz)
             d = math.hypot(sp[0] - mx, sp[1] - my)
             if d >= rad:
                 continue
@@ -1016,11 +1106,12 @@ class World(Scene):
         for o in self.interactables:
             if not o.radius or not o.can_interact(self):
                 continue
-            sp = self.cam.project(o.x, o.y, 22)
+            gz = 22 + self.ground_z(o.x, o.y)
+            sp = self.cam.project(o.x, o.y, gz)
             if not sp:
                 continue
             d = math.hypot(sp[0] - mx, sp[1] - my)
-            if d < 34 * self.cam.pixel_scale(o.x, o.y, 22) and (bd is None or d < bd):
+            if d < 34 * self.cam.pixel_scale(o.x, o.y, gz) and (bd is None or d < bd):
                 best, bd = o, d
         return best
 
@@ -1040,7 +1131,7 @@ class World(Scene):
         elif self.hover_obj:
             self.nav = {"kind": "interact", "obj": self.hover_obj, "x": self.hover_obj.x, "y": self.hover_obj.y}
         else:
-            gx, gy = self.ground_point()
+            gx, gy = self.mouse_ground()
             self.nav = {"kind": "move", "x": gx, "y": gy}
             self.click_fx = [gx, gy, 0.0]
 
@@ -1056,7 +1147,7 @@ class World(Scene):
             self.nav = {"kind": "attack", "obj": self.hover, "once": False}
             self.path = []
             return
-        gx, gy = self.ground_point()
+        gx, gy = self.mouse_ground()
         if not n or math.hypot(n["x"] - gx, n["y"] - gy) > 20:
             self.nav = {"kind": "move", "x": gx, "y": gy}
             if self.repath_t <= 0:
@@ -1127,6 +1218,14 @@ class World(Scene):
         if not self.path or self.repath_t <= 0:
             self.path = nav.find_path(self, p.x, p.y, dest[0], dest[1], p.r)
             self.repath_t = 0.25 if n["kind"] == "attack" else 0.6
+            if (n["kind"] == "move" and self.path and self.blocked(dest[0], dest[1], p.r)
+                    and not self.path_ok(p.x, p.y, dest[0], dest[1], self.path)):
+                # clic sur un toit, un mur ou un obstacle : la case libre la plus proche est de l'autre côté.
+                # Plutôt qu'un long détour dans la direction opposée, on marche tout droit vers le clic.
+                bx, by = self.reachable(p.x, p.y, dest[0], dest[1], p.r)
+                self.path = [(bx, by)] if math.hypot(bx - p.x, by - p.y) > 8 else []
+                if self.path:
+                    n["x"], n["y"] = bx, by
             if not self.path or (n["kind"] == "attack" and not self.path_ok(p.x, p.y, dest[0], dest[1], self.path)):
                 self.nav, self.path = None, []      # cible hors d'atteinte ou partie trop loin : on ne la poursuit pas
                 return
@@ -1263,56 +1362,102 @@ class World(Scene):
         cam = self.cam
         cam.tx += (p.x - cam.tx) * 0.2
         cam.ty += (p.y - cam.ty) * 0.2
+        pz = self.ground_z(p.x, p.y)
+        cam.tz += (pz - cam.tz) * 0.12          # la caméra descend et remonte avec les paliers
+        fr.ground = self.ground_z
         sh = self.shake
         cam.shake_off = (random.uniform(-sh, sh), random.uniform(-sh, sh))
         env = self.env
-        env.player = (p.x, p.y, 0)
+        env.player = (p.x, p.y, pz)
+        # chaque objet est dessiné à la hauteur du sol sous lui (estrades, marches)
+        self.on_ground(fr, p)
         p.render(fr, t)
+        fr.zoff = 0.0
         self.render_cursor_marks(fr)
         for m in self.monsters:
             if abs(m.x - p.x) < 1100 and abs(m.y - p.y) < 1100:
+                self.on_ground(fr, m)
                 m.render(fr, t)
         for a in self.allies:
+            self.on_ground(fr, a)
             a.render(fr, t)
         for o in self.interactables:
             if abs(o.x - p.x) < 1300 and abs(o.y - p.y) < 1300:
+                self.on_ground(fr, o)
                 o.render(fr, t)
         for pr in self.projectiles:
+            self.on_ground(fr, pr)
             pr.render(fr, t)
         for ef in self.effects:
+            self.on_ground(fr, ef)
             ef.render(fr)
         for l in self.loot:
+            self.on_ground(fr, l)
             l.render(fr, t)
+        fr.zoff = 0.0
         self.particles.render(fr)
         for bx, by, br in self.blood:
             fr.decal(bx, by, br, br * 0.85, (70, 6, 8), 0.75, kind=0, rot=bx)
         # lumières : lanterne du héros, torches, bougies, lave, éclairs
-        fr.light(p.x, p.y, 80, 400, (255, 214, 170), 1.3 + 0.05 * math.sin(t * 9))
+        # lanterne du héros : la principale source de lumière, chaude, qui vacille un peu
+        fr.light(p.x, p.y, 80 + pz, 430, (255, 200, 150), self.lantern_power + 0.06 * math.sin(t * 9) + 0.04 * math.sin(t * 23))
         for x, y, z in self.geo.torches:
             if abs(x - p.x) < 900 and abs(y - p.y) < 900:
                 f = 1 + 0.12 * math.sin(t * 11 + x) + 0.06 * math.sin(t * 23 + y)
-                fr.glow(x, y, z + 5, 18 * f, self.torch_col, 0.95)
+                fr.glow(x, y, z + 5, 22 * f, self.torch_col, 1.0)
+                fr.glow(x, y, z + 9, 9 * f, (255, 240, 200), 1.0)
                 fr.part("cone", (x, y, z + 5), (2.6, 0, 0), (0, 0, 5 * f), (0, 2.6, 0), self.torch_col, 1.0)
-                fr.light(x, y, z, 230 * f, self.torch_col, 1.25)
+                fr.light(x, y, z, 270 * f, self.torch_col, self.torch_power)
         for x, y, z in self.geo.candles:
             if abs(x - p.x) < 700 and abs(y - p.y) < 700:
                 fr.glow(x, y, z, 7, (255, 200, 110), 0.9)
                 fr.light(x, y, z, 70, (255, 190, 100), 0.6)
         for x, y in self.geo.lava:
             if abs(x - p.x) < 800 and abs(y - p.y) < 800:
-                fr.decal(x, y, 14, 5, (255, 110, 30), 0.85 + 0.15 * math.sin(t * 2 + x), kind=0, rot=x)
-                fr.light(x, y, 5, 90, (255, 90, 30), 0.7)
+                fr.decal(x, y, 30, 30, (255, 96, 24), 0.8 + 0.2 * math.sin(t * 1.7 + x), kind=7, rot=x, p1=(x * 0.137) % 9)
+                fr.light(x, y, 8 + self.ground_z(x, y), 100, (255, 90, 30), 0.8 + 0.15 * math.sin(t * 1.7 + x))
         for x, y, r, c, life, dur in self.flashes:
-            fr.light(x, y, 40, r, c, 1.8 * life / dur)
+            fr.light(x, y, 40 + self.ground_z(x, y), r, c, 1.3 * life / dur)
+        for x, y, r, a, seed in self.geo.stains:
+            if abs(x - p.x) < 800 and abs(y - p.y) < 700:
+                fr.decal(x, y, r, r * 0.8, (12, 10, 9), a, kind=8, rot=seed, p1=seed)
+        self.render_atmosphere(fr)
         n = p.anima.get("tourbillon", 0)
         for i in range(n):
             a = t * 2.4 + i * math.tau / n
-            fr.glow(p.x + math.cos(a) * 60, p.y + math.sin(a) * 60, 30, 26, (150, 230, 255), 0.9)
+            fr.glow(p.x + math.cos(a) * 60, p.y + math.sin(a) * 60, 30 + pz, 26, (150, 230, 255), 0.9)
         self.render_extra(fr)
         return cam, env
 
     def render_extra(self, fr):
         pass
+
+    def render_atmosphere(self, fr):
+        """Particules en suspension et brume rampante autour de la caméra (sans état : fonction du temps)."""
+        a = getattr(self, "atmo", None)
+        if not a:
+            return
+        t = self.time
+        cx, cy = self.cam.tx, self.cam.ty
+        W, H, Z = 1100.0, 800.0, 150.0
+        col, rise = a["motes"], a["rise"]
+        for i in range(70):
+            h1, h2, h3, h4 = (math.sin(i * 12.9898 + k * 78.233) * 43758.5453 % 1.0 for k in (1, 2, 3, 4))
+            x = (h1 * W + math.sin(t * 0.3 + i) * 30 + t * 6) % W
+            y = (h2 * H + math.cos(t * 0.27 + i * 1.7) * 30) % H
+            z = (h3 * Z + t * rise * (0.5 + h4)) % Z
+            wx, wy = cx - W / 2 + x, cy - H / 2 + y
+            fade = min(1.0, z / 25, (Z - z) / 25)
+            tw = 0.55 + 0.45 * math.sin(t * (1.5 + h4 * 2) + i)
+            fr.glow(wx, wy, z + 6 + self.ground_z(wx, wy), 2.2 + h4 * 2.2, col, 0.5 * fade * tw)
+        mc, ma = a["mist"], a["mist_a"]
+        for i in range(9):
+            h1, h2 = (math.sin(i * 7.31 + k * 3.17) * 9187.13 % 1.0 for k in (1, 2))
+            x = (h1 * W + t * (8 + 6 * h2)) % W
+            y = (h2 * H + t * 3) % H
+            r = 150 + 90 * h1
+            fr.decal(cx - W / 2 + x, cy - H / 2 + y, r, r * 0.8, mc, ma * (0.7 + 0.3 * math.sin(t * 0.4 + i)),
+                     kind=8, rot=h1 * 6, p1=i * 1.7 + t * 0.05, lift=0.01)
 
     # ------------------------------------------------------------------ interface
     def render_cursor_marks(self, fr):
@@ -1333,16 +1478,22 @@ class World(Scene):
             fr.decal(x, y, 8 + 18 * a, 8 + 18 * a, (240, 230, 190), 0.8 * a, kind=1, inner=0.7)
 
     def project(self, x, y, z=0.0):
-        pt = self.cam.project(x, y, z)
+        pt = self.cam.project(x, y, z + self.ground_z(x, y))
         if not pt:
             return None
         return pt[0] / VIEW.s, pt[1] / VIEW.s
+
+    def objective_point(self):
+        """Lieu signalé par une flèche au bord de l'écran et sur la minicarte : (x, y, libellé, couleur) ou None."""
+        return None
 
     def draw_ui(self, surf):
         if getattr(self.modal, "fullscreen", False):
             self.modal.draw(surf)
             return
         p = self.player
+        if not self.modal:
+            hud.draw_objective_pointer(surf, self)
         for m in self.monsters:
             if (m.hp < m.max_hp or m.elite) and not m.boss:
                 pt = self.project(m.x, m.y, m.height() + 12)
